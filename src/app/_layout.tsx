@@ -1,16 +1,27 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import React from 'react';
-import { useColorScheme } from 'react-native';
+import { Stack, useLocalSearchParams } from "expo-router";
+import { ThemeProvider } from "../context/theme-app";
+import "../css/global.css";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+function RootLayoutNav() {
+  const params = useLocalSearchParams();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+    <ThemeProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerStyle: {
+            backgroundColor: "#27272a",
+          },
+          title: Array.isArray(params.name)
+            ? params.name.join(", ")
+            : params.name,
+        }}
+      />
     </ThemeProvider>
   );
+}
+
+export default function RootLayout() {
+  return <RootLayoutNav />;
 }
