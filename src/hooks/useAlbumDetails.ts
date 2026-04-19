@@ -1,13 +1,16 @@
 import * as MediaLibrary from "expo-media-library";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, AppStateStatus } from "react-native";
-import { albumsStore } from "../store/albumsStore";
+import { useAlbumsContext } from "../context/AlbumsContext";
 import { AlbumWithDetails, SongWithArt } from "../types/interfaces";
 import { getSongCoverArt } from "../utils/getSongCoverArt";
 
+const SONGS_PER_PAGE = 20; // Quantas músicas carregar por página
+const COVERS_BATCH_SIZE = 5; // Tamanho do lote para carregar capas
+
 interface AlbumParams {
   albumId?: string;
-  type: "album_local" | "album_artist";
+  type?: "album_local" | "album_artist";
 }
 
 const albumCache = new Map<
@@ -17,11 +20,26 @@ const albumCache = new Map<
 const coverArtCache = new Map<string, { data: string; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000;
 
-export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
+export const useAlbumDetails = ({
+  albumId,
+  type = "album_local",
+}: AlbumParams) => {
   const [loadingDetails, setLoadingDetails] = useState(true);
+  const [loadingCovers, setLoadingCovers] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [albumDetails, setAlbumDetails] = useState<AlbumWithDetails | null>(
     null,
   );
+
+  // Estado para paginação
+  const [allSongs, setAllSongs] = useState<SongWithArt[]>([]);
+  const [displayedSongs, setDisplayedSongs] = useState<SongWithArt[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const { albums, groupedAlbums, loadingAlbums, loadingGrouped } =
+    useAlbumsContext();
+
   const isMounted = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isLoadingRef = useRef(false);
@@ -31,6 +49,7 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
       const cached = coverArtCache.get(songUri);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL)
         return cached.data;
+
       try {
         const coverArt = await getSongCoverArt(songUri);
         if (coverArt)
@@ -43,15 +62,63 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
     [],
   );
 
-  // BUSCA PELO ASYNCSTORAGE (album_artist)
+  // Função para carregar mais músicas (scroll infinito)
+  const loadMoreSongs = useCallback(async () => {
+    if (loadingMore || !hasMore || !albumId) return;
+
+    setLoadingMore(true);
+
+    const nextPage = currentPage + 1;
+    const startIndex = currentPage * SONGS_PER_PAGE;
+    const endIndex = startIndex + SONGS_PER_PAGE;
+    const newSongs = allSongs.slice(startIndex, endIndex);
+
+    if (newSongs.length > 0) {
+      setDisplayedSongs((prev) => [...prev, ...newSongs]);
+      setCurrentPage(nextPage);
+      setHasMore(endIndex < allSongs.length);
+
+      // Atualiza o albumDetails com as novas músicas
+      if (isMounted.current && albumDetails) {
+        setAlbumDetails({
+          ...albumDetails,
+          songs: [...displayedSongs, ...newSongs],
+        });
+      }
+    } else {
+      setHasMore(false);
+    }
+
+    setLoadingMore(false);
+  }, [
+    loadingMore,
+    hasMore,
+    currentPage,
+    allSongs,
+    albumId,
+    albumDetails,
+    displayedSongs,
+  ]);
+
   const fetchAlbumArtist = useCallback(async () => {
     if (!albumId || isLoadingRef.current) return;
 
-    // 1. Verifica cache em memória
     const cached = albumCache.get(albumId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       if (isMounted.current) {
-        setAlbumDetails(cached.data);
+        const allSongsData = cached.data.songs;
+        setAllSongs(allSongsData);
+
+        // Carrega primeira página
+        const initialSongs = allSongsData.slice(0, SONGS_PER_PAGE);
+        setDisplayedSongs(initialSongs);
+        setHasMore(allSongsData.length > SONGS_PER_PAGE);
+        setCurrentPage(1);
+
+        setAlbumDetails({
+          ...cached.data,
+          songs: initialSongs,
+        });
         setLoadingDetails(false);
       }
       return;
@@ -61,65 +128,70 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
     setLoadingDetails(true);
 
     try {
-      // 2. Tenta memória do albumsStore (se ainda está na sessão)
-      const fromMemory = albumsStore.findById(albumId);
-      if (fromMemory) {
-        const details: AlbumWithDetails = fromMemory;
-
-        // Capa ainda não carregada? Busca em background
-        if (!details.coverArt && details.songs[0]?.uri) {
-          const coverArt = await fetchSongCoverArt(details.songs[0].uri);
-          details.coverArt = coverArt;
-        }
-
-        albumCache.set(albumId, { data: details, timestamp: Date.now() });
-        if (isMounted.current) {
-          setAlbumDetails(details);
-          setLoadingDetails(false);
-        }
+      const album = groupedAlbums.find((a) => a.id === albumId);
+      if (!album) {
+        console.warn(
+          `[useAlbumDetails] album_artist: id "${albumId}" não encontrado`,
+        );
         return;
       }
 
-      // 3. Fallback: lê direto do AsyncStorage (app reiniciado)
-      const stored = await albumsStore.load();
-      const found = stored.find((a) => a.id === albumId);
+      // Carrega todas as músicas com capas
+      const allSongsWithArt: SongWithArt[] = await Promise.all(
+        album.songs.map(async (song) => ({
+          ...song,
+          coverArt: await fetchSongCoverArt(song.uri),
+        })),
+      );
 
-      if (!found) {
-        if (isMounted.current) Alert.alert("Álbum não encontrado");
-        return;
-      }
+      setAllSongs(allSongsWithArt);
 
-      // Reconstrói o objeto com capa
-      const coverArt = found.songs[0]?.uri
-        ? await fetchSongCoverArt(found.songs[0].uri)
-        : undefined;
+      // Carrega apenas a primeira página
+      const initialSongs = allSongsWithArt.slice(0, SONGS_PER_PAGE);
+      setDisplayedSongs(initialSongs);
+      setHasMore(allSongsWithArt.length > SONGS_PER_PAGE);
+      setCurrentPage(1);
 
       const details: AlbumWithDetails = {
-        ...found,
-        coverArt,
-        songs: found.songs as SongWithArt[],
+        ...album,
+        songs: initialSongs,
       };
 
-      albumCache.set(albumId, { data: details, timestamp: Date.now() });
+      // Cache com todas as músicas
+      albumCache.set(albumId, {
+        data: { ...album, songs: allSongsWithArt },
+        timestamp: Date.now(),
+      });
+
       if (isMounted.current) setAlbumDetails(details);
     } catch (err) {
-      console.error("Erro ao buscar álbum do artista:", err);
+      console.error("[useAlbumDetails] fetchAlbumArtist:", err);
     } finally {
       if (isMounted.current) {
         setLoadingDetails(false);
         isLoadingRef.current = false;
       }
     }
-  }, [albumId, fetchSongCoverArt]);
+  }, [albumId, groupedAlbums, fetchSongCoverArt]);
 
-  // BUSCA PELO MEDIALIBRARY (album_local)─
   const fetchAlbumLocal = useCallback(async () => {
     if (!albumId || isLoadingRef.current) return;
 
     const cached = albumCache.get(albumId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       if (isMounted.current) {
-        setAlbumDetails(cached.data);
+        const allSongsData = cached.data.songs;
+        setAllSongs(allSongsData);
+
+        const initialSongs = allSongsData.slice(0, SONGS_PER_PAGE);
+        setDisplayedSongs(initialSongs);
+        setHasMore(allSongsData.length > SONGS_PER_PAGE);
+        setCurrentPage(1);
+
+        setAlbumDetails({
+          ...cached.data,
+          songs: initialSongs,
+        });
         setLoadingDetails(false);
       }
       return;
@@ -129,14 +201,9 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
     setLoadingDetails(true);
 
     try {
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-      abortControllerRef.current = new AbortController();
-
-      const allAlbums = await MediaLibrary.getAlbumsAsync();
-      const albumInfo = allAlbums.find((a) => a.id === albumId);
-
-      if (!albumInfo) {
-        if (isMounted.current) Alert.alert(`Álbum não encontrado: ${albumId}`);
+      const albumMeta = albums.find((a) => a.id === albumId);
+      if (!albumMeta) {
+        console.warn(`[fetchAlbumLocal] id "${albumId}" não encontrado`);
         return;
       }
 
@@ -147,7 +214,7 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
       });
 
       if (firstBatch.totalCount === 0) {
-        if (isMounted.current) Alert.alert("Nenhuma música encontrada");
+        console.warn("[fetchAlbumLocal] Nenhuma música encontrada");
         return;
       }
 
@@ -158,39 +225,99 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
         sortBy: [MediaLibrary.SortBy.modificationTime],
       });
 
-      const songsWithArt: SongWithArt[] = [];
-      const batchSize = 5;
+      const allSongsWithoutArt = allAssets.assets.map((s) => ({
+        ...s,
+        coverArt: undefined,
+      })) as SongWithArt[];
+      setAllSongs(allSongsWithoutArt);
 
-      for (let i = 0; i < allAssets.assets.length; i += batchSize) {
+      // Exibe apenas a primeira página imediatamente sem capas
+      const initialSongs = allSongsWithoutArt.slice(0, SONGS_PER_PAGE);
+      setDisplayedSongs(initialSongs);
+      setHasMore(allSongsWithoutArt.length > SONGS_PER_PAGE);
+      setCurrentPage(1);
+
+      if (isMounted.current) {
+        setAlbumDetails({
+          id: albumId,
+          title: albumMeta.title,
+          assetCount: firstBatch.totalCount,
+          coverArt: albumMeta.coverArt,
+          songs: initialSongs,
+        });
+        setLoadingDetails(false);
+      }
+
+      // Carrega capas apenas das músicas visíveis primeiro (página atual)
+      setLoadingCovers(true);
+      const songsWithArt: SongWithArt[] = [...initialSongs];
+
+      for (let i = 0; i < initialSongs.length; i += COVERS_BATCH_SIZE) {
         if (abortControllerRef.current?.signal.aborted) return;
 
-        const batch = allAssets.assets.slice(i, i + batchSize);
+        const batch = initialSongs.slice(i, i + COVERS_BATCH_SIZE);
         const results = await Promise.all(
-          batch.map(async (song) => ({
-            ...song,
+          batch.map(async (song, idx) => ({
+            index: i + idx,
             coverArt: await fetchSongCoverArt(song.uri),
           })),
         );
-        songsWithArt.push(...results);
 
-        if (i + batchSize < allAssets.assets.length) {
-          await new Promise((r) => setTimeout(r, 20));
+        results.forEach(({ index, coverArt }) => {
+          if (coverArt) {
+            songsWithArt[index] = { ...songsWithArt[index], coverArt };
+          }
+        });
+
+        if (isMounted.current) {
+          setAlbumDetails((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  songs: songsWithArt,
+                  coverArt:
+                    songsWithArt.find((s) => s.coverArt)?.coverArt ??
+                    prev.coverArt,
+                }
+              : prev,
+          );
+
+          // Atualiza allSongs também
+          setAllSongs((prev) => {
+            const updated = [...prev];
+            results.forEach(({ index, coverArt }) => {
+              if (coverArt && updated[index]) {
+                updated[index] = { ...updated[index], coverArt };
+              }
+            });
+            return updated;
+          });
         }
+
+        await new Promise((r) => setTimeout(r, 20));
       }
 
-      const details: AlbumWithDetails = {
-        id: albumId,
-        title: albumInfo.title || "Álbum sem título",
-        assetCount: firstBatch.totalCount,
-        coverArt: songsWithArt[0]?.coverArt,
-        songs: songsWithArt,
-      };
+      setLoadingCovers(false);
 
-      albumCache.set(albumId, { data: details, timestamp: Date.now() });
-      if (isMounted.current) setAlbumDetails(details);
+      // Cache com todas as músicas
+      albumCache.set(albumId, {
+        data: {
+          id: albumId,
+          title: albumMeta.title,
+          assetCount: firstBatch.totalCount,
+          coverArt:
+            songsWithArt.find((s) => s.coverArt)?.coverArt ??
+            albumMeta.coverArt,
+          songs: allSongsWithoutArt.map((song, idx) => ({
+            ...song,
+            coverArt: songsWithArt[idx]?.coverArt,
+          })),
+        },
+        timestamp: Date.now(),
+      });
     } catch (err) {
       if (err instanceof Error && err.name !== "AbortError") {
-        console.error("Erro ao buscar álbum local:", err);
+        console.error("[fetchAlbumLocal]", err);
         if (isMounted.current)
           Alert.alert("Erro", "Não foi possível carregar o álbum");
       }
@@ -200,17 +327,22 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
         isLoadingRef.current = false;
       }
     }
-  }, [albumId, fetchSongCoverArt]);
+  }, [albumId, albums, fetchSongCoverArt]);
 
-  // DECIDE QUAL BUSCA USAR
   const fetchAlbum = useCallback(() => {
     if (type === "album_artist") return fetchAlbumArtist();
     return fetchAlbumLocal();
   }, [type, fetchAlbumArtist, fetchAlbumLocal]);
 
+  const contextReady =
+    type === "album_artist" ? !loadingGrouped : !loadingAlbums;
+
   useEffect(() => {
+    if (!contextReady) return;
+
     isMounted.current = true;
-    const timer = setTimeout(fetchAlbum, 100);
+    isLoadingRef.current = false;
+    const timer = setTimeout(fetchAlbum, 50);
 
     const subscription = AppState.addEventListener(
       "change",
@@ -229,12 +361,25 @@ export const useAlbumDetails = ({ albumId, type }: AlbumParams) => {
       isMounted.current = false;
       abortControllerRef.current?.abort();
     };
-  }, [albumId, fetchAlbum]);
+  }, [albumId, fetchAlbum, contextReady]);
 
   const refreshAlbum = useCallback(() => {
     albumCache.delete(albumId!);
+    setAllSongs([]);
+    setDisplayedSongs([]);
+    setCurrentPage(1);
+    setHasMore(true);
     fetchAlbum();
   }, [albumId, fetchAlbum]);
 
-  return { albumDetails, loadingDetails, refreshAlbum };
+  return {
+    albumDetails,
+    loadingDetails: loadingDetails || !contextReady,
+    loadingCovers,
+    loadingMore,
+    hasMore,
+    loadMoreSongs,
+    totalSongsCount: allSongs.length,
+    refreshAlbum,
+  };
 };

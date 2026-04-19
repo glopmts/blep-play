@@ -11,6 +11,7 @@ const ASSETS_CACHE_KEY = "assets_modification_hash";
 export const useAlbumsGrouped = () => {
   const [albums, setAlbums] = useState<GroupedAlbum[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingCovers, setLoadingCovers] = useState(false);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
   useEffect(() => {
@@ -49,6 +50,7 @@ export const useAlbumsGrouped = () => {
   };
 
   const loadCoversInBackground = async (albums: GroupedAlbum[]) => {
+    setLoadingCovers(true);
     const updated = await Promise.all(
       albums.map(async (album) => {
         const coverArt = await getSongCoverArt(album.songs[0]?.uri);
@@ -58,6 +60,7 @@ export const useAlbumsGrouped = () => {
     );
     albumsStore.setMemory(updated);
     setAlbums(updated);
+    setLoadingCovers(false);
   };
 
   // Compara timestamp da última modificação para detectar mudanças
@@ -147,6 +150,7 @@ export const useAlbumsGrouped = () => {
   return {
     albums,
     loading,
+    loadingCovers,
     permissionResponse,
     requestPermission,
     refreshAlbums: loadGroupedAlbums,

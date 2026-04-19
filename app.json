@@ -7,8 +7,32 @@
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#18181b",
     "ios": {
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "bundleIdentifier": "com.glopblog.blepplay",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Audio File",
+            "LSHandlerRank": "Default",
+            "LSItemContentTypes": [
+              "public.mp3",
+              "public.mpeg-4-audio",
+              "public.audio",
+              "com.apple.m4a-audio",
+              "com.microsoft.waveform-audio",
+              "public.aiff-audio",
+              "public.aac-audio",
+              "public.flac-audio"
+            ]
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "UIFileSharingEnabled": true,
+        "UIBackgroundModes": ["audio"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,8 +41,94 @@
         "backgroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/icon.png"
       },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_AUDIO",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK"
+      ],
       "predictiveBackGestureEnabled": false,
-      "package": "com.glopblog.blepplay"
+      "package": "com.glopblog.blepplay",
+      "intentFilters": [
+        {
+          "autoVerify": true,
+          "action": "android.intent.action.VIEW",
+          "data": [
+            {
+              "scheme": "content",
+              "mimeType": "audio/*"
+            },
+            {
+              "scheme": "file",
+              "mimeType": "audio/*"
+            }
+          ],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ]
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "data": [
+            {
+              "scheme": "content",
+              "host": "*",
+              "pathPattern": ".*\\.mp3"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "pathPattern": ".*\\.m4a"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "pathPattern": ".*\\.wav"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "pathPattern": ".*\\.flac"
+            },
+            {
+              "scheme": "content",
+              "host": "*",
+              "pathPattern": ".*\\.aac"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "pathPattern": ".*\\.mp3"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "pathPattern": ".*\\.m4a"
+            },
+            {
+              "scheme": "file",
+              "host": "*",
+              "pathPattern": ".*\\.wav"
+            }
+          ],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ]
+        },
+        {
+          "action": "android.intent.action.SEND",
+          "data": [
+            {
+              "mimeType": "audio/*"
+            }
+          ],
+          "category": ["android.intent.category.DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -30,11 +140,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#18181b",
+          "resizeMode": "contain",
+          "image": "./assets/images/splash.png"
         }
       ],
       [
@@ -61,10 +169,28 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/images/splash.png",
           "color": "#ffffff",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "PlayerWidget",
+              "label": "Player - Última Música",
+              "description": "Mostra a última música tocada",
+              "minWidth": "180dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "previewImage": "./assets/images/icon.png",
+              "updatePeriodMillis": 0
+            }
+          ]
         }
       ]
     ],

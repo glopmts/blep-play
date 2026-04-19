@@ -1,4 +1,5 @@
-import { Image } from "expo-image";
+import { useAlbum } from "@/hooks/useAlbumLocal";
+import { AlbumWithDetails } from "@/types/interfaces";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
 import React, { memo } from "react";
@@ -10,9 +11,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { useAlbum } from "../hooks/useAlbum";
-import { AlbumWithDetails } from "../types/interfaces";
-import { CARD_WIDTH, IMAGE_SIZE } from "../utils/image-types";
+import AlbumThumbnail from "../album.thumbnail";
 
 // Componente Card
 const AlbumCard = memo(
@@ -20,10 +19,12 @@ const AlbumCard = memo(
     album,
     onPress,
     isDark,
+    loadingCovers,
   }: {
     album: AlbumWithDetails;
     onPress: (album: AlbumWithDetails) => void;
     isDark: boolean;
+    loadingCovers: boolean;
   }) => {
     return (
       <TouchableOpacity
@@ -31,28 +32,12 @@ const AlbumCard = memo(
         className="flex-col gap-3 items-center justify-center mb-4 p-3"
         activeOpacity={0.7}
       >
-        <View
-          style={{
-            width: CARD_WIDTH,
-            height: CARD_WIDTH,
-            borderRadius: 16,
-            overflow: "hidden",
-          }}
-          className="bg-zinc-200 dark:bg-zinc-800"
-        >
-          {album.coverArt ? (
-            <Image
-              source={{ uri: album.coverArt }}
-              style={{ width: IMAGE_SIZE, height: IMAGE_SIZE }}
-              contentFit="cover"
-              transition={100}
-            />
-          ) : (
-            <View className="w-full h-full items-center justify-center">
-              <Music size={30} color={isDark ? "#d4d4d8" : "#27272a"} />
-            </View>
-          )}
-        </View>
+        <AlbumThumbnail
+          coverArt={album.coverArt ? `file://${album.coverArt}` : null}
+          isDark={isDark}
+          loadingCovers={loadingCovers}
+          type="card"
+        />
         <View className="">
           <Text
             className="text-base font-semibold text-black dark:text-white mb-1"
@@ -77,7 +62,8 @@ interface ALlbumScreen {
 }
 
 export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
-  const { albums, loading, selectAlbum, refreshAlbums } = useAlbum({});
+  const { albums, loading, loadingCovers, selectAlbum, refreshAlbums } =
+    useAlbum();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -117,7 +103,12 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
       <FlatList
         data={albums}
         renderItem={({ item }) => (
-          <AlbumCard album={item} onPress={handleAlbumPress} isDark={isDark} />
+          <AlbumCard
+            album={item}
+            onPress={handleAlbumPress}
+            isDark={isDark}
+            loadingCovers={loadingCovers}
+          />
         )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}

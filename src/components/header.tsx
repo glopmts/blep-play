@@ -6,7 +6,7 @@ const Header = () => {
     <View className="w-full p-5">
       <View className="flex items-center justify-between flex-row">
         <View className="flex flex-col gap-3">
-          <Text className="font-semibold text-3xl text-white">Home</Text>
+          <Text className="text text-3xl">Home</Text>
           <Text className="flex flex-wrap text-zinc-400 text-xl">
             Controle suas musicas em unico lugar!
           </Text>

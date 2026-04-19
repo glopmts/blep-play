@@ -220,7 +220,7 @@ export const getSongCoverArt = async (
     const fileSize = (fileInfo as any).size ?? 0;
     if (fileSize === 0) return undefined;
 
-    const bytesToRead = Math.min(fileSize, 512 * 1024);
+    const bytesToRead = Math.min(fileSize, 2 * 1024 * 1024); // Lê até 2MB para extrair capa
 
     const base64Data = await FileSystem.readAsStringAsync(fileUri, {
       encoding: FileSystem.EncodingType.Base64,
