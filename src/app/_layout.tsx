@@ -1,19 +1,14 @@
 import { PlaybackService } from "@/services/playback.service";
 import * as Linking from "expo-linking";
 import { Stack } from "expo-router";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import TrackPlayer from "react-native-track-player";
 import { showPlatformMessage } from "../components/toast-message-plataform";
-import { ThemeProvider } from "../context/theme-app";
+import { PlayerSetup } from "../context/player-context";
 import "../css/global.css";
-import { handleIncomingFile } from "../utils/fileHandler";
 
-let isServiceRegistered = false;
-if (!isServiceRegistered) {
-  isServiceRegistered = true;
-  TrackPlayer.registerPlaybackService(() => PlaybackService);
-}
+import { handleIncomingFile } from "../utils/fileHandler";
 
 function RootLayoutNav() {
   const processUrl = useCallback(async (url: string) => {
@@ -43,9 +38,7 @@ function RootLayoutNav() {
   }, []);
 
   const handleUrl = useCallback(
-    ({ url }: { url: string }) => {
-      processUrl(url);
-    },
+    ({ url }: { url: string }) => processUrl(url),
     [processUrl],
   );
 
@@ -62,15 +55,23 @@ function RootLayoutNav() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
-      <ThemeProvider>
-        <>
-          <Stack screenOptions={{ headerShown: false }} />
-        </>
-      </ThemeProvider>
+      <Stack screenOptions={{ headerShown: false }} />
     </GestureHandlerRootView>
   );
 }
 
 export default function RootLayout() {
-  return <RootLayoutNav />;
+  const registered = useRef(false);
+
+  useEffect(() => {
+    if (registered.current) return;
+    registered.current = true;
+    TrackPlayer.registerPlaybackService(() => PlaybackService); // ← aqui
+  }, []);
+
+  return (
+    <PlayerSetup>
+      <RootLayoutNav />
+    </PlayerSetup>
+  );
 }

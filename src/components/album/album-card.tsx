@@ -33,7 +33,7 @@ const AlbumCard = memo(
         activeOpacity={0.7}
       >
         <AlbumThumbnail
-          coverArt={album.coverArt ? `file://${album.coverArt}` : null}
+          coverArt={album.coverArt || null}
           isDark={isDark}
           loadingCovers={loadingCovers}
           type="card"

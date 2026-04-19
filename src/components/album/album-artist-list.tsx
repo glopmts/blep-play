@@ -40,7 +40,7 @@ const AlbumCard = memo(
       >
         {/* Container da imagem - quadrado perfeito */}
         <AlbumThumbnail
-          coverArt={album.coverArt ? `file://${album.coverArt}` : null}
+          coverArt={album.coverArt || null}
           isDark={isDark}
           loadingCovers={loadingCovers}
           type="list"
