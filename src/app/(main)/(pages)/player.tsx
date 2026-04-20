@@ -115,7 +115,10 @@ export default function PlayerScreen() {
     : "rgba(255, 255, 255, 0.92)";
 
   return (
-    <View className="content p-0">
+    <View
+      className="content p-0"
+      style={{ flex: 1, paddingBottom: currentTrack?.url ? 100 : 0 }}
+    >
       {/* Background artwork blur */}
       {currentTrack.artwork ? (
         <Image

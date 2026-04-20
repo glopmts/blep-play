@@ -2,7 +2,7 @@ import { usePlayer } from "@/hooks/usePlayer";
 import { Ionicons } from "@expo/vector-icons";
 import { Slider } from "@miblanchard/react-native-slider";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, usePathname } from "expo-router";
 import { Music } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import {
@@ -14,6 +14,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { usePlayerHeight } from "../context/player-height-context";
 import { formatTime } from "../utils/formaTS/formatTimeSong";
 
 const PlayerMusicRecurrent = () => {
@@ -27,16 +28,41 @@ const PlayerMusicRecurrent = () => {
     duration,
     togglePlayPause,
     skipToPrevious,
+    togglePlayStop,
   } = usePlayer();
-
+  const { setPlayerHeight } = usePlayerHeight();
   const isDark = useColorScheme() === "dark";
+  const pathname = usePathname();
 
-  // Animação de entrada
+  const IS_PAGE = ["player", "details-music", "details-album"];
+  const isOnPage = IS_PAGE.some((page) => pathname.includes(page));
+
+  const getBottomValue = () => {
+    if (Platform.OS === "ios") return isOnPage ? 40 : 72;
+    return isOnPage ? 20 : 65;
+  };
+
   const translateY = useRef(new Animated.Value(100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
-  // Animação do ícone de música (pulsa enquanto toca)
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const handleStopPlayer = () => {
+    Animated.parallel([
+      Animated.timing(translateY, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      togglePlayStop();
+    });
+  };
 
   useEffect(() => {
     if (currentTrack) {
@@ -113,9 +139,9 @@ const PlayerMusicRecurrent = () => {
           transform: [{ translateY }],
           opacity,
           position: "absolute",
-          bottom: Platform.OS === "ios" ? 84 : 72, // acima da tab bar
-          left: 12,
-          right: 12,
+          bottom: getBottomValue(),
+          left: 10,
+          right: 10,
           borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
           overflow: "hidden",
@@ -127,6 +153,10 @@ const PlayerMusicRecurrent = () => {
           elevation: 12,
         },
       ]}
+      onLayout={(e) => {
+        const { height } = e.nativeEvent.layout;
+        setPlayerHeight(height);
+      }}
     >
       <TouchableOpacity
         activeOpacity={0.85}

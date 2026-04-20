@@ -1,11 +1,15 @@
 import * as MediaLibrary from "expo-media-library";
 
 export interface SongWithArt extends MediaLibrary.Asset {
-  coverArt?: string; // Capa individual da música
-  artist?: string; // Adicionar campo para artista
-  genre?: string;
   albumName?: string;
   title?: string;
+  artist?: string;
+  album?: string;
+  genre?: string;
+  year?: string;
+  track?: string;
+  coverArt?: string;
+  lyrics?: string;
 }
 
 export interface AlbumWithDetails {

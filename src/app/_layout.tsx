@@ -8,16 +8,27 @@ import { showPlatformMessage } from "../components/toast-message-plataform";
 import { PlayerSetup } from "../context/player-context";
 import "../css/global.css";
 
+import { PlayerHeightProvider } from "../context/player-height-context";
 import { handleIncomingFile } from "../utils/fileHandler";
 
 function RootLayoutNav() {
   const processUrl = useCallback(async (url: string) => {
+    // Ignora apenas deep links internos do Expo
     if (url.startsWith("exp+") || url.startsWith("exp://")) return;
+
+    // content:// e file:// vão direto para o handler
+    const isMediaFile =
+      url.startsWith("content://") ||
+      url.startsWith("file://") ||
+      /\.(mp3|m4a|flac|wav|ogg|aac|opus)(\?|$)/i.test(url);
 
     const { router } = require("expo-router");
     const parsed = Linking.parse(url);
 
-    if (parsed.path === "player" || parsed.path === "player/notification") {
+    if (
+      !isMediaFile &&
+      (parsed.path === "player" || parsed.path === "player/notification")
+    ) {
       router.push({ pathname: "/player" });
       return;
     }
@@ -70,8 +81,10 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <PlayerSetup>
-      <RootLayoutNav />
-    </PlayerSetup>
+    <PlayerHeightProvider>
+      <PlayerSetup>
+        <RootLayoutNav />
+      </PlayerSetup>
+    </PlayerHeightProvider>
   );
 }

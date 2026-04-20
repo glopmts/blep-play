@@ -2,16 +2,17 @@ import { useAlbum } from "@/hooks/useAlbumLocal";
 import { AlbumWithDetails } from "@/types/interfaces";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { memo } from "react";
+import React, { memo, useCallback, useRef } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Text,
   TouchableOpacity,
   useColorScheme,
   View,
+  ViewToken,
 } from "react-native";
 import AlbumThumbnail from "../album.thumbnail";
+import SkeletonLoadingAlbum from "../loading-skeleton-album";
 
 // Componente Card
 const AlbumCard = memo(
@@ -62,8 +63,14 @@ interface ALlbumScreen {
 }
 
 export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
-  const { albums, loading, loadingCovers, selectAlbum, refreshAlbums } =
-    useAlbum();
+  const {
+    albums,
+    loading,
+    loadingCovers,
+    selectAlbum,
+    onAlbumsVisible,
+    refreshAlbums,
+  } = useAlbum();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -75,13 +82,24 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
     });
   };
 
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const visibleIds = viewableItems
+        .map((v) => v.item?.id)
+        .filter(Boolean) as string[];
+      onAlbumsVisible(visibleIds);
+    },
+    [onAlbumsVisible],
+  );
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 20, // 20% do item visível já conta
+  }).current;
+
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center">
-        <ActivityIndicator
-          size="large"
-          color={isDark ? "#ffffff" : "#3b82f6"}
-        />
+      <View className="flex-1">
+        <SkeletonLoadingAlbum horizontal={true} />
       </View>
     );
   }
@@ -119,6 +137,8 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
         horizontal={horizontal}
         onRefresh={refreshAlbums}
         refreshing={loading}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         showsHorizontalScrollIndicator={false}
       />
     </View>

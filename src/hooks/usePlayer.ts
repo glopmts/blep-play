@@ -1,5 +1,5 @@
 import { SongWithArt } from "@/types/interfaces";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TrackPlayer, {
   Event,
   RepeatMode,
@@ -10,6 +10,7 @@ import TrackPlayer, {
   useTrackPlayerEvents,
 } from "react-native-track-player";
 import { updatePlayerWidget } from "../services/widget.service";
+import { getSongMetadata } from "../utils/getSongMetadata";
 
 // ─── Converte SongWithArt → Track
 function songToTrack(song: SongWithArt): Track {
@@ -90,7 +91,42 @@ export function usePlayer() {
     }
   });
 
-  // Ulima musica tocada ao iniciar o app
+  // Sincroniza o estado do player ao montar o hook
+  useEffect(() => {
+    let mounted = true;
+
+    const syncCurrentTrack = async () => {
+      try {
+        const track = await TrackPlayer.getActiveTrack();
+        const idx = await TrackPlayer.getActiveTrackIndex();
+        const queueState = await TrackPlayer.getQueue();
+        const pbState = await TrackPlayer.getPlaybackState();
+
+        if (!mounted) return;
+
+        if (track) {
+          setCurrentTrack(track);
+          setCurrentIndex(idx ?? 0);
+          setQueue(queueState);
+          updatePlayerWidget({
+            artist: track.artist ?? "",
+            title: track.title ?? "",
+            isPlaying: pbState.state === State.Playing,
+          });
+        } else {
+          setCurrentTrack(null);
+        }
+      } catch (error) {
+        console.warn("[usePlayer] erro ao sincronizar faixa ativa:", error);
+      }
+    };
+
+    syncCurrentTrack();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // ── Carregar faixa externa (deep link / notificação) ──
 
@@ -98,17 +134,18 @@ export function usePlayer() {
     async (uri: string, fileName?: string) => {
       if (isLoadingRef.current) return;
 
-      // ✅ Verifica se essa URI já está tocando — se sim, não faz nada
       const activeTrack = await TrackPlayer.getActiveTrack();
-      if (activeTrack?.url === uri) {
-        return; // já está tocando, só exibe o player
-      }
+      if (activeTrack?.url === uri) return;
 
       isLoadingRef.current = true;
       try {
-        const title = fileName
+        // Limpa o nome do arquivo para usar como título provisório
+        const provisionalTitle = fileName
           ? decodeURIComponent(fileName).replace(/\.[^/.]+$/, "")
-          : "Áudio externo";
+          : decodeURIComponent(uri.split("/").pop() ?? "Áudio").replace(
+              /\.[^/.]+$/,
+              "",
+            );
 
         const decodedUri = decodeURIComponent(uri);
 
@@ -116,17 +153,43 @@ export function usePlayer() {
         await TrackPlayer.add({
           id: `external_${Date.now()}`,
           url: decodedUri,
-          title,
-          artist: "Arquivo externo",
+          title: provisionalTitle,
+          artist: "Carregando...",
           artwork: undefined,
         });
         await TrackPlayer.play();
 
-        // Sincroniza estado local
         const track = await TrackPlayer.getActiveTrack();
         setCurrentTrack(track ?? null);
         setCurrentIndex(0);
         setQueue(track ? [track] : []);
+
+        // Busca metadados reais em background sem travar o play
+        getSongMetadata(decodedUri)
+          .then(async (meta) => {
+            const updatedTrack = {
+              id: `external_${Date.now()}`,
+              url: decodedUri,
+              title: meta.title ?? provisionalTitle,
+              artist: meta.artist ?? "Arquivo externo",
+              album: meta.album,
+              artwork: meta.coverArt,
+            };
+
+            // Atualiza a faixa na fila sem interromper a reprodução
+            await TrackPlayer.updateNowPlayingMetadata({
+              title: updatedTrack.title,
+              artist: updatedTrack.artist,
+              artwork: updatedTrack.artwork,
+            });
+
+            setCurrentTrack((prev) =>
+              prev ? { ...prev, ...updatedTrack } : prev,
+            );
+          })
+          .catch(() => {
+            // Falhou em ler metadados — mantém o título provisório, tudo bem
+          });
       } catch (err) {
         console.error("[loadExternalTrack] erro:", err);
       } finally {
@@ -160,6 +223,11 @@ export function usePlayer() {
   // ── Controles──
   const togglePlayPause = useCallback(async () => {
     if (isPlaying) await TrackPlayer.pause();
+    else await TrackPlayer.play();
+  }, [isPlaying]);
+
+  const togglePlayStop = useCallback(async () => {
+    if (isPlaying) await TrackPlayer.stop();
     else await TrackPlayer.play();
   }, [isPlaying]);
 
@@ -220,6 +288,7 @@ export function usePlayer() {
     skipToNext,
     skipToPrevious,
     seekTo,
+    togglePlayStop,
     toggleRepeat,
     toggleShuffle,
     loadExternalTrack,

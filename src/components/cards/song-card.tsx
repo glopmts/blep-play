@@ -1,6 +1,7 @@
 import { SongWithArt } from "@/types/interfaces";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { Music } from "lucide-react-native";
 import { memo } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
@@ -48,11 +49,19 @@ const SongCard = memo(
       );
     }
 
+    const handleDetailsMusic = (musicId: string) => {
+      router.navigate({
+        pathname: "/details-music/[id]",
+        params: { id: musicId },
+      });
+    };
+
     return (
       <TouchableOpacity
         onPress={() => handleSongPress(index)}
         disabled={loadingSongIndex !== null}
         activeOpacity={0.7}
+        onLongPress={() => handleDetailsMusic(song.id)}
         className={`card-music ${isCurrentlyPlaying ? "bg-blue-500/10 dark:bg-blue-500/10" : ""}`}
         style={
           isCurrentlyPlaying

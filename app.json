@@ -53,80 +53,22 @@
       "package": "com.glopblog.blepplay",
       "intentFilters": [
         {
-          "autoVerify": true,
-          "action": "android.intent.action.VIEW",
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
           "data": [
-            {
-              "scheme": "content",
-              "mimeType": "audio/*"
-            },
-            {
-              "scheme": "file",
-              "mimeType": "audio/*"
-            }
-          ],
-          "category": [
-            "android.intent.category.DEFAULT",
-            "android.intent.category.BROWSABLE"
+            { "mimeType": "audio/*" },
+            { "mimeType": "audio/mpeg" },
+            { "mimeType": "audio/mp4" },
+            { "mimeType": "audio/flac" },
+            { "mimeType": "audio/wav" },
+            { "mimeType": "audio/ogg" },
+            { "mimeType": "audio/aac" }
           ]
         },
         {
-          "action": "android.intent.action.VIEW",
-          "data": [
-            {
-              "scheme": "content",
-              "host": "*",
-              "pathPattern": ".*\\.mp3"
-            },
-            {
-              "scheme": "content",
-              "host": "*",
-              "pathPattern": ".*\\.m4a"
-            },
-            {
-              "scheme": "content",
-              "host": "*",
-              "pathPattern": ".*\\.wav"
-            },
-            {
-              "scheme": "content",
-              "host": "*",
-              "pathPattern": ".*\\.flac"
-            },
-            {
-              "scheme": "content",
-              "host": "*",
-              "pathPattern": ".*\\.aac"
-            },
-            {
-              "scheme": "file",
-              "host": "*",
-              "pathPattern": ".*\\.mp3"
-            },
-            {
-              "scheme": "file",
-              "host": "*",
-              "pathPattern": ".*\\.m4a"
-            },
-            {
-              "scheme": "file",
-              "host": "*",
-              "pathPattern": ".*\\.wav"
-            }
-          ],
-          "category": [
-            "android.intent.category.DEFAULT",
-            "android.intent.category.BROWSABLE"
-          ]
-        },
-        {
-          "action": "android.intent.action.SEND",
-          "data": [
-            {
-              "mimeType": "audio/*"
-            }
-          ],
-          "category": ["android.intent.category.DEFAULT"]
+          "action": "SEND",
+          "category": ["DEFAULT"],
+          "data": [{ "mimeType": "audio/*" }]
         }
       ]
     },
@@ -140,9 +82,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#18181b",
-          "resizeMode": "contain",
-          "image": "./assets/images/splash.png"
+          "backgroundColor": "#fff",
+          "resizeMode": "cover",
+          "image": "./assets/images/splash.png",
+          "dark": {
+            "image": "./assets/images/splash.png",
+            "backgroundColor": "#18181b"
+          },
+          "imageWidth": 400
         }
       ],
       [
@@ -173,24 +120,6 @@
           "color": "#ffffff",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false
-        }
-      ],
-      [
-        "react-native-android-widget",
-        {
-          "widgets": [
-            {
-              "name": "PlayerWidget",
-              "label": "Player - Última Música",
-              "description": "Mostra a última música tocada",
-              "minWidth": "180dp",
-              "minHeight": "110dp",
-              "targetCellWidth": 4,
-              "targetCellHeight": 2,
-              "previewImage": "./assets/images/icon.png",
-              "updatePeriodMillis": 0
-            }
-          ]
         }
       ]
     ],

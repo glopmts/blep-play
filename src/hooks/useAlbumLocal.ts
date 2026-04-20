@@ -1,55 +1,30 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as MediaLibrary from "expo-media-library";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert } from "react-native";
 import { AlbumWithDetails } from "../types/interfaces";
-import { getSongCoverArt } from "../utils/getSongCoverArt";
+import { fetchAndCacheCover, getCoverUri } from "../utils/coverArtCache";
 
-// ─── Cache persistente (AsyncStorage)
-const CACHE_KEY_ALBUMS = "albums_list_v1";
-const CACHE_KEY_COVERS = "covers_map_v1";
-const CACHE_TTL = 10 * 60 * 1000; // 10 min
+const CACHE_KEY_ALBUMS = "albums_meta_v2"; // v2 — formato novo
+const CACHE_TTL = 30 * 60 * 1000; // 30 min (metadados mudam pouco)
 
-// Cache em memória (evita I/O repetido no AsyncStorage)
+// Cache em memória só de metadados (sem imagens)
 const memoryAlbums = new Map<string, AlbumWithDetails>();
-const memoryCovers = new Map<string, string>(); // albumId → coverArt URI/base64
-let albumsCachedAt = 0;
 
-async function readCoverCache(): Promise<void> {
-  if (memoryCovers.size > 0) return; // já carregado
-  try {
-    const raw = await AsyncStorage.getItem(CACHE_KEY_COVERS);
-    if (raw) {
-      const obj: Record<string, string> = JSON.parse(raw);
-      Object.entries(obj).forEach(([k, v]) => memoryCovers.set(k, v));
-    }
-  } catch {}
-}
-
-async function persistCoverCache(): Promise<void> {
-  try {
-    const obj = Object.fromEntries(memoryCovers);
-    await AsyncStorage.setItem(CACHE_KEY_COVERS, JSON.stringify(obj));
-  } catch {}
-}
-
-async function readAlbumsCache(): Promise<{
-  data: AlbumWithDetails[];
+async function readAlbumsMeta(): Promise<{
+  data: Omit<AlbumWithDetails, "coverArt" | "songs">[];
   ts: number;
 } | null> {
   try {
     const raw = await AsyncStorage.getItem(CACHE_KEY_ALBUMS);
-    if (!raw) return null;
-    return JSON.parse(raw);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-async function persistAlbumsCache(albums: AlbumWithDetails[]): Promise<void> {
+async function persistAlbumsMeta(albums: AlbumWithDetails[]): Promise<void> {
   try {
-    // Não persiste coverArt (pesada) — só metadados
-    const light = albums.map(({ coverArt: _drop, songs: _s, ...rest }) => rest);
+    const light = albums.map(({ coverArt: _, songs: __, ...rest }) => rest);
     await AsyncStorage.setItem(
       CACHE_KEY_ALBUMS,
       JSON.stringify({ data: light, ts: Date.now() }),
@@ -57,208 +32,195 @@ async function persistAlbumsCache(albums: AlbumWithDetails[]): Promise<void> {
   } catch {}
 }
 
-// ─── Busca capa de 1 álbum com cache ─
-async function fetchCoverArt(albumId: string): Promise<string | undefined> {
-  if (memoryCovers.has(albumId)) return memoryCovers.get(albumId);
+const priorityQueue = new Set<string>(); // albumIds visíveis
+const normalQueue = new Set<string>(); // álbumes não visíveis
 
-  try {
-    const assets = await MediaLibrary.getAssetsAsync({
-      album: albumId,
-      mediaType: ["audio"],
-      first: 1,
-      sortBy: [MediaLibrary.SortBy.modificationTime],
-    });
-
-    const song = assets.assets[0];
-    if (!song) return undefined;
-
-    const cover = await getSongCoverArt(song.uri);
-    if (cover) {
-      memoryCovers.set(albumId, cover);
-      // Persiste em background
-      persistCoverCache();
-    }
-    return cover ?? undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-// ─── Carrega só metadados (sem músicas completas)
-async function fetchAlbumMeta(
-  album: MediaLibrary.Album,
-): Promise<AlbumWithDetails | null> {
-  // Só 1 asset pra saber se tem áudio
-  const first = await MediaLibrary.getAssetsAsync({
-    album: album.id,
-    mediaType: ["audio"],
-    first: 1,
-  });
-
-  if (first.totalCount === 0) return null;
-
-  return {
-    id: album.id,
-    title: album.title || "Álbum sem título",
-    assetCount: first.totalCount,
-    coverArt: memoryCovers.get(album.id), // pode ser undefined ainda
-    songs: [], // músicas carregadas só quando abrir o álbum
-  };
-}
-
-// ─── Hook
 export const useAlbum = () => {
   const [albums, setAlbums] = useState<AlbumWithDetails[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedAlbum, setSelectedAlbum] = useState<AlbumWithDetails | null>(
-    null,
-  );
-  const [coverProgress, setCoverProgress] = useState(0); // 0-100
+  const [loading, setLoading] = useState(true);
   const [loadingCovers, setLoadingCovers] = useState(false);
   const isMounted = useRef(true);
   const abortRef = useRef(false);
+  const processingRef = useRef(false);
 
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
+  // Chamado pela FlatList quando itens entram/saem da tela
+  const onAlbumsVisible = useCallback((visibleIds: string[]) => {
+    visibleIds.forEach((id) => {
+      priorityQueue.add(id);
+      normalQueue.delete(id); // tira da fila normal se estava lá
+    });
+    // Inicia processamento se não está rodando
+    if (!processingRef.current) processCoverQueue();
   }, []);
 
-  // ── Carregamento principal
-  const loadAlbums = useCallback(async (force = false) => {
-    setLoading(true);
-    abortRef.current = false;
+  const processCoverQueue = useCallback(async () => {
+    if (processingRef.current) return;
+    processingRef.current = true;
 
-    // 1. Lê cache de capas do disco
-    await readCoverCache();
+    // Drena prioritários primeiro, depois normais
+    const drainQueue = async (queue: Set<string>) => {
+      for (const albumId of [...queue]) {
+        if (abortRef.current) break;
+        queue.delete(albumId);
 
-    // 2. Tenta servir do cache de álbuns enquanto atualiza em background
-    const cached = await readAlbumsCache();
-    const cacheValid = cached && Date.now() - cached.ts < CACHE_TTL && !force;
+        // Já tem capa? Pula
+        const existing = await getCoverUri(albumId);
+        if (existing) {
+          if (isMounted.current) {
+            setAlbums((prev) =>
+              prev.map((a) =>
+                a.id === albumId && !a.coverArt
+                  ? { ...a, coverArt: existing }
+                  : a,
+              ),
+            );
+          }
+          continue;
+        }
 
-    if (cacheValid && cached) {
-      // Restaura memória e exibe imediatamente
-      const restored = cached.data.map((a: AlbumWithDetails) => ({
-        ...a,
-        coverArt: memoryCovers.get(a.id),
-        songs: [],
-      }));
-      restored.forEach((a: AlbumWithDetails) => memoryAlbums.set(a.id, a));
-      if (isMounted.current) {
-        setAlbums(restored);
-        setLoading(false);
+        // Busca a URI da primeira música
+        const assets = await MediaLibrary.getAssetsAsync({
+          album: albumId,
+          mediaType: ["audio"],
+          first: 1,
+        });
+        const songUri = assets.assets[0]?.uri;
+        if (!songUri) continue;
+
+        const coverUri = await fetchAndCacheCover(albumId, songUri);
+        if (isMounted.current && coverUri) {
+          setAlbums((prev) =>
+            prev.map((a) =>
+              a.id === albumId ? { ...a, coverArt: coverUri } : a,
+            ),
+          );
+        }
+
+        await new Promise((r) => setTimeout(r, 30));
       }
-      // Carrega capas faltantes em background sem bloquear UI
-      loadMissingCovers(restored);
-      return;
+    };
+
+    while (priorityQueue.size > 0 || normalQueue.size > 0) {
+      if (priorityQueue.size > 0) {
+        await drainQueue(priorityQueue);
+      } else {
+        await drainQueue(normalQueue);
+      }
     }
 
-    try {
-      // 3. Busca lista de álbuns da MediaLibrary
-      const allAlbums = await MediaLibrary.getAlbumsAsync();
+    processingRef.current = false;
+    if (isMounted.current) setLoadingCovers(false);
+  }, []);
 
-      // 4. Processa em lotes de 5 (não trava a thread JS)
-      const BATCH = 5;
+  const loadAlbums = useCallback(async (force = false) => {
+    abortRef.current = false;
+    setLoading(true);
+
+    try {
+      // ── Mostra metadados do cache imediatamente ──
+      const cached = await readAlbumsMeta();
+      const cacheValid = cached && Date.now() - cached.ts < CACHE_TTL && !force;
+
+      if (cacheValid && cached.data.length > 0) {
+        const fromCache: AlbumWithDetails[] = cached.data.map((a) => ({
+          ...a,
+          coverArt: undefined,
+          songs: [],
+        }));
+
+        if (isMounted.current) {
+          setAlbums(fromCache);
+          setLoading(false);
+          setLoadingCovers(true);
+        }
+
+        // Enfileira todos para background — visíveis serão priorizados via onAlbumsVisible
+        fromCache.forEach((a) => normalQueue.add(a.id));
+        processCoverQueue();
+        return;
+      }
+
+      // ── Primeiro acesso: busca metadados em lotes ──
+      const allAlbums = await MediaLibrary.getAlbumsAsync();
       const result: AlbumWithDetails[] = [];
+      const BATCH = 10;
 
       for (let i = 0; i < allAlbums.length; i += BATCH) {
         if (abortRef.current) break;
 
         const batch = allAlbums.slice(i, i + BATCH);
         const settled = await Promise.allSettled(
-          batch.map((a) => fetchAlbumMeta(a)),
+          batch.map(async (album) => {
+            const first = await MediaLibrary.getAssetsAsync({
+              album: album.id,
+              mediaType: ["audio"],
+              first: 1,
+            });
+            if (first.totalCount === 0) return null;
+            return {
+              id: album.id,
+              title: album.title || "Álbum sem título",
+              assetCount: first.totalCount,
+              coverArt: undefined,
+              songs: [],
+            } as AlbumWithDetails;
+          }),
         );
 
         settled.forEach((r) => {
           if (r.status === "fulfilled" && r.value) {
             result.push(r.value);
-            memoryAlbums.set(r.value.id, r.value);
+            normalQueue.add(r.value.id); // enfileira para capa
           }
         });
 
-        // Atualiza UI a cada lote — usuário já vê resultados parciais
         if (isMounted.current) setAlbums([...result]);
 
-        // Respira entre lotes (evita jank)
+        // Primeiro lote — inicia processamento de capas já
+        if (i === 0) {
+          setLoading(false);
+          setLoadingCovers(true);
+          processCoverQueue();
+        }
+
         await new Promise((r) => setTimeout(r, 16));
       }
 
-      persistAlbumsCache(result);
-      albumsCachedAt = Date.now();
-
-      // 5. Carrega capas progressivamente em background
-      loadMissingCovers(result);
+      persistAlbumsMeta(result);
     } catch (err) {
-      console.error("Erro ao carregar álbuns:", err);
-      Alert.alert("Erro", "Não foi possível carregar os álbuns");
+      console.error(err);
     } finally {
       if (isMounted.current) setLoading(false);
     }
   }, []);
 
-  // ── Capas em background, uma a uma──
-  const loadMissingCovers = useCallback(
-    async (albumList: AlbumWithDetails[]) => {
-      const withoutCover = albumList.filter((a) => !memoryCovers.has(a.id));
-      if (withoutCover.length === 0) return;
-      setLoadingCovers(true);
-
-      for (let i = 0; i < withoutCover.length; i++) {
-        if (abortRef.current) break;
-        const album = withoutCover[i];
-
-        const cover = await fetchCoverArt(album.id);
-
-        if (isMounted.current && cover) {
-          // Atualiza só o álbum que recebeu a capa
-          setAlbums((prev) =>
-            prev.map((a) =>
-              a.id === album.id ? { ...a, coverArt: cover } : a,
-            ),
-          );
-          setCoverProgress(Math.round(((i + 1) / withoutCover.length) * 100));
-        }
-
-        // Pausa entre capas pra não sobrar CPU
-        await new Promise((r) => setTimeout(r, 30));
-      }
-
-      setCoverProgress(100);
-      setLoadingCovers(false);
-    },
-    [],
-  );
+  useEffect(() => {
+    isMounted.current = true;
+    abortRef.current = false;
+    return () => {
+      isMounted.current = false;
+      abortRef.current = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (permissionResponse?.granted) loadAlbums();
   }, [permissionResponse?.granted]);
 
-  const refresh = useCallback(() => loadAlbums(true), [loadAlbums]);
-
-  const clearCache = useCallback(async () => {
-    memoryAlbums.clear();
-    memoryCovers.clear();
-    albumsCachedAt = 0;
-    await AsyncStorage.multiRemove([CACHE_KEY_ALBUMS, CACHE_KEY_COVERS]);
-  }, []);
-
-  const selectAlbum = async (album: AlbumWithDetails) => {
-    setSelectedAlbum(album);
+  const selectAlbum = (album: AlbumWithDetails) => {
+    memoryAlbums.set(album.id, album);
   };
 
   return {
     albums,
     loading,
-    coverProgress,
+    selectAlbum,
     loadingCovers,
     permissionResponse,
-    selectedAlbum,
-    selectAlbum,
     requestPermission,
-    refreshAlbums: refresh,
-    clearCache,
+    refreshAlbums: () => loadAlbums(true),
+    onAlbumsVisible, // ← expõe para a FlatList
   };
 };

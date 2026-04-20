@@ -1,3 +1,4 @@
+import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
 import { useAlbumDetails } from "@/hooks/useAlbumDetails";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -22,38 +23,6 @@ import {
 
 SongCard.displayName = "SongCard";
 
-function BackButton({ isDark }: { isDark: boolean }) {
-  return (
-    <View
-      style={{
-        padding: 20,
-        paddingTop: Platform.OS === "ios" ? 60 : 50,
-        position: "absolute",
-        zIndex: 100,
-      }}
-    >
-      <TouchableOpacity
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-        style={{
-          backgroundColor: "rgba(0,0,0,0.5)",
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Ionicons
-          name="chevron-back"
-          size={24}
-          color={isDark ? "#ffffff" : "#27272a"}
-        />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
 // Tela principal
 const AlbumDetails = () => {
   const { id, type } = useLocalSearchParams<{
@@ -68,7 +37,6 @@ const AlbumDetails = () => {
     hasMore,
     loadMoreSongs,
     loadingMore,
-    refreshAlbum,
     totalSongsCount,
   } = useAlbumDetails({
     albumId: id as string,
@@ -304,7 +272,7 @@ const AlbumDetails = () => {
         removeClippedSubviews={Platform.OS === "android"}
         updateCellsBatchingPeriod={50}
         maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-        contentContainerStyle={{ paddingBottom: 120 }} // espaço pro MiniPlayer
+        contentContainerStyle={{ paddingBottom: 160 }} // espaço pro MiniPlayer
       />
     </View>
   );

@@ -2,17 +2,18 @@ import { useAlbumsGrouped } from "@/hooks/useAlbumsGrouped";
 import { GroupedAlbum } from "@/types/interfaces";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import { memo } from "react";
+import { memo, useCallback, useRef } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Text,
   TouchableOpacity,
   useColorScheme,
   View,
+  ViewToken,
 } from "react-native";
 import AlbumThumbnail from "../album.thumbnail";
+import SkeletonLoadingAlbum from "../loading-skeleton-album";
 
 const { width } = Dimensions.get("window");
 const CARD_MARGIN = 8; // espaçamento entre os cards
@@ -88,7 +89,8 @@ const AlbumCard = memo(
 AlbumCard.displayName = "AlbumCard";
 
 export const AlbumsList = () => {
-  const { albums, loading, loadingCovers, refreshAlbums } = useAlbumsGrouped();
+  const { albums, loading, loadingCovers, refreshAlbums, onAlbumsVisible } =
+    useAlbumsGrouped();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -104,10 +106,24 @@ export const AlbumsList = () => {
     });
   };
 
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 20,
+  }).current;
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const ids = viewableItems
+        .map((v) => v.item?.id)
+        .filter(Boolean) as string[];
+      onAlbumsVisible(ids);
+    },
+    [onAlbumsVisible],
+  );
+
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center dark:bg-zinc-900">
-        <ActivityIndicator size="large" color={isDark ? "#fff" : "#3b82f6"} />
+      <View className="flex-1">
+        <SkeletonLoadingAlbum numberOfItems={10} numColumns={2} />
       </View>
     );
   }
@@ -147,6 +163,8 @@ export const AlbumsList = () => {
       }}
       onRefresh={refreshAlbums}
       refreshing={loading}
+      onViewableItemsChanged={onViewableItemsChanged}
+      viewabilityConfig={viewabilityConfig}
     />
   );
 };

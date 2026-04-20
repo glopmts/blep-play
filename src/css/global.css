@@ -3,10 +3,6 @@
 @tailwind utilities;
 
 @layer components {
-  .btn {
-    @apply px-4 py-2 rounded-full bg-primary text-white;
-  }
-
   .card {
     @apply p-4 rounded shadow bg-card;
   }
@@ -33,5 +29,13 @@
 
   .infor-alert {
     @apply flex-1 items-center justify-center dark:bg-zinc-900;
+  }
+
+  .btn {
+    @apply px-4 py-4 rounded-full bg-primary text-white;
+  }
+
+  .btn-delete {
+    @apply px-4 py-4 rounded-full bg-red-500 text-white;
   }
 }
