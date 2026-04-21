@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { Music } from "lucide-react-native";
 import { memo, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { CARD_WIDTH, IMAGE_SIZE } from "../utils/image-types";
+import { CARD_WIDTH, IMAGE_SIZE } from "../../utils/image-types";
 
 interface AlbumThumbnailProps {
   coverArt?: string | null;

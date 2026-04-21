@@ -1,15 +1,24 @@
 import { AlbumScreen } from "@/components/album/album-card";
 import Header from "@/components/header";
+import { HeaderPage } from "@/components/hearder-page";
+import HistoryRecentMusic from "@/components/history-recent-music";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
-import { View } from "react-native";
+import { useColorScheme, View } from "react-native";
 
 const Home = () => {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <LayoutWithHeader>
       <Header />
 
-      <View className="flex-1">
+      <View className="mb-4">
+        <HeaderPage title="Álbuns do Dispositivo" isDark={isDark} />
         <AlbumScreen />
+      </View>
+      <View className="mb-4 p-4">
+        <HistoryRecentMusic />
       </View>
     </LayoutWithHeader>
   );

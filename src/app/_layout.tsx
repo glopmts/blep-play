@@ -1,9 +1,7 @@
-import { PlaybackService } from "@/services/playback.service";
 import * as Linking from "expo-linking";
 import { Stack } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import TrackPlayer from "react-native-track-player";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { PlayerSetup } from "../context/player-context";
 import "../css/global.css";
@@ -13,25 +11,18 @@ import { handleIncomingFile } from "../utils/fileHandler";
 
 function RootLayoutNav() {
   const processUrl = useCallback(async (url: string) => {
-    // Ignora apenas deep links internos do Expo
+    // Ignora deep links internos do Expo
     if (url.startsWith("exp+") || url.startsWith("exp://")) return;
 
-    // content:// e file:// vão direto para o handler
     const isMediaFile =
       url.startsWith("content://") ||
       url.startsWith("file://") ||
       /\.(mp3|m4a|flac|wav|ogg|aac|opus)(\?|$)/i.test(url);
 
-    const { router } = require("expo-router");
-    const parsed = Linking.parse(url);
+    // Se não for mídia, deixa o router resolver normalmente
+    if (!isMediaFile) return;
 
-    if (
-      !isMediaFile &&
-      (parsed.path === "player" || parsed.path === "player/notification")
-    ) {
-      router.push({ pathname: "/player" });
-      return;
-    }
+    const { router } = require("expo-router");
 
     try {
       const { uri, fileName } = await handleIncomingFile(url);
@@ -72,14 +63,6 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const registered = useRef(false);
-
-  useEffect(() => {
-    if (registered.current) return;
-    registered.current = true;
-    TrackPlayer.registerPlaybackService(() => PlaybackService); // ← aqui
-  }, []);
-
   return (
     <PlayerHeightProvider>
       <PlayerSetup>

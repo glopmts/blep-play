@@ -11,8 +11,8 @@ import {
   View,
   ViewToken,
 } from "react-native";
-import AlbumThumbnail from "../album.thumbnail";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
+import AlbumThumbnail from "./album-thumbnail";
 
 // Componente Card
 const AlbumCard = memo(
@@ -98,7 +98,7 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
 
   if (loading) {
     return (
-      <View className="flex-1">
+      <View className="flex">
         <SkeletonLoadingAlbum horizontal={true} />
       </View>
     );

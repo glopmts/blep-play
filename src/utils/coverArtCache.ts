@@ -9,9 +9,8 @@ export async function ensureCoversDir() {
     await FileSystem.makeDirectoryAsync(COVERS_DIR, { intermediates: true });
 }
 
-export function getCoverPath(albumId: string): string {
-  // Sanitiza o ID para nome de arquivo seguro
-  const safe = albumId.replace(/[^a-zA-Z0-9]/g, "_");
+export function getCoverPath(songId: string): string {
+  const safe = songId.replace(/[^a-zA-Z0-9]/g, "_");
   return `${COVERS_DIR}${safe}.jpg`;
 }
 
@@ -50,18 +49,18 @@ export async function clearCoversCache(): Promise<void> {
 }
 
 export async function fetchAndCacheCover(
-  albumId: string,
+  songId: string, // ← chave única por música
   songUri: string,
 ): Promise<string | undefined> {
-  const cached = await getCoverUri(albumId);
+  const cached = await getCoverUri(songId);
   if (cached) return cached;
 
   const base64Cover = await getSongCoverArt(songUri);
   if (!base64Cover) return undefined;
 
   try {
-    return await saveCoverToFile(albumId, base64Cover);
+    return await saveCoverToFile(songId, base64Cover);
   } catch {
-    return base64Cover; // fallback para base64 se falhar
+    return base64Cover;
   }
 }

@@ -81,7 +81,11 @@ export default function PlayerScreen() {
       <View className="flex-1 dark:bg-zinc-900 items-center justify-center">
         <Text className="text">Nenhuma música selecionada</Text>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(main)/(tabs)")
+          }
           className="mt-4 px-6 py-3 bg-zinc-700 rounded-xl"
         >
           <Text className="text text-lg">Voltar</Text>
@@ -153,7 +157,11 @@ export default function PlayerScreen() {
         }}
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(main)/(tabs)")
+          }
           style={{
             backgroundColor: "rgba(255,255,255,0.12)",
             width: 40,

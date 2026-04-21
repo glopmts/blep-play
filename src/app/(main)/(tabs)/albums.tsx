@@ -1,21 +1,9 @@
 import { AlbumsList } from "@/components/album/album-artist-list";
 import { AlbumScreen } from "@/components/album/album-card";
+import { HeaderPage } from "@/components/hearder-page";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
-import { Folder } from "lucide-react-native";
-import { Text, useColorScheme, View } from "react-native";
-
-function HeaderPage({ isDark, title }: { isDark: boolean; title?: string }) {
-  return (
-    <View className="pt-12 pb-4 px-4">
-      <View className="flex-row items-center gap-2">
-        <Folder size={24} color={isDark ? "#d4d4d8" : "#27272a"} />
-        <Text className="title text-xl font-bold text-black dark:text-white">
-          {title || "Álbuns do Dispositivo"}
-        </Text>
-      </View>
-    </View>
-  );
-}
+import { Album } from "lucide-react-native";
+import { useColorScheme, View } from "react-native";
 
 const Albums = () => {
   const colorScheme = useColorScheme();
@@ -29,7 +17,7 @@ const Albums = () => {
         <AlbumScreen />
 
         {/* Apenas a lista de álbuns */}
-        <HeaderPage isDark={isDark} title="Albums por Artistas" />
+        <HeaderPage isDark={isDark} title="Albums por Artistas" icon={Album} />
         <AlbumsList />
       </View>
     </LayoutWithHeader>

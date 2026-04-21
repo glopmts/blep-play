@@ -12,8 +12,8 @@ import {
   View,
   ViewToken,
 } from "react-native";
-import AlbumThumbnail from "../album.thumbnail";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
+import AlbumThumbnail from "./album-thumbnail";
 
 const { width } = Dimensions.get("window");
 const CARD_MARGIN = 8; // espaçamento entre os cards

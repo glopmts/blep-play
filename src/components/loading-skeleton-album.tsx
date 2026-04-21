@@ -78,6 +78,7 @@ const SkeletonLoadingAlbum = ({
           width: horizontal ? 128 : itemWidth,
           marginRight: marginRight,
           marginBottom: 16,
+          flex: 1,
         }}
       >
         {/* Capa do álbum - altura igual à largura para manter quadrado */}

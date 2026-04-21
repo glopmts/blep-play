@@ -1,9 +1,11 @@
+import { tabs } from "@/constants/data";
 import * as MediaLibrary from "expo-media-library";
 import * as Notifications from "expo-notifications";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
 import { PermissionsAndroid, Platform, useColorScheme } from "react-native";
-import { tabs } from "../../../constants/data";
+import { useAlbum } from "../../../hooks/useAlbumLocal";
+import { useAlbumsGrouped } from "../../../hooks/useAlbumsGrouped";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -11,6 +13,7 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
+    priority: Notifications.AndroidNotificationPriority.HIGH,
   }),
 });
 
@@ -24,31 +27,44 @@ const requestNotificationPermission = async () => {
   return true;
 };
 
-const requestMediaLibraryPermission = async () => {
+const requestPermission = async () => {
   const { status } = await MediaLibrary.requestPermissionsAsync();
 
   if (status !== "granted") {
-    console.log("Permissão de mídia negada");
     return false;
   }
-
-  console.log("Permissão de mídia concedida");
   return true;
 };
 
 export default function MainLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const { refreshAlbums, permissionResponse, requestPermission } = useAlbum();
+
+  const {
+    refreshAlbums: refreshGroupedAlbums,
+    permissionResponse: permissionResponse2,
+    requestPermission: requestPermission2,
+  } = useAlbumsGrouped();
 
   useEffect(() => {
-    const requestPermissions = async () => {
-      await requestNotificationPermission();
-      await requestMediaLibraryPermission();
-    };
-
-    requestPermissions();
+    requestNotificationPermission();
+    requestPermission();
+    requestPermission2();
   }, []);
 
+  // Recarrega quando a permissão for concedida
+  useEffect(() => {
+    if (permissionResponse?.granted) {
+      refreshAlbums();
+    }
+  }, [permissionResponse?.granted]);
+
+  useEffect(() => {
+    if (permissionResponse2?.granted) {
+      refreshGroupedAlbums();
+    }
+  }, [permissionResponse2?.granted]);
   return (
     <Tabs
       screenOptions={{

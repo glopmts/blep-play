@@ -36,6 +36,6 @@
   }
 
   .btn-delete {
-    @apply px-4 py-4 rounded-full bg-red-500 text-white;
+    @apply p-4 rounded-full bg-red-500 text-white;
   }
 }

@@ -13,6 +13,7 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts",
-    "src/types/global.js"
+    "src/types/global.js",
+    "src/services/playback.service.js"
   ]
 }

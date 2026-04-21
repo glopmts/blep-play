@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AppState, AppStateStatus } from "react-native";
 import { useAlbumsContext } from "../context/AlbumsContext";
 import { AlbumWithDetails, SongWithArt } from "../types/interfaces";
+import { fetchAndCacheCover } from "../utils/coverArtCache";
 import { getSongCoverArt } from "../utils/getSongCoverArt";
 
 const SONGS_PER_PAGE = 20; // Quantas músicas carregar por página
@@ -144,22 +145,26 @@ export const useAlbumDetails = ({
         })),
       );
 
-      setAllSongs(allSongsWithArt);
+      // ← Pega a primeira música com capa e converte para file://
+      const firstSongWithCover = allSongsWithArt.find((s) => s.coverArt);
+      const albumCoverUri = firstSongWithCover
+        ? await fetchAndCacheCover(String(albumId), firstSongWithCover.uri)
+        : album.coverArt;
 
-      // Carrega apenas a primeira página
       const initialSongs = allSongsWithArt.slice(0, SONGS_PER_PAGE);
-      setDisplayedSongs(initialSongs);
-      setHasMore(allSongsWithArt.length > SONGS_PER_PAGE);
-      setCurrentPage(1);
 
       const details: AlbumWithDetails = {
         ...album,
+        coverArt: albumCoverUri, // ← file:// garantido
         songs: initialSongs,
       };
 
-      // Cache com todas as músicas
       albumCache.set(albumId, {
-        data: { ...album, songs: allSongsWithArt },
+        data: {
+          ...album,
+          coverArt: albumCoverUri, // ← salva file:// no cache também
+          songs: allSongsWithArt,
+        },
         timestamp: Date.now(),
       });
 

@@ -1,7 +1,7 @@
 // Wrapper global — coloque no _layout.tsx raiz do Expo Router
 
-import { SetupService } from "@/services/playback.service";
 import { useEffect, useRef } from "react";
+import { SetupService } from "../services/setupplay.service";
 
 // Serviço de background — crie este arquivo separado
 // services/trackPlayerService.ts
