@@ -6,6 +6,7 @@ import { showPlatformMessage } from "../components/toast-message-plataform";
 import { PlayerSetup } from "../context/player-context";
 import "../css/global.css";
 
+import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { PlayerHeightProvider } from "../context/player-height-context";
 import { handleIncomingFile } from "../utils/fileHandler";
 
@@ -56,18 +57,22 @@ function RootLayoutNav() {
   }, [handleInitialUrl, handleUrl]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
+    <>
       <Stack screenOptions={{ headerShown: false }} />
-    </GestureHandlerRootView>
+    </>
   );
 }
 
 export default function RootLayout() {
   return (
-    <PlayerHeightProvider>
-      <PlayerSetup>
-        <RootLayoutNav />
-      </PlayerSetup>
-    </PlayerHeightProvider>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
+      <PlayerHeightProvider>
+        <PlayerSetup>
+          <BottomSheetProvider>
+            <RootLayoutNav />
+          </BottomSheetProvider>
+        </PlayerSetup>
+      </PlayerHeightProvider>
+    </GestureHandlerRootView>
   );
 }

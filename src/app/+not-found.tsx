@@ -1,7 +1,9 @@
+import { Image } from "expo-image";
 import * as Linking from "expo-linking";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
+import { useColorScheme } from "nativewind";
 import { useEffect } from "react";
-import { Text, useColorScheme, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { handleIncomingFile } from "../utils/fileHandler";
 
@@ -16,7 +18,7 @@ function isMediaUrl(url: string): boolean {
 }
 
 export default function NotFoundScreen() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
   useEffect(() => {
@@ -51,17 +53,16 @@ export default function NotFoundScreen() {
   // Tela de loading enquanto processa
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <View style={{ flex: 1, backgroundColor: isDark ? "#27272a" : "" }}>
-        <Text
+      <View className="flex-1 items-center justify-center gap-10 dark:bg-zinc-900">
+        <Image
+          source={require("../../assets/images/icon.png")}
+          className="w-20 h-20 object-cover rounded-md"
           style={{
-            color: isDark ? "#fff" : "27272a",
-            textAlign: "center",
-            marginTop: 40,
+            width: 150,
+            height: 150,
           }}
-        >
-          Carregando...
-        </Text>
+        />
+        <ActivityIndicator size={36} color={isDark ? "#ffff" : "#3b82f6 "} />
       </View>
     </>
   );

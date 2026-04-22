@@ -15,6 +15,8 @@ const LayoutPages = () => {
       }}
     >
       <Stack.Screen name="details-album/[id]" />
+      <Stack.Screen name="details-music/[id]" />
+      <Stack.Screen name="details-playlist/[id]" />
     </Stack>
   );
 };

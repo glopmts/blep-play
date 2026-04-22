@@ -3,11 +3,11 @@ import Header from "@/components/header";
 import { HeaderPage } from "@/components/hearder-page";
 import HistoryRecentMusic from "@/components/history-recent-music";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
-import { useColorScheme, View } from "react-native";
+import { View } from "react-native";
+import { useTheme } from "../../../hooks/useTheme";
 
 const Home = () => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   return (
     <LayoutWithHeader>

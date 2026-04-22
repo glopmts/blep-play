@@ -17,9 +17,9 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
+import { useTheme } from "../../../../hooks/useTheme";
 
 SongCard.displayName = "SongCard";
 
@@ -44,8 +44,8 @@ const AlbumDetails = () => {
   });
 
   const { playSongs, currentTrack } = usePlayer();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
+
   const flatListRef = useRef<FlatList>(null);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
 

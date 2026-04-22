@@ -8,10 +8,10 @@ import {
   FlatList,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
   ViewToken,
 } from "react-native";
+import { useTheme } from "../../hooks/useTheme";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumThumbnail from "./album-thumbnail";
 
@@ -91,8 +91,7 @@ AlbumCard.displayName = "AlbumCard";
 export const AlbumsList = () => {
   const { albums, loading, loadingCovers, refreshAlbums, onAlbumsVisible } =
     useAlbumsGrouped();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   const handleAlbumPress = (album: GroupedAlbum) => {
     router.navigate({

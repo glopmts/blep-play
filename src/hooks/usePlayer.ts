@@ -10,7 +10,6 @@ import TrackPlayer, {
   useTrackPlayerEvents,
 } from "react-native-track-player";
 import { addToRecents } from "../services/music-history.service";
-import { updatePlayerWidget } from "../services/widget.service";
 import { fetchAndCacheCover } from "../utils/coverArtCache";
 import { getSongMetadata } from "../utils/getSongMetadata";
 
@@ -71,11 +70,6 @@ export function usePlayer() {
           setCurrentTrack(track);
           setCurrentIndex(idx ?? 0);
           setQueue(queueState);
-          updatePlayerWidget({
-            artist: track.artist ?? "",
-            title: track.title ?? "",
-            isPlaying: pbState.state === State.Playing,
-          });
         } else {
           setCurrentTrack(null);
         }
@@ -121,12 +115,6 @@ export function usePlayer() {
 
     setCurrentTrack({ ...track, artwork });
     setCurrentIndex(idx ?? 0);
-
-    updatePlayerWidget({
-      artist: track.artist ?? "",
-      title: track.title ?? "",
-      isPlaying: true,
-    });
 
     await addToRecents({
       id: String(track.id),
@@ -243,12 +231,6 @@ export function usePlayer() {
         setCurrentIndex(startIndex);
         setCurrentTrack(tracks[startIndex]);
 
-        updatePlayerWidget({
-          artist: tracks[startIndex].artist ?? "",
-          title: tracks[startIndex].title ?? "",
-          isPlaying: true,
-        });
-
         await TrackPlayer.updateNowPlayingMetadata({
           title: tracks[startIndex].title,
           artist: tracks[startIndex].artist,
@@ -287,6 +269,11 @@ export function usePlayer() {
     if (isPlaying) await TrackPlayer.stop();
     else await TrackPlayer.play();
   }, [isPlaying]);
+
+  const stopAndClear = useCallback(async () => {
+    await TrackPlayer.stop();
+    setCurrentTrack(null);
+  }, []);
 
   const skipToNext = useCallback(async () => {
     await TrackPlayer.skipToNext();
@@ -345,6 +332,7 @@ export function usePlayer() {
     skipToNext,
     skipToPrevious,
     seekTo,
+    stopAndClear,
     togglePlayStop,
     toggleRepeat,
     toggleShuffle,

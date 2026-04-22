@@ -32,3 +32,12 @@ export interface GroupedAlbum extends AlbumWithDetails {
   artistName: string;
   albumName: string;
 }
+
+export interface Playlists {
+  id: string;
+  musicId?: string;
+  coverArt?: string | undefined;
+  title: string;
+  songs?: SongWithArt[];
+  playedAt?: number; // timestamp — só em recentes
+}

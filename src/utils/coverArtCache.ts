@@ -1,4 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
+import { getPlaylistById } from "../services/playlists.service";
 import { getSongCoverArt } from "./getSongCoverArt";
 
 const COVERS_DIR = `${FileSystem.cacheDirectory}covers/`;
@@ -64,3 +65,22 @@ export async function fetchAndCacheCover(
     return base64Cover;
   }
 }
+
+export const getAllPlaylistImages = async (playlistId: string) => {
+  const data = await getPlaylistById(playlistId);
+
+  if (!data?.songs) return [];
+
+  // Buscar imagens em paralelo para melhor performance
+  const songsWithImages = await Promise.all(
+    data.songs.map(async (song) => {
+      const imageUri = await fetchAndCacheCover(song.id, song.uri);
+      return {
+        ...song,
+        coverArt: imageUri, // Adiciona a imagem ao objeto da música
+      };
+    }),
+  );
+
+  return songsWithImages;
+};

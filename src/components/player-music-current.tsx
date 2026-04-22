@@ -1,21 +1,28 @@
 import { usePlayer } from "@/hooks/usePlayer";
 import { Ionicons } from "@expo/vector-icons";
-import { Slider } from "@miblanchard/react-native-slider";
 import { Image } from "expo-image";
 import { router, usePathname } from "expo-router";
 import { Music } from "lucide-react-native";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import {
-  Animated,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { usePlayerHeight } from "../context/player-height-context";
-import { formatTime } from "../utils/formaTS/formatTimeSong";
+import { useTheme } from "../hooks/useTheme";
 
 const PlayerMusicRecurrent = () => {
   const {
@@ -29,9 +36,11 @@ const PlayerMusicRecurrent = () => {
     togglePlayPause,
     skipToPrevious,
     togglePlayStop,
+    stopAndClear,
   } = usePlayer();
   const { setPlayerHeight } = usePlayerHeight();
-  const isDark = useColorScheme() === "dark";
+  const { isDark, colors } = useTheme();
+
   const pathname = usePathname();
 
   const IS_PAGE = ["player", "details-music", "details-album"];
@@ -42,84 +51,81 @@ const PlayerMusicRecurrent = () => {
     return isOnPage ? 20 : 65;
   };
 
-  const translateY = useRef(new Animated.Value(100)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
+  // Shared values para Reanimated
+  const translateY = useSharedValue(100);
+  const opacity = useSharedValue(0);
+  const dragX = useSharedValue(0);
+  const scale = useSharedValue(1);
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const stopAndClearPlayer = () => {
+    stopAndClear();
+  };
 
-  const handleStopPlayer = () => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: 100,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      togglePlayStop();
+  // Animação de fechar com saída
+  const animateClose = () => {
+    dragX.value = 0;
+    translateY.value = withTiming(100, { duration: 200 });
+    opacity.value = withTiming(0, { duration: 200 }, (finished) => {
+      if (finished) runOnJS(stopAndClearPlayer)();
     });
   };
 
+  // Gesto de arrasto horizontal
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Permite arrasto apenas para direita, limitado a 150px
+      const newX = Math.min(Math.max(0, event.translationX), 150);
+      dragX.value = newX;
+    })
+    .onEnd((event) => {
+      if (event.translationX > 80 && event.velocityX > 300) {
+        runOnJS(animateClose)();
+      } else {
+        // Volta à posição original com spring
+        dragX.value = withSpring(0, { damping: 15, stiffness: 150 });
+      }
+    })
+    .activeOffsetX([10, 10])
+    .failOffsetY([-10, 10])
+    .minDistance(5);
+
+  // Animações de entrada/saída baseadas na existência da track
   useEffect(() => {
     if (currentTrack) {
-      Animated.parallel([
-        Animated.spring(translateY, {
-          toValue: 0,
-          tension: 80,
-          friction: 12,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      translateY.value = withSpring(0, { damping: 15, stiffness: 120 });
+      opacity.value = withTiming(1, { duration: 250 });
     } else {
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: 100,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      translateY.value = withTiming(100, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 200 });
     }
   }, [!!currentTrack]);
 
+  // Animação de pulsação quando tocando
   useEffect(() => {
     if (isPlaying) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.15, { duration: 600 }),
+          withTiming(1, { duration: 600 }),
+        ),
+        -1,
+        true,
+      );
     } else {
-      pulseAnim.stopAnimation();
-      Animated.timing(pulseAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      scale.value = withTiming(1, { duration: 200 });
     }
   }, [isPlaying]);
+
+  // Estilos animados
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }, { translateX: dragX.value }],
+    opacity: opacity.value,
+  }));
+
+  const artworkAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    shadowColor: isDark ? "#3b82f6" : "#000",
+  }));
 
   if (!currentTrack) return null;
 
@@ -131,180 +137,137 @@ const PlayerMusicRecurrent = () => {
   const artistColor = isDark ? "#a1a1aa" : "#71717a";
 
   return (
-    <Animated.View
-      style={[
-        {
-          backgroundColor: bgColor,
-          borderTopColor: borderColor,
-          transform: [{ translateY }],
-          opacity,
-          position: "absolute",
-          bottom: getBottomValue(),
-          left: 10,
-          right: 10,
-          borderRadius: 18,
-          borderWidth: StyleSheet.hairlineWidth,
-          overflow: "hidden",
-          // Sombra
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.18,
-          shadowRadius: 20,
-          elevation: 12,
-        },
-      ]}
-      onLayout={(e) => {
-        const { height } = e.nativeEvent.layout;
-        setPlayerHeight(height);
-      }}
-    >
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={() => router.navigate("/player")}
-        className="flex-row items-center gap-3 px-3 py-2"
+    <GestureDetector gesture={panGesture}>
+      <Animated.View
+        style={[
+          {
+            backgroundColor: bgColor,
+            borderTopColor: borderColor,
+            position: "absolute",
+            bottom: getBottomValue(),
+            left: 10,
+            right: 10,
+            borderRadius: 18,
+            borderWidth: StyleSheet.hairlineWidth,
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.18,
+            shadowRadius: 20,
+            elevation: 12,
+          },
+          containerAnimatedStyle,
+        ]}
+        onLayout={(e) => {
+          const { height } = e.nativeEvent.layout;
+          setPlayerHeight(height);
+        }}
       >
-        {/* Artwork */}
-        <Animated.View
-          style={[
-            {
-              transform: [{ scale: pulseAnim }],
-              shadowColor: isDark ? "#3b82f6" : "#000",
-            },
-          ]}
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.navigate("/player")}
+          className="flex-row items-center gap-3 px-3 py-2"
         >
-          {currentTrack.artwork ? (
-            <Image
-              source={{ uri: currentTrack.artwork as string }}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 12,
-              }}
-              contentFit="cover"
-              transition={200}
-            />
-          ) : (
-            <View
-              style={[
-                {
+          {/* Artwork com animação de pulsação */}
+          <Animated.View style={artworkAnimatedStyle}>
+            {currentTrack.artwork ? (
+              <Image
+                source={{ uri: currentTrack.artwork as string }}
+                style={{
                   width: 48,
                   height: 48,
                   borderRadius: 12,
-                  backgroundColor: isDark ? "#3f3f46" : "#e4e4e7",
-                  alignItems: "center",
-                  justifyContent: "center",
-                },
-              ]}
-            >
-              <Music size={20} color={isDark ? "#a1a1aa" : "#71717a"} />
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Info */}
-        <View className="flex-1">
-          <Text
-            className={`text-1 text-lg truncate w-full ${titleColor}`}
-            numberOfLines={1}
-          >
-            {currentTrack.title}
-          </Text>
-          <Text
-            className={`text-base dark:text-zinc-400 ${artistColor}`}
-            numberOfLines={1}
-          >
-            {currentTrack.artist ?? "Artista desconhecido"}
-          </Text>
-        </View>
-
-        {/* Controles */}
-        <View className="flex-row items-center gap-2 ml-auto">
-          {/* Previous */}
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              skipToPrevious();
-            }}
-            className="p-2"
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="play-skip-back"
-              size={22}
-              color={isDark ? "#ffffff" : "#18181b"}
-            />
-          </TouchableOpacity>
-          {/* Play / Pause */}
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              togglePlayPause();
-            }}
-            className="p-2"
-            activeOpacity={0.8}
-          >
-            {isBuffering ? (
-              <Ionicons name="hourglass-outline" size={18} color="#fff" />
-            ) : (
-              <Ionicons
-                name={isPlaying ? "pause" : "play"}
-                size={18}
-                color="#fff"
-                style={{ marginLeft: isPlaying ? 0 : 2 }}
+                }}
+                contentFit="cover"
+                transition={200}
               />
+            ) : (
+              <View
+                style={[
+                  {
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: isDark ? "#3f3f46" : "#e4e4e7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  },
+                ]}
+              >
+                <Music size={20} color={isDark ? "#a1a1aa" : "#71717a"} />
+              </View>
             )}
-          </TouchableOpacity>
+          </Animated.View>
 
-          {/* Next */}
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              skipToNext();
-            }}
-            className="p-2"
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="play-skip-forward"
-              size={22}
-              color={isDark ? "#ffffff" : "#18181b"}
-            />
-          </TouchableOpacity>
-        </View>
-        {/* Progress */}
-      </TouchableOpacity>
-      <View className="p-4">
-        <View>
-          <Slider
-            value={duration > 0 ? position / duration : 0}
-            onSlidingComplete={(v) => {
-              const val = Array.isArray(v) ? v[0] : v;
-              seekTo(val * duration);
-            }}
-            minimumValue={0}
-            maximumValue={1}
-            animateTransitions={true}
-            minimumTrackTintColor="#3b82f6"
-            thumbTintColor={isDark ? "#3b82f6" : "#000"}
-            trackStyle={{ height: 4, borderRadius: 2 }}
-            thumbStyle={{ width: 14, height: 14, borderRadius: 7 }}
-            thumbImage={
-              currentTrack.artwork
-                ? { uri: currentTrack.artwork as string }
-                : undefined
-            }
-          />
-          <View className="flex-row justify-between mt-1">
-            <Text className="dark:text-white/45 text-xs">
-              {formatTime(position)}
+          {/* Info */}
+          <View className="flex-1">
+            <Text
+              className={`text-1 text-lg truncate w-full ${titleColor}`}
+              numberOfLines={1}
+            >
+              {currentTrack.title}
             </Text>
-            <Text className="dark:text-white/45 text-xs">
-              {formatTime(duration)}
+            <Text
+              className={`text-base dark:text-zinc-400 ${artistColor}`}
+              numberOfLines={1}
+            >
+              {currentTrack.artist ?? "Artista desconhecido"}
             </Text>
           </View>
-        </View>
-      </View>
-    </Animated.View>
+
+          {/* Controles */}
+          <View className="flex-row items-center gap-2 ml-auto">
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                skipToPrevious();
+              }}
+              className="p-2"
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="play-skip-back"
+                size={22}
+                color={isDark ? "#ffffff" : "#18181b"}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                togglePlayPause();
+              }}
+              className="p-2"
+              activeOpacity={0.8}
+            >
+              {isBuffering ? (
+                <Ionicons name="hourglass-outline" size={18} color="#fff" />
+              ) : (
+                <Ionicons
+                  name={isPlaying ? "pause" : "play"}
+                  size={18}
+                  color="#fff"
+                  style={{ marginLeft: isPlaying ? 0 : 2 }}
+                />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                skipToNext();
+              }}
+              className="p-2"
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name="play-skip-forward"
+                size={22}
+                color={isDark ? "#ffffff" : "#18181b"}
+              />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
+    </GestureDetector>
   );
 };
 

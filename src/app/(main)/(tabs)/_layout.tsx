@@ -3,9 +3,10 @@ import * as MediaLibrary from "expo-media-library";
 import * as Notifications from "expo-notifications";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
-import { PermissionsAndroid, Platform, useColorScheme } from "react-native";
+import { PermissionsAndroid, Platform } from "react-native";
 import { useAlbum } from "../../../hooks/useAlbumLocal";
 import { useAlbumsGrouped } from "../../../hooks/useAlbumsGrouped";
+import { useTheme } from "../../../hooks/useTheme";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -37,8 +38,8 @@ const requestPermission = async () => {
 };
 
 export default function MainLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
+
   const { refreshAlbums, permissionResponse, requestPermission } = useAlbum();
 
   const {

@@ -2,15 +2,17 @@ import { useAlbum } from "@/hooks/useAlbumLocal";
 import { AlbumWithDetails } from "@/types/interfaces";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { memo, useCallback, useRef } from "react";
+import React, { memo, useCallback, useRef, useState } from "react";
 import {
   FlatList,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
   ViewToken,
 } from "react-native";
+import { useBottomSheet } from "../../context/bottom-sheet-context";
+import { useTheme } from "../../hooks/useTheme";
+import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumThumbnail from "./album-thumbnail";
 
@@ -21,17 +23,21 @@ const AlbumCard = memo(
     onPress,
     isDark,
     loadingCovers,
+    handleOpenBottomSheet,
   }: {
     album: AlbumWithDetails;
     onPress: (album: AlbumWithDetails) => void;
     isDark: boolean;
     loadingCovers: boolean;
+    handleOpenBottomSheet: (album: AlbumWithDetails) => void;
   }) => {
     return (
       <TouchableOpacity
         onPress={() => onPress(album)}
         className="flex-col gap-3 items-center justify-center mb-4 p-3"
         activeOpacity={0.7}
+        onLongPress={() => handleOpenBottomSheet(album)}
+        delayLongPress={500}
       >
         <AlbumThumbnail
           coverArt={album.coverArt || null}
@@ -71,8 +77,26 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
     onAlbumsVisible,
     refreshAlbums,
   } = useAlbum();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
+
+  useState<AlbumWithDetails | null>(null);
+  const { openSheet, closeSheet } = useBottomSheet();
+
+  const handleOpenBottomSheet = useCallback(
+    (album: AlbumWithDetails) => {
+      openSheet({
+        snapPoints: ["40%"],
+        content: (
+          <BottomSheetAlbumDetails
+            album={album}
+            isDark={isDark}
+            onClose={closeSheet}
+          />
+        ),
+      });
+    },
+    [openSheet],
+  );
 
   const handleAlbumPress = (album: AlbumWithDetails) => {
     selectAlbum(album);
@@ -126,6 +150,7 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
             onPress={handleAlbumPress}
             isDark={isDark}
             loadingCovers={loadingCovers}
+            handleOpenBottomSheet={handleOpenBottomSheet}
           />
         )}
         keyExtractor={(item) => item.id}

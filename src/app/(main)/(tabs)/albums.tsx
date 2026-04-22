@@ -3,11 +3,11 @@ import { AlbumScreen } from "@/components/album/album-card";
 import { HeaderPage } from "@/components/hearder-page";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { Album } from "lucide-react-native";
-import { useColorScheme, View } from "react-native";
+import { View } from "react-native";
+import { useTheme } from "../../../hooks/useTheme";
 
 const Albums = () => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   return (
     <LayoutWithHeader>

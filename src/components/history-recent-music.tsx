@@ -1,15 +1,10 @@
 import { Image } from "expo-image";
 import { History, Music, Trash2 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
-import {
-  FlatList,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-} from "react-native";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
 import { useMusicHistory } from "../hooks/useMusicHistory";
 import { usePlayer } from "../hooks/usePlayer";
+import { useTheme } from "../hooks/useTheme";
 import { StoredTrack } from "../services/music-history.service";
 import { storedTracksToSongs } from "../services/storedTrackToSong";
 import SkeletonLoadingAlbum from "./loading-skeleton-album";
@@ -81,9 +76,7 @@ const HistoryRecentMusic = () => {
   const { recents, loading, reload, clearRecents } = useMusicHistory();
   const { currentTrack, playSongs, togglePlayPause } = usePlayer();
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
-
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   const handleSongPress = useCallback(
     async (index: number, songId: string) => {

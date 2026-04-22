@@ -32,10 +32,100 @@
   }
 
   .btn {
-    @apply px-4 py-4 rounded-full bg-primary text-white;
+    @apply px-4 py-4 flex-row items-center justify-center gap-1.5 rounded-full bg-zinc-800 text-white;
   }
 
   .btn-delete {
     @apply p-4 rounded-full bg-red-500 text-white;
+  }
+
+  /* ── DetailsMusic ── */
+
+  .hero-container {
+    @apply w-full overflow-hidden;
+  }
+
+  .hero-image {
+    @apply flex-1 rounded-b-3xl overflow-hidden;
+  }
+
+  .hero-info {
+    @apply absolute bottom-6 left-5 right-5 items-center;
+  }
+
+  .hero-badge {
+    @apply flex-row items-center gap-1.5 bg-blue-500/20 border border-blue-500/35 rounded-full px-3 py-1 mb-2.5;
+  }
+
+  .hero-dot {
+    @apply w-1.5 h-1.5 rounded-full bg-blue-500;
+  }
+
+  .hero-badge-text {
+    @apply text-[11px] text-blue-300 font-medium;
+  }
+
+  .hero-title {
+    @apply text-[22px] font-bold text-white text-center tracking-tight mb-1;
+  }
+
+  .hero-artist {
+    @apply text-[13px] text-white/50 text-center;
+  }
+
+  .detail-card {
+    @apply rounded-2xl p-4 border-[0.5px] bg-zinc-100 border-black/[0.06] dark:bg-zinc-800 dark:border-white/[0.06];
+  }
+
+  .detail-card-header {
+    @apply flex-row items-center justify-between gap-2 mb-3.5;
+  }
+
+  .detail-card-icon-wrap {
+    @apply w-7 h-7 rounded-lg bg-blue-500/[0.12] items-center justify-center;
+  }
+
+  .detail-card-title {
+    @apply text-sm font-semibold text-black dark:text-white;
+  }
+
+  .meta-row {
+    @apply flex-row justify-between items-center py-2.5;
+  }
+
+  .meta-label {
+    @apply text-xs text-zinc-500 font-medium;
+  }
+
+  .meta-value {
+    @apply text-xs max-w-[60%] text-right text-zinc-900 dark:text-white/85;
+  }
+
+  .lyrics-text {
+    @apply text-[13px] text-zinc-400 leading-[22px];
+  }
+
+  .lyrics-empty {
+    @apply text-[13px] text-zinc-500 italic;
+  }
+
+  .lyrics-see-more {
+    @apply text-xs text-blue-500 font-medium mt-2.5;
+  }
+
+  .btn-play {
+    @apply flex-1 flex-row items-center justify-center gap-2 bg-blue-500 rounded-2xl py-3.5;
+  }
+
+  .btn-play-text {
+    @apply text-sm font-semibold text-white;
+  }
+
+  .btn-delete-outline {
+    @apply flex-row items-center justify-center gap-1.5 bg-red-500/10 border-[0.5px] border-red-500/25 rounded-2xl py-3.5 px-[18px];
+  }
+
+  .btn-delete-text {
+    @apply text-sm font-semibold text-red-400;
   }
 }

@@ -1,11 +1,6 @@
 import { useEffect, useRef } from "react";
-import {
-  Animated,
-  Dimensions,
-  FlatList,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Animated, Dimensions, FlatList, View } from "react-native";
+import { useTheme } from "../hooks/useTheme";
 
 const { width } = Dimensions.get("window");
 
@@ -21,8 +16,7 @@ const SkeletonLoadingAlbum = ({
   numColumns = 1,
 }: SkeletonLoadingAlbumProps) => {
   const shimmerAnimation = useRef(new Animated.Value(0)).current;
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   const backgroundColor = isDark ? "#374151" : "#E5E7EB"; // cinza escuro para dark mode, cinza claro para light mode
   const shimmerColor = isDark

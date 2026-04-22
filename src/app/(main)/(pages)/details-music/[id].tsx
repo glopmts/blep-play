@@ -1,21 +1,28 @@
 import { BackButton } from "@/components/black-button";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { showPlatformMessage } from "@/components/toast-message-plataform";
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { usePlayerHeight } from "@/context/player-height-context";
 import { useMusic } from "@/hooks/useMusic";
 import { usePlayer } from "@/hooks/usePlayer";
+import { usePlaylists } from "@/hooks/usePlaylists";
+import { useTheme } from "@/hooks/useTheme";
 import { METADATA_MUSIC } from "@/lib/metada-music";
+import { SongWithArt } from "@/types/interfaces";
 import { formatDuration } from "@/utils/formaTS/formatTimeSong";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import * as Clipboard from "expo-clipboard";
-import { ImageBackground } from "expo-image";
+import { Image, ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import {
   Album,
+  ArrowRightCircle,
+  CheckCircle,
   Copy,
   CopyCheck,
   Info,
+  ListMusicIcon,
   Music,
   Pause,
   Play,
@@ -30,39 +37,105 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 
 const DetailsMusic = () => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   const { playerHeight } = usePlayerHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { playlists, handleAddSongToPlaylist } = usePlaylists();
   const { error, loading, musicDetails } = useMusic({ musicId: id as string });
   const { playSongs, togglePlayPause, currentTrack } = usePlayer();
   const [seeMore, setSeeMore] = useState(false);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const { openSheet } = useBottomSheet();
 
   const pathname = usePathname();
   const isOnPage = ["player", "details-music", "details-album"].some((p) =>
     pathname.includes(p),
   );
 
-  // Função para calcular o valor de bottom com base na plataforma e se estamos na página de detalhes
   const getBottomValue = () => {
     if (Platform.OS === "ios") return isOnPage ? 40 : 72;
     return isOnPage ? 20 : 65;
   };
 
-  // Calcula o espaço necessário embaixo
   const bottomPadding = currentTrack
-    ? playerHeight + getBottomValue() + 16 // altura + posição + margem
+    ? playerHeight + getBottomValue() + 16
     : 32;
 
   const toggleSeeMore = useCallback(() => setSeeMore((p) => !p), []);
+
+  const handleOpenBottomSheet = useCallback(
+    (item: SongWithArt) => {
+      openSheet({
+        snapPoints: ["60%"],
+        content: (
+          <View className="flex-col gap-5 px-4">
+            {playlists.length > 0 ? (
+              playlists.map((c) => {
+                //  Verifica se a música existe na playlist
+                const isMusic =
+                  c.songs?.some((song) => song.id === item.id) ?? false;
+
+                return (
+                  <TouchableOpacity
+                    key={c.id}
+                    className="flex-col flex-1 gap-4 px-4 py-3.5 rounded-2xl dark:bg-zinc-800/70 bg-zinc-50 border dark:border-zinc-700/50 border-zinc-200 active:opacity-80"
+                    onPress={() => handleAddSongToPlaylist(c.id, item)}
+                  >
+                    <View className="flex-row gap-4 items-center justify-between">
+                      <View className="flex-row gap-3 items-center">
+                        <View className="w-20 h-20 rounded-3xl overflow-hidden dark:bg-zinc-800 bg-zinc-100 items-center justify-center border dark:border-zinc-700 border-zinc-200 shadow-sm">
+                          {c.coverArt ? (
+                            <Image
+                              source={{ uri: c.coverArt }}
+                              style={{ width: "100%", height: "100%" }}
+                              contentFit="cover"
+                              transition={200}
+                              cachePolicy="memory-disk"
+                            />
+                          ) : (
+                            <ListMusicIcon
+                              size={24}
+                              color={colors.icon}
+                              strokeWidth={1.5}
+                            />
+                          )}
+                        </View>
+                        <View className="flex-col gap-2">
+                          <Text className="text">{c.title}</Text>
+                          <Text className="text text-base text-zinc-300">
+                            Musicas: {c.songs?.length || 0}
+                          </Text>
+                        </View>
+                      </View>
+                      {isMusic ? (
+                        <CheckCircle size={28} color={colors.primary} />
+                      ) : (
+                        <ArrowRightCircle
+                          size={28}
+                          color={isDark ? "#71717a" : "#a1a1aa"}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            ) : (
+              <View className="items-center justify-center">
+                <Text className="text text-zinc-300">Nenhuma Playlist</Text>
+              </View>
+            )}
+          </View>
+        ),
+      });
+    },
+    [openSheet, playlists, handleAddSongToPlaylist, isDark], // ← adicione isDark se usado
+  );
 
   const handleCopyLyrics = useCallback(async (lyrics: string) => {
     if (isCopying) return;
@@ -70,7 +143,7 @@ const DetailsMusic = () => {
     try {
       await Clipboard.setStringAsync(lyrics);
       showPlatformMessage("Letra copiada para a área de transferência!");
-      setTimeout(() => setIsCopying(false), 5000); // Reseta o estado após 2 segundos
+      setTimeout(() => setIsCopying(false), 5000);
     } catch (error) {
       console.error("Erro ao copiar letra:", error);
       setIsCopying(false);
@@ -133,11 +206,19 @@ const DetailsMusic = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Hero ── */}
-        <View style={styles.heroContainer}>
+        <View
+          className="hero-container"
+          style={{ height: IMAGE_SIZE_BACKGROUND }}
+        >
           {musicDetails.coverArt ? (
             <ImageBackground
               source={{ uri: musicDetails.coverArt }}
-              style={styles.heroImage}
+              style={{
+                flex: 1,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                overflow: "hidden",
+              }}
               contentFit="cover"
             >
               <LinearGradient
@@ -160,14 +241,22 @@ const DetailsMusic = () => {
               <HeroContent musicDetails={musicDetails} noImage />
             </View>
           )}
-          <BackButton isDark={true} />
+          <BackButton
+            isDark={isDark}
+            isBottomOption={true}
+            handleSongPress={() => handleOpenBottomSheet(musicDetails)}
+          >
+            <View>
+              <ListMusicIcon size={16} color="#fff" />
+            </View>
+          </BackButton>
         </View>
 
-        <View style={{ paddingHorizontal: 16, gap: 12, marginTop: 16 }}>
+        <View className="px-4 gap-3 mt-4">
           {/* ── Ações ── */}
-          <View style={{ flexDirection: "row", gap: 10 }}>
+          <View className="flex-row gap-2.5">
             <TouchableOpacity
-              style={styles.btnPlay}
+              className="btn-play"
               onPress={() => handleSongPress(0)}
               disabled={loadingSongIndex !== null}
               activeOpacity={0.85}
@@ -181,35 +270,31 @@ const DetailsMusic = () => {
                   ) : (
                     <Play size={16} color="#fff" />
                   )}
-                  <Text style={styles.btnPlayText}>
+                  <Text className="btn-play-text">
                     {isPlaying ? "Pausar" : "Tocar música"}
                   </Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.btnDelete} activeOpacity={0.85}>
+            <TouchableOpacity
+              className="btn-delete-outline"
+              activeOpacity={0.85}
+            >
               <Trash2 size={16} color="#f87171" />
-              <Text style={styles.btnDeleteText}>Excluir</Text>
+              <Text className="btn-delete-text">Excluir</Text>
             </TouchableOpacity>
           </View>
 
           {/* ── Detalhes ── */}
-          <View
-            style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.cardIconWrap}>
-                <Info size={14} color="#3b82f6" />
+          <View className="detail-card">
+            <View className="detail-card-header">
+              <View className="flex-row gap-3 items-center">
+                <View className="detail-card-icon-wrap">
+                  <Info size={14} color="#3b82f6" />
+                </View>
+                <Text className="detail-card-title">Detalhes</Text>
               </View>
-              <Text
-                style={[
-                  styles.cardTitle,
-                  { color: isDark ? "#fff" : "#18181b" },
-                ]}
-              >
-                Detalhes
-              </Text>
             </View>
 
             {METADATA_MUSIC.map((item, i) => {
@@ -219,24 +304,15 @@ const DetailsMusic = () => {
               return (
                 <View
                   key={item.value}
-                  style={[
-                    styles.metaRow,
-                    i < METADATA_MUSIC.length - 1 && {
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: isDark
-                        ? "rgba(255,255,255,0.06)"
-                        : "rgba(0,0,0,0.06)",
-                    },
-                  ]}
+                  className={[
+                    "meta-row",
+                    i < METADATA_MUSIC.length - 1
+                      ? "border-b-[0.5px] border-black/[0.06] dark:border-white/[0.06]"
+                      : "",
+                  ].join(" ")}
                 >
-                  <Text style={styles.metaLabel}>{item.label}</Text>
-                  <Text
-                    style={[
-                      styles.metaValue,
-                      { color: isDark ? "rgba(255,255,255,0.85)" : "#18181b" },
-                    ]}
-                    numberOfLines={1}
-                  >
+                  <Text className="meta-label">{item.label}</Text>
+                  <Text className="meta-value" numberOfLines={1}>
                     {String(value)}
                   </Text>
                 </View>
@@ -244,14 +320,9 @@ const DetailsMusic = () => {
             })}
 
             {/* Linha extra: arquivo + duração */}
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Arquivo</Text>
-              <Text
-                style={[
-                  styles.metaValue,
-                  { color: isDark ? "rgba(255,255,255,0.85)" : "#18181b" },
-                ]}
-              >
+            <View className="meta-row">
+              <Text className="meta-label">Arquivo</Text>
+              <Text className="meta-value">
                 {musicDetails.filename?.split(".").pop()?.toUpperCase()} •{" "}
                 {formatDuration(musicDetails.duration)}
               </Text>
@@ -259,67 +330,48 @@ const DetailsMusic = () => {
           </View>
 
           {/* ── Letra ── */}
-          <View
-            style={[styles.card, isDark ? styles.cardDark : styles.cardLight]}
-          >
-            <View style={styles.cardHeader}>
+          <View className="detail-card">
+            <View className="detail-card-header">
               <View className="flex-row gap-3 items-center">
-                <View style={styles.cardIconWrap}>
+                <View className="detail-card-icon-wrap">
                   <TextInitialIcon size={14} color="#3b82f6" />
                 </View>
-                <Text
-                  style={[
-                    styles.cardTitle,
-                    { color: isDark ? "#fff" : "#18181b" },
-                  ]}
+                <Text className="detail-card-title">Letra</Text>
+              </View>
+
+              {musicDetails.lyrics && (
+                <TouchableOpacity
+                  onPress={() =>
+                    handleCopyLyrics(musicDetails.lyrics as string)
+                  }
+                  disabled={isCopying}
+                  className="p-1.5"
                 >
-                  Letra
-                </Text>
-              </View>
-              <View>
-                {musicDetails.lyrics && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleCopyLyrics(musicDetails.lyrics as string)
-                    }
-                    disabled={isCopying}
-                    style={{ padding: 6 }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                      }}
-                    >
-                      {isCopying ? (
-                        <CopyCheck size={18} color={"rgba(59,130,246,0.5)"} />
-                      ) : (
-                        <Copy size={18} color={isDark ? "#fff" : "#18181b"} />
-                      )}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                  {isCopying ? (
+                    <CopyCheck size={18} color="rgba(59,130,246,0.5)" />
+                  ) : (
+                    <Copy size={18} color={isDark ? "#fff" : "#18181b"} />
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
 
             {musicDetails.lyrics ? (
               <>
                 <Text
-                  style={styles.lyricsText}
+                  className="lyrics-text"
                   numberOfLines={seeMore ? undefined : 8}
                 >
                   {musicDetails.lyrics}
                 </Text>
-                <TouchableOpacity
-                  onPress={toggleSeeMore}
-                  style={{ marginTop: 10 }}
-                >
-                  <Text style={styles.seeMore}>
+                <TouchableOpacity onPress={toggleSeeMore}>
+                  <Text className="lyrics-see-more">
                     {seeMore ? "Ver menos" : "Ver mais"}
                   </Text>
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={styles.lyricsEmpty}>
+              <Text className="lyrics-empty">
                 Letra não disponível para esta música.
               </Text>
             )}
@@ -339,23 +391,18 @@ function HeroContent({
   noImage?: boolean;
 }) {
   return (
-    <View
-      style={[
-        styles.heroInfo,
-        noImage && { position: "relative", bottom: 0, marginTop: 16 },
-      ]}
-    >
+    <View className={`hero-info ${noImage ? "relative bottom-0 mt-4" : ""}`}>
       {!noImage && (
-        <View style={styles.heroBadge}>
-          <View style={styles.heroDot} />
-          <Text style={styles.heroBadgeText}>Música</Text>
+        <View className="hero-badge">
+          <View className="hero-dot" />
+          <Text className="hero-badge-text">Música</Text>
         </View>
       )}
-      <Text style={styles.heroTitle} numberOfLines={2}>
+      <Text className="hero-title" numberOfLines={2}>
         {musicDetails.title ?? musicDetails.filename?.replace(/\.[^/.]+$/, "")}
       </Text>
       {musicDetails.artist && (
-        <Text style={styles.heroArtist} numberOfLines={1}>
+        <Text className="hero-artist" numberOfLines={1}>
           {musicDetails.artist}
           {musicDetails.year ? ` • ${musicDetails.year}` : ""}
         </Text>
@@ -363,156 +410,5 @@ function HeroContent({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  heroContainer: {
-    width: "100%",
-    height: IMAGE_SIZE_BACKGROUND,
-  },
-  heroImage: {
-    flex: 1,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: "hidden",
-  },
-  heroInfo: {
-    position: "absolute",
-    bottom: 24,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-  },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "rgba(59,130,246,0.2)",
-    borderWidth: 0.5,
-    borderColor: "rgba(59,130,246,0.35)",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  heroDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#3b82f6",
-  },
-  heroBadgeText: {
-    fontSize: 11,
-    color: "#93c5fd",
-    fontWeight: "500",
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#fff",
-    textAlign: "center",
-    letterSpacing: -0.3,
-    marginBottom: 4,
-  },
-  heroArtist: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.5)",
-    textAlign: "center",
-  },
-  btnPlay: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#3b82f6",
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  btnPlayText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#fff",
-  },
-  btnDelete: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "rgba(239,68,68,0.1)",
-    borderWidth: 0.5,
-    borderColor: "rgba(239,68,68,0.25)",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-  },
-  btnDeleteText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#f87171",
-  },
-  card: {
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 0.5,
-  },
-  cardDark: {
-    backgroundColor: "#27272a",
-    borderColor: "rgba(255,255,255,0.06)",
-  },
-  cardLight: {
-    backgroundColor: "#f4f4f5",
-    borderColor: "rgba(0,0,0,0.06)",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginBottom: 14,
-  },
-  cardIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: "rgba(59,130,246,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 9,
-  },
-  metaLabel: {
-    fontSize: 12,
-    color: "rgba(113,113,122,1)",
-    fontWeight: "500",
-  },
-  metaValue: {
-    fontSize: 12,
-    maxWidth: "60%",
-    textAlign: "right",
-  },
-  lyricsText: {
-    fontSize: 13,
-    color: "rgba(161,161,170,1)",
-    lineHeight: 22,
-  },
-  lyricsEmpty: {
-    fontSize: 13,
-    color: "rgba(113,113,122,1)",
-    fontStyle: "italic",
-  },
-  seeMore: {
-    fontSize: 12,
-    color: "#3b82f6",
-    fontWeight: "500",
-  },
-});
 
 export default DetailsMusic;

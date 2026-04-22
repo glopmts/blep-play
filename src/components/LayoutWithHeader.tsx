@@ -91,7 +91,7 @@ export const LayoutWithHeader = ({
               )}
               {title && (
                 <Text
-                  className={`text-lg font-semibold ${
+                  className={`text-2xl font-semibold ${
                     isDark ? "text-white" : "text-black"
                   }`}
                   numberOfLines={1}
