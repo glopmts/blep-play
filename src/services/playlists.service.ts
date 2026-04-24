@@ -162,7 +162,6 @@ export async function getStorageStats(): Promise<{
 export async function cleanupOldStorage(): Promise<void> {
   try {
     await AsyncStorage.multiRemove(["playlists", "playlists_v2"]);
-    console.log("[Playlists] Versões antigas removidas");
   } catch (error) {
     console.warn("[Playlists] Erro ao limpar versões antigas:", error);
   }

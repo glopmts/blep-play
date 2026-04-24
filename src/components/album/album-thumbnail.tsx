@@ -17,7 +17,9 @@ const Placeholder = ({ isDark, size }: { isDark: boolean; size: number }) => (
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: isDark ? "#27272a" : "#e4e4e7",
+      borderWidth: 1,
+      borderColor: isDark ? "#404040" : "#a3a3a3",
+      backgroundColor: isDark ? "#262626" : "#e4e4e7",
     }}
   >
     <Music size={size} color={isDark ? "#d4d4d8" : "#27272a"} />
@@ -79,7 +81,7 @@ const AlbumThumbnail = memo(
           height: CARD_WIDTH,
           borderRadius: 16,
           overflow: "hidden",
-          backgroundColor: isDark ? "#3f3f46" : "#e4e4e7",
+          backgroundColor: isDark ? "#262626" : "#e4e4e7",
         }}
       >
         {source ? (

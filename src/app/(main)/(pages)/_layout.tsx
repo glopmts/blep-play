@@ -1,9 +1,8 @@
+import { useTheme } from "@/hooks/useTheme";
 import { Stack } from "expo-router";
-import { useColorScheme } from "react-native";
 
 const LayoutPages = () => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useTheme();
   return (
     <Stack
       screenOptions={{

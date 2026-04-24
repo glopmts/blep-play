@@ -1,4 +1,6 @@
 import { usePlayer } from "@/hooks/usePlayer";
+import { useTheme } from "@/hooks/useTheme";
+import { formatTime } from "@/utils/formaTS/formatTimeSong";
 import { Ionicons } from "@expo/vector-icons";
 import { Slider } from "@miblanchard/react-native-slider";
 import { Image } from "expo-image";
@@ -13,17 +15,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useColorScheme,
   View,
 } from "react-native";
 import TrackPlayer, { RepeatMode } from "react-native-track-player";
-import { formatTime } from "../../../utils/formaTS/formatTimeSong";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const ARTWORK_SIZE = SCREEN_WIDTH - 64;
 
 export default function PlayerScreen() {
-  const isDark = useColorScheme() === "dark";
+  const { isDark, colors } = useTheme();
   const {
     currentTrack,
     isPlaying,
@@ -78,7 +78,12 @@ export default function PlayerScreen() {
 
   if ((!currentTrack || !isReady) && hasWaited) {
     return (
-      <View className="flex-1 dark:bg-zinc-900 items-center justify-center">
+      <View
+        className="flex-1 items-center justify-center"
+        style={{
+          backgroundColor: colors.background,
+        }}
+      >
         <Text className="text">Nenhuma música selecionada</Text>
         <TouchableOpacity
           onPress={() =>
@@ -96,11 +101,13 @@ export default function PlayerScreen() {
 
   if (!currentTrack || !isReady) {
     return (
-      <View className="flex-1 dark:bg-zinc-900 items-center justify-center">
-        <ActivityIndicator
-          size="large"
-          color={isDark ? "#ffffff" : "#3b82f6"}
-        />
+      <View
+        className="flex-1 items-center justify-center"
+        style={{
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -112,7 +119,7 @@ export default function PlayerScreen() {
       ? isDark
         ? "#52525b"
         : "#a1a1aa"
-      : "#3b82f6";
+      : colors.primary;
 
   const bgColorRgba = isDark
     ? "rgba(24, 24, 27, 0.97)"
@@ -132,10 +139,7 @@ export default function PlayerScreen() {
           blurRadius={40}
         />
       ) : (
-        <View
-          style={StyleSheet.absoluteFill}
-          className="dark:bg-zinc-900 bg-zinc-300"
-        />
+        <View style={StyleSheet.absoluteFill} className="bg-zinc-300" />
       )}
 
       <LinearGradient
@@ -171,11 +175,7 @@ export default function PlayerScreen() {
             justifyContent: "center",
           }}
         >
-          <Ionicons
-            name="chevron-down"
-            size={22}
-            color={isDark ? "#fff" : "#000"}
-          />
+          <Ionicons name="chevron-down" size={22} color={colors.icon} />
         </TouchableOpacity>
 
         <View className="items-center">
@@ -227,7 +227,7 @@ export default function PlayerScreen() {
       {/* Info */}
       <View className="px-8 mt-8">
         <Text
-          className="dark:text-white text-2xl font-bold"
+          className="text text-2xl font-bold"
           numberOfLines={1}
           style={{ letterSpacing: -0.5 }}
         >
@@ -248,9 +248,9 @@ export default function PlayerScreen() {
           }}
           minimumValue={0}
           maximumValue={1}
-          minimumTrackTintColor="#3b82f6"
+          minimumTrackTintColor={colors.primary}
           maximumTrackTintColor="rgba(255,255,255,0.2)"
-          thumbTintColor={isDark ? "#3b82f6" : "#000"}
+          thumbTintColor={isDark ? colors.primary : "#000"}
           trackStyle={{ height: 4, borderRadius: 2 }}
           thumbStyle={{ width: 14, height: 14, borderRadius: 7 }}
         />
@@ -274,7 +274,7 @@ export default function PlayerScreen() {
           <Ionicons
             name="shuffle"
             size={24}
-            color={isShuffle ? "#3b82f6" : "rgba(255,255,255,0.4)"}
+            color={isShuffle ? colors.primary : "rgba(255,255,255,0.4)"}
           />
         </TouchableOpacity>
 
@@ -297,10 +297,10 @@ export default function PlayerScreen() {
             width: 68,
             height: 68,
             borderRadius: 34,
-            backgroundColor: "#3b82f6",
+            backgroundColor: colors.primary,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: "#3b82f6",
+            shadowColor: colors.primary,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.6,
             shadowRadius: 16,
@@ -308,12 +308,12 @@ export default function PlayerScreen() {
           }}
         >
           {isBuffering ? (
-            <ActivityIndicator size="large" color={isDark ? "#fff" : "#000"} />
+            <ActivityIndicator size="large" color={isDark ? "#fffc" : "#000"} />
           ) : (
             <Ionicons
               name={isPlaying ? "pause" : "play"}
               size={30}
-              color={isDark ? "#fff" : "#000"}
+              color={isDark ? "#fffc" : "#000"}
               style={{ marginLeft: isPlaying ? 0 : 3 }}
             />
           )}
@@ -343,7 +343,7 @@ export default function PlayerScreen() {
                 position: "absolute",
                 bottom: 6,
                 right: 6,
-                backgroundColor: "#3b82f6",
+                backgroundColor: colors.primary,
                 width: 8,
                 height: 8,
                 borderRadius: 4,

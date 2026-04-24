@@ -116,7 +116,6 @@ export const useAlbum = () => {
 
   const loadAlbums = useCallback(async (force = false) => {
     abortRef.current = false;
-    setLoading(true);
 
     try {
       // ── Mostra metadados do cache imediatamente ──

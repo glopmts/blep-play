@@ -48,7 +48,7 @@ const PlayerMusicRecurrent = () => {
 
   const getBottomValue = () => {
     if (Platform.OS === "ios") return isOnPage ? 40 : 72;
-    return isOnPage ? 20 : 65;
+    return isOnPage ? 20 : 85;
   };
 
   // Shared values para Reanimated
@@ -136,6 +136,10 @@ const PlayerMusicRecurrent = () => {
   const titleColor = isDark ? "#ffffff" : "#18181b";
   const artistColor = isDark ? "#a1a1aa" : "#71717a";
 
+  if (pathname.includes("player")) {
+    return null;
+  }
+
   return (
     <GestureDetector gesture={panGesture}>
       <Animated.View
@@ -166,7 +170,7 @@ const PlayerMusicRecurrent = () => {
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => router.navigate("/player")}
-          className="flex-row items-center gap-3 px-3 py-2"
+          className="flex-row items-center gap-3 px-3 py-4"
         >
           {/* Artwork com animação de pulsação */}
           <Animated.View style={artworkAnimatedStyle}>

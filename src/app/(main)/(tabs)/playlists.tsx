@@ -1,13 +1,19 @@
+import CreatePlaylistModal from "@/components/creater-playlits";
+import Header from "@/components/header";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import SkeletonLoadingAlbum from "@/components/loading-skeleton-album";
-import Input from "@/components/ui/input";
-import Modal from "@/components/ui/modal";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useTheme } from "@/hooks/useTheme";
+import { Playlists as Playlist } from "@/types/interfaces";
 import * as Crypto from "expo-crypto";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { ListMusicIcon, PlusIcon } from "lucide-react-native";
+import {
+  ArrowRight,
+  EllipsisVertical,
+  ListMusicIcon,
+  PlusIcon,
+} from "lucide-react-native";
 import { useState } from "react";
 import {
   Alert,
@@ -110,18 +116,71 @@ const Playlists = () => {
     );
   }
 
-  const fillterNumberColumns = playlists.map((c) => c.songs);
-  const numberColums = fillterNumberColumns.length > 1;
+  const RenderItem = ({ item }: { item: Playlist }) => (
+    <View className="flex-row items-center justify-between py-2 px-4">
+      {/* Left: thumbnail + info */}
+      <Pressable
+        className="flex-row items-center gap-4 flex-1"
+        android_ripple={{ color: "rgba(255,255,255,0.05)" }}
+        onPress={() => handlePlaylistDetails(item.id)}
+      >
+        {/* Thumbnail */}
+        <View
+          className="w-16 h-16 rounded-xl overflow-hidden items-center justify-center"
+          style={{ backgroundColor: "#1E1E2A" }}
+        >
+          {item.coverArt ? (
+            <Image
+              source={{ uri: item.coverArt }}
+              style={{ width: "100%", height: "100%" }}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+            />
+          ) : (
+            <ListMusicIcon size={24} color={colors.icon} strokeWidth={1.5} />
+          )}
+        </View>
+
+        {/* Text info */}
+        <View className="gap-0.5">
+          <Text
+            className="text-xl font-semibold"
+            style={{ color: "#F2F2F2" }}
+            numberOfLines={1}
+          >
+            {item.title}
+          </Text>
+          <Text className="text-sm" style={{ color: "#6B6B7A" }}>
+            {item.songs?.length ?? 0} músicas
+          </Text>
+        </View>
+      </Pressable>
+
+      {/* Right: chevron + menu */}
+      <View className="flex-row items-center gap-3">
+        {/* Chevron arrow */}
+        <ArrowRight size={26} color={colors.icon} strokeWidth={1.5} />
+        <TouchableOpacity hitSlop={8}>
+          <EllipsisVertical size={26} color={colors.icon} strokeWidth={1.5} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   // ─── List
   return (
     <LayoutWithHeader header={false} statusBarOpen={false}>
-      <View className="flex-1">
+      <View
+        className="flex-1"
+        style={{
+          padding: 20,
+        }}
+      >
+        <Header />
         {/* Top bar */}
         <View className="flex-row items-center justify-between px-5 pt-5 pb-3">
-          <Text className="text-xl font-bold dark:text-zinc-100 text-zinc-900 tracking-tight">
-            Playlists
-          </Text>
+          {/* Buttons navegação */}
           <TouchableOpacity
             onPress={handleOpenCreateModal}
             activeOpacity={0.8}
@@ -132,68 +191,29 @@ const Playlists = () => {
         </View>
 
         {/* Playlist items */}
-        <FlatList
-          data={playlists}
-          keyExtractor={(_, index) => index.toString()}
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
-          showsVerticalScrollIndicator={false}
-          columnWrapperStyle={{
-            justifyContent: "space-between",
-            gap: 10,
+        <View
+          className="flex-1"
+          style={{
+            backgroundColor: "#0F1016",
+            borderRadius: colors.rounded.rounded_2xl,
           }}
-          initialNumToRender={10}
-          numColumns={2}
-          maxToRenderPerBatch={5}
-          renderItem={({ item: playlist, index }) => (
-            <Pressable
-              key={playlist.id}
-              android_ripple={{ color: "rgba(99,102,241,0.08)" }}
-              className={`flex-col items-center gap-4 px-4 py-3.5 rounded-2xl 
-        dark:bg-zinc-800/70 bg-zinc-50 border dark:border-zinc-700/50 
-        border-zinc-200 active:opacity-80
-        ${
-          index === playlists.length - 1 && playlists.length % 2 !== 0
-            ? "w-[45%]" // Largura fixa para o último item ímpar
-            : "flex-1"
-        }`}
-              onPress={() => handlePlaylistDetails(playlist.id)}
-            >
-              {/* Thumbnail placeholder */}
-              <View className="w-40 h-40 rounded-md overflow-hidden dark:bg-zinc-700 bg-zinc-200 items-center justify-center flex-shrink-0">
-                {playlist.coverArt ? (
-                  <Image
-                    source={{ uri: playlist.coverArt }}
-                    style={{ width: "100%", height: "100%" }}
-                    contentFit="cover"
-                    transition={200}
-                    cachePolicy="memory-disk" // ← cache agressivo
-                  />
-                ) : (
-                  <ListMusicIcon
-                    size={20}
-                    color={colors.icon}
-                    strokeWidth={1.5}
-                  />
-                )}
-              </View>
-
-              {/* Info */}
-              <View className="flex-1 gap-0.5">
-                <Text
-                  className="text-sm font-semibold dark:text-zinc-100 text-zinc-800"
-                  numberOfLines={1}
-                >
-                  {playlist.title}
-                </Text>
-                <Text className="text-xs dark:text-zinc-500 text-zinc-400">
-                  {playlist.songs?.length ?? 0} músicas
-                </Text>
-              </View>
-            </Pressable>
-          )}
-        />
+        >
+          <FlatList
+            data={playlists}
+            keyExtractor={(_, index) => index.toString()}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+            contentContainerClassName="gap-4 p-4"
+            showsVerticalScrollIndicator={false}
+            horizontal={false}
+            initialNumToRender={10}
+            numColumns={1}
+            maxToRenderPerBatch={5}
+            renderItem={({ item: playlist, index }) => (
+              <RenderItem item={playlist} key={index} />
+            )}
+          />
+        </View>
       </View>
 
       <CreatePlaylistModal
@@ -206,53 +226,5 @@ const Playlists = () => {
     </LayoutWithHeader>
   );
 };
-
-// ─── Create Playlist Modal
-interface CreatePlaylistModalProps {
-  visible: boolean;
-  onClose: () => void;
-  title: string;
-  setTitle: (v: string) => void;
-  onConfirm: () => void;
-}
-
-const CreatePlaylistModal: React.FC<CreatePlaylistModalProps> = ({
-  visible,
-  onClose,
-  title,
-  setTitle,
-  onConfirm,
-}) => (
-  <Modal visible={visible} onClose={onClose} title="Nova playlist">
-    <View className="gap-4">
-      <Input
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Nome da playlist"
-        maxLength={30}
-      />
-
-      <View className="flex-row gap-3 mt-1">
-        <TouchableOpacity
-          onPress={onClose}
-          activeOpacity={0.8}
-          className="flex-1 py-3.5 rounded-xl border dark:border-zinc-700 border-zinc-200 items-center"
-        >
-          <Text className="text-sm font-medium dark:text-zinc-400 text-zinc-500">
-            Cancelar
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={onConfirm}
-          activeOpacity={0.82}
-          className="flex-1 py-3.5 rounded-xl bg-indigo-500 items-center shadow-sm shadow-indigo-500/30"
-        >
-          <Text className="text-sm font-semibold text-white">Criar</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-);
 
 export default Playlists;

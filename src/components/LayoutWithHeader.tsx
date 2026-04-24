@@ -1,14 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
-import {
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  useColorScheme,
-  View,
-} from "react-native";
+import { StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme } from "../hooks/useTheme";
 
 type LayoutVariant = "view" | "safeArea";
 
@@ -40,8 +35,7 @@ export const LayoutWithHeader = ({
   statusBarStyle = "auto",
 }: LayoutWithHeaderProps) => {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, colors } = useTheme();
 
   const Container = variant === "safeArea" ? SafeAreaView : View;
 
@@ -57,18 +51,22 @@ export const LayoutWithHeader = ({
       {statusBarOpen && (
         <StatusBar
           barStyle={getStatusBarStyle()}
-          backgroundColor={isDark ? "#18181b" : "#ffffff"}
+          backgroundColor={colors.background}
           translucent={variant === "view"}
         />
       )}
       <Container
-        className={`flex-1 ${isDark ? "bg-zinc-900" : "bg-white"} ${
-          variant === "view" ? viewPaddingTop : ""
-        }`}
+        style={{
+          backgroundColor: colors.surface,
+        }}
+        className={`flex-1 ${variant === "view" ? viewPaddingTop : ""}`}
       >
         {/* Header */}
         {header && (
           <View
+            style={{
+              backgroundColor: colors.surface,
+            }}
             className={`flex-row items-center justify-between px-4 py-3 border-b ${
               isDark
                 ? "border-zinc-800 bg-zinc-900"

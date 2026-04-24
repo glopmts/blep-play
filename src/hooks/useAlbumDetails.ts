@@ -4,7 +4,6 @@ import { Alert, AppState, AppStateStatus } from "react-native";
 import { useAlbumsContext } from "../context/AlbumsContext";
 import { AlbumWithDetails, SongWithArt } from "../types/interfaces";
 import { fetchAndCacheCover } from "../utils/coverArtCache";
-import { getSongCoverArt } from "../utils/getSongCoverArt";
 
 const SONGS_PER_PAGE = 20; // Quantas músicas carregar por página
 const COVERS_BATCH_SIZE = 10;
@@ -44,24 +43,6 @@ export const useAlbumDetails = ({
   const isMounted = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isLoadingRef = useRef(false);
-
-  const fetchSongCoverArt = useCallback(
-    async (songUri: string): Promise<string | undefined> => {
-      const cached = coverArtCache.get(songUri);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL)
-        return cached.data;
-
-      try {
-        const coverArt = await getSongCoverArt(songUri);
-        if (coverArt)
-          coverArtCache.set(songUri, { data: coverArt, timestamp: Date.now() });
-        return coverArt;
-      } catch {
-        return undefined;
-      }
-    },
-    [],
-  );
 
   // Função para carregar mais músicas (scroll infinito)
   const loadMoreSongs = useCallback(async () => {

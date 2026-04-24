@@ -2,6 +2,7 @@ import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
 import { useAlbumDetails } from "@/hooks/useAlbumDetails";
 import { usePlayer } from "@/hooks/usePlayer";
+import { useTheme } from "@/hooks/useTheme";
 import { SongWithArt } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,7 +20,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTheme } from "../../../../hooks/useTheme";
 
 SongCard.displayName = "SongCard";
 

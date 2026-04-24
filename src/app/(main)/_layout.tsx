@@ -1,11 +1,11 @@
 import PlayerMusicRecurrent from "@/components/player-music-current";
 import { AlbumsProvider } from "@/context/AlbumsContext";
 import { Stack } from "expo-router";
-import { useColorScheme } from "react-native";
+import { AppUpdater } from "../../components/update/AppUpdater";
+import { useTheme } from "../../hooks/useTheme";
 
 const LayoutMain = () => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useTheme();
 
   return (
     <AlbumsProvider>
@@ -18,6 +18,7 @@ const LayoutMain = () => {
           headerShown: false,
         }}
       />
+      <AppUpdater autoCheck={true} />
       <PlayerMusicRecurrent />
     </AlbumsProvider>
   );

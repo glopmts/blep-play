@@ -14,10 +14,16 @@ const Home = () => {
       <Header />
 
       <View className="mb-4">
-        <HeaderPage title="Álbuns do Dispositivo" isDark={isDark} />
+        <HeaderPage
+          title="Álbuns do Dispositivo"
+          isDark={isDark}
+          isAction={true}
+          colors={colors}
+          titleAction="Ver todos"
+        />
         <AlbumScreen />
       </View>
-      <View className="mb-4 p-4">
+      <View className="mb-4 p-4 flex-1">
         <HistoryRecentMusic />
       </View>
     </LayoutWithHeader>
