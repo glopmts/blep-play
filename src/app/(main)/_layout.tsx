@@ -1,8 +1,8 @@
 import PlayerMusicRecurrent from "@/components/player-music-current";
-import { AlbumsProvider } from "@/context/AlbumsContext";
+import { AppUpdater } from "@/components/update/app-update-context";
+import { AlbumsProvider } from "@/context/albums-context";
+import { useTheme } from "@/hooks/useTheme";
 import { Stack } from "expo-router";
-import { AppUpdater } from "../../components/update/AppUpdater";
-import { useTheme } from "../../hooks/useTheme";
 
 const LayoutMain = () => {
   const { isDark } = useTheme();

@@ -1,9 +1,7 @@
-import { Image } from "expo-image";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import ActivityIndicatorCustom from "../components/activityIndicator-Custom";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { handleIncomingFile } from "../utils/fileHandler";
 
@@ -18,9 +16,6 @@ function isMediaUrl(url: string): boolean {
 }
 
 export default function NotFoundScreen() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   useEffect(() => {
     const tryHandleAsMedia = async () => {
       // Pega a URL original que causou o "not found"
@@ -53,17 +48,7 @@ export default function NotFoundScreen() {
   // Tela de loading enquanto processa
   return (
     <>
-      <View className="flex-1 items-center justify-center gap-10 dark:bg-zinc-900">
-        <Image
-          source={require("../../assets/images/icon.png")}
-          className="w-20 h-20 object-cover rounded-md"
-          style={{
-            width: 150,
-            height: 150,
-          }}
-        />
-        <ActivityIndicator size={36} color={isDark ? "#ffff" : "#3b82f6 "} />
-      </View>
+      <ActivityIndicatorCustom />
     </>
   );
 }

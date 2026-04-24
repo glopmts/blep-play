@@ -2,12 +2,12 @@
   "expo": {
     "name": "BlepPlay",
     "slug": "blep-play",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
-    "userInterfaceStyle": "automatic",
-    "backgroundColor": "#18181b",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#1A1C22",
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.glopblog.blepplay",
@@ -36,7 +36,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#18181b",
+        "backgroundColor": "#1A1C22",
         "foregroundImage": "./assets/images/icon.png",
         "backgroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/icon.png"
@@ -87,7 +87,7 @@
           "image": "./assets/images/splash.png",
           "dark": {
             "image": "./assets/images/splash.png",
-            "backgroundColor": "#18181b"
+            "backgroundColor": "#1A1C22"
           },
           "imageWidth": 400
         }

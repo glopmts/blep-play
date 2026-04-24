@@ -1,11 +1,11 @@
 import { useAlbumsGrouped } from "@/hooks/useAlbumsGrouped";
 import { GroupedAlbum } from "@/types/interfaces";
+import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
 import { memo, useCallback, useRef } from "react";
 import {
   Dimensions,
-  FlatList,
   Text,
   TouchableOpacity,
   View,
@@ -139,7 +139,7 @@ export const AlbumsList = () => {
   }
 
   return (
-    <FlatList
+    <FlashList
       data={albums}
       renderItem={({ item }) => (
         <AlbumCard
@@ -156,9 +156,6 @@ export const AlbumsList = () => {
         paddingHorizontal: CARD_MARGIN,
         paddingTop: 16,
         paddingBottom: 32,
-      }}
-      columnWrapperStyle={{
-        justifyContent: "space-between",
       }}
       onRefresh={refreshAlbums}
       refreshing={loading}

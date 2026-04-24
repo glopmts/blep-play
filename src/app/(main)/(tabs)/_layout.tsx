@@ -78,7 +78,7 @@ export default function MainLayout() {
     if (permissionResponse2?.granted) refreshGroupedAlbums();
   }, [permissionResponse2?.granted]);
 
-  const ACTIVE_COLOR = "#A6FF4D";
+  const ACTIVE_COLOR = "#A6FF4c";
   const INACTIVE_COLOR = isDark ? "#52525b" : "#a1a1aa";
 
   return (

@@ -189,7 +189,7 @@ export const useAlbumsGrouped = () => {
         withoutArt.forEach((a) => normalQueue.add(a.id));
         processCoverQueue();
 
-        // ── FASE 2: Verifica mudanças em background ──
+        // Verifica mudanças em background ──
         const hasChanges = await checkForChanges();
         if (!hasChanges) return; // cache válido, apenas capas em background
 

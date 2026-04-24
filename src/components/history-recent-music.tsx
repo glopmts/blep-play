@@ -1,13 +1,20 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { EllipsisVertical, History, Music, Trash2 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useMusicHistory } from "../hooks/useMusicHistory";
 import { usePlayer } from "../hooks/usePlayer";
 import { Colors, useTheme } from "../hooks/useTheme";
 import { StoredTrack } from "../services/music-history.service";
 import { storedTracksToSongs } from "../services/storedTrackToSong";
-import { formatTime } from "../utils/formaTS/formatTimeSong";
+import { formatDuration } from "../utils/formaTS/formatTimeSong";
 import SkeletonLoadingAlbum from "./loading-skeleton-album";
 
 const Placeholder = ({ isDark, size }: { isDark: boolean; size: number }) => (
@@ -27,22 +34,31 @@ const RecentCard = ({
   song,
   isDark,
   colors,
+  isCurrentlyPlaying,
   handleSongPress,
 }: {
   song: StoredTrack;
   isDark: boolean;
   colors: Colors;
   loadingSongIndex: boolean;
-  handleSongPress: (index: number) => void;
+  isCurrentlyPlaying: boolean;
+  handleSongPress: (song: StoredTrack) => void;
 }) => {
   return (
     <View
       className="flex-row items-center justify-between gap-3 py-2 px-3 mt-6 border-b border-zinc-200/40"
-      style={{
-        borderRadius: colors.rounded.rounded_3xl,
-      }}
+      style={
+        isCurrentlyPlaying
+          ? {
+              borderWidth: 1,
+              borderColor: "rgba(59,130,246,0.3)",
+              borderRadius: 12,
+              opacity: 0.7,
+            }
+          : undefined
+      }
     >
-      <TouchableOpacity className="" onPress={() => handleSongPress(0)}>
+      <TouchableOpacity className="" onPress={() => handleSongPress(song)}>
         <View className="flex-row gap-3 ">
           <View
             style={{
@@ -77,9 +93,15 @@ const RecentCard = ({
         </View>
       </TouchableOpacity>
       <View className="flex-row gap-2 items-center">
-        <Text className="text text-sm truncate text-zinc-300" numberOfLines={1}>
-          {song.duration && formatTime(song.duration)}
-        </Text>
+        {isCurrentlyPlaying ? (
+          <Ionicons name="musical-notes" size={16} color="#3b82f6" />
+        ) : (
+          song.duration && (
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              {formatDuration(song.duration)}
+            </Text>
+          )
+        )}
         <EllipsisVertical size={24} color={isDark ? "#a1a1aa" : "#000000"} />
       </View>
     </View>
@@ -147,20 +169,31 @@ const HistoryRecentMusic = () => {
           <Text className="text text-lg text-zinc-400">
             Nenhuma música recente.
           </Text>
+          <TouchableOpacity className="btn mt-4" onPress={() => reload()}>
+            {loading ? (
+              <ActivityIndicator size={20} color={colors.iconActive} />
+            ) : (
+              <Text className="text text-base">Recarregar pagina</Text>
+            )}
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={recents}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <RecentCard
-              song={item}
-              colors={colors}
-              isDark={isDark}
-              handleSongPress={() => handleSongPress(0, item.id)}
-              loadingSongIndex={loadingSongIndex !== null}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            const isCurrentlyPlaying = currentTrack?.id === item.id;
+            return (
+              <RecentCard
+                song={item}
+                isCurrentlyPlaying={isCurrentlyPlaying}
+                colors={colors}
+                isDark={isDark}
+                handleSongPress={() => handleSongPress(index, item.id)}
+                loadingSongIndex={loadingSongIndex !== null}
+              />
+            );
+          }}
           refreshing={loading}
           horizontal={false}
           numColumns={1}

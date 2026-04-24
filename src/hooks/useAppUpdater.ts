@@ -5,7 +5,7 @@ import {
   getUpdateInfo,
   isNewerVersion,
   UpdateInfo,
-} from "../services/githubApi";
+} from "../services/githubApi.service";
 import {
   nativeCancelDownload,
   nativeCanInstallPackages,

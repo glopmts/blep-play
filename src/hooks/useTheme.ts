@@ -39,7 +39,9 @@ export function useTheme() {
     // cores prontas para usar em props de libs externas
     colors: {
       background: "#0A0A0C",
+      background_surface: isDark ? "#1A1C22" : "#F3F4F6",
       surface: isDark ? "#1A1C22" : "#F3F4F6",
+      surface_card: isDark ? "#0F1016" : "#F3F4ff",
       textSecondary: isDark ? "#F3F4F6" : "#1A1C22",
       card: isDark ? "#27272A" : "#ffffff",
       cardMuted: isDark ? "#3f3f46" : "#f4f4f5",
@@ -49,6 +51,7 @@ export function useTheme() {
       indicator: isDark ? "#52525b" : "#d4d4d8",
       icon: isDark ? "#a1a1aa" : "#71717a",
       iconActive: isDark ? "#ffffff" : "#18181b",
+      loadingIcon: isDark ? "#ffff" : "#3b82f6",
 
       // Novas cores para o botão
       primary: "#A6FF4D",

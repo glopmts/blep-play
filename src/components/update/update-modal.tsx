@@ -1,7 +1,5 @@
-// src/components/UpdateModal.tsx
-
 import { DownloadState, UpdateStatus } from "@/hooks/useAppUpdater";
-import { UpdateInfo } from "@/services/githubApi";
+import { UpdateInfo } from "@/services/githubApi.service";
 import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,

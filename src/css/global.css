@@ -24,7 +24,7 @@
   }
 
   .card-music {
-    @apply flex-row items-center p-3 mb-2 rounded-lg bg-zinc-200 dark:bg-zinc-800;
+    @apply flex-row items-center p-3 mb-2 rounded-lg border-b border-zinc-200/40;
   }
 
   .infor-alert {

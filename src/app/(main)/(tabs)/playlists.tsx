@@ -24,6 +24,12 @@ import {
   View,
 } from "react-native";
 
+type NaveItem = {
+  id: string;
+  label: string;
+  icon?: React.ReactNode;
+};
+
 const Playlists = () => {
   const { colors, isDark } = useTheme();
   const {
@@ -38,6 +44,13 @@ const Playlists = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [title, setTitle] = useState("");
+  const [activeTab, setActiveTab] =
+    useState<NaveItem["id"]>("minhas-playlists");
+
+  const itensNavegacao: NaveItem[] = [
+    { id: "minhas-playlists", label: "Minhas Playlists", icon: "🎵" },
+    { id: "baixadas", label: "Baixadas", icon: "📥" },
+  ];
 
   const handleOpenCreateModal = () => {
     setTitle("");
@@ -116,6 +129,45 @@ const Playlists = () => {
     );
   }
 
+  const TabSelector = ({
+    activeTab,
+    setActiveTab,
+  }: {
+    activeTab: string;
+    setActiveTab: (tab: string) => void;
+  }) => {
+    const tabs = [
+      { id: "minhas-playlists", label: "Minhas playlists" },
+      { id: "baixadas", label: "Baixadas" },
+    ];
+
+    return (
+      <View className="flex-row  bg-neutral-900 rounded-full border border-zinc-800 p-1">
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            onPress={() => setActiveTab(tab.id)}
+            className="flex-1 rounded-full"
+            style={{
+              backgroundColor: activeTab === tab.id ? "#84cc16" : "transparent",
+              paddingVertical: 12, // Altura consistente
+            }}
+          >
+            <View className="justify-center items-center">
+              <Text
+                className={`font-medium text-base ${
+                  activeTab === tab.id ? "text-black" : "text-zinc-300"
+                }`}
+              >
+                {tab.label}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   const RenderItem = ({ item }: { item: Playlist }) => (
     <View className="flex-row items-center justify-between py-2 px-4">
       {/* Left: thumbnail + info */}
@@ -126,7 +178,7 @@ const Playlists = () => {
       >
         {/* Thumbnail */}
         <View
-          className="w-16 h-16 rounded-xl overflow-hidden items-center justify-center"
+          className="w-24 h-24 rounded-2xl overflow-hidden items-center justify-center"
           style={{ backgroundColor: "#1E1E2A" }}
         >
           {item.coverArt ? (
@@ -145,7 +197,7 @@ const Playlists = () => {
         {/* Text info */}
         <View className="gap-0.5">
           <Text
-            className="text-xl font-semibold"
+            className="text-2xl font-semibold"
             style={{ color: "#F2F2F2" }}
             numberOfLines={1}
           >
@@ -171,22 +223,22 @@ const Playlists = () => {
   // ─── List
   return (
     <LayoutWithHeader header={false} statusBarOpen={false}>
-      <View
-        className="flex-1"
-        style={{
-          padding: 20,
-        }}
-      >
+      <View className="flex-1">
         <Header />
         {/* Top bar */}
-        <View className="flex-row items-center justify-between px-5 pt-5 pb-3">
-          {/* Buttons navegação */}
+        <View className="flex-row items-center justify-between px-5 pt-5 pb-3 gap-3">
+          {/* TabSelector - ocupa espaço restante */}
+          <View className="flex-1">
+            <TabSelector activeTab={activeTab} setActiveTab={setActiveTab} />
+          </View>
+
+          {/* Botão Add - tamanho fixo */}
           <TouchableOpacity
             onPress={handleOpenCreateModal}
             activeOpacity={0.8}
-            className="w-9 h-9 rounded-xl bg-indigo-500 items-center justify-center shadow-sm"
+            className="w-12 h-12 rounded-xl bg-lime-500 items-center justify-center shadow-sm"
           >
-            <PlusIcon size={18} color="#fff" strokeWidth={2.5} />
+            <PlusIcon size={18} color="#fffc" strokeWidth={2.5} />
           </TouchableOpacity>
         </View>
 
@@ -194,12 +246,12 @@ const Playlists = () => {
         <View
           className="flex-1"
           style={{
-            backgroundColor: "#0F1016",
+            backgroundColor: colors.surface_card,
             borderRadius: colors.rounded.rounded_2xl,
           }}
         >
           <FlatList
-            data={playlists}
+            data={activeTab === "minhas-playlists" ? playlists : []}
             keyExtractor={(_, index) => index.toString()}
             onRefresh={handleRefresh}
             refreshing={refreshing}

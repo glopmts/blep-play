@@ -1,17 +1,12 @@
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useAlbum } from "@/hooks/useAlbumLocal";
+import { useTheme } from "@/hooks/useTheme";
 import { AlbumWithDetails } from "@/types/interfaces";
-import { router } from "expo-router";
+import { FlashList } from "@shopify/flash-list";
+import { router, useNavigation } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { memo, useCallback, useRef, useState } from "react";
-import {
-  FlatList,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewToken,
-} from "react-native";
-import { useBottomSheet } from "../../context/bottom-sheet-context";
-import { useTheme } from "../../hooks/useTheme";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Text, TouchableOpacity, View, ViewToken } from "react-native";
 import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumThumbnail from "./album-thumbnail";
@@ -44,6 +39,7 @@ const AlbumCard = memo(
           isDark={isDark}
           loadingCovers={loadingCovers}
           type="card"
+          albumId={album.id}
         />
         <View className="">
           <Text
@@ -76,11 +72,23 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
     selectAlbum,
     onAlbumsVisible,
     refreshAlbums,
+    refreshAllAlbumCovers,
   } = useAlbum();
   const { isDark, colors } = useTheme();
+  const navigation = useNavigation();
 
   useState<AlbumWithDetails | null>(null);
   const { openSheet, closeSheet } = useBottomSheet();
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (albums.length > 0) {
+        refreshAllAlbumCovers();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, albums.length, refreshAllAlbumCovers]);
 
   const handleOpenBottomSheet = useCallback(
     (album: AlbumWithDetails) => {
@@ -142,7 +150,7 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
   return (
     <View className="">
       {/* Lista de Álbuns */}
-      <FlatList
+      <FlashList
         data={albums}
         renderItem={({ item }) => (
           <AlbumCard
@@ -156,9 +164,6 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="gap-4"
-        initialNumToRender={10}
-        maxToRenderPerBatch={5}
-        windowSize={10}
         horizontal={horizontal}
         onRefresh={refreshAlbums}
         refreshing={loading}

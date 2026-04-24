@@ -5,7 +5,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { PlayerSetup } from "../context/player-context";
 import "../css/global.css";
+const { PerformanceOptimization, CacheManager } = NativeModules;
 
+import { NativeModules } from "react-native";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { PlayerHeightProvider } from "../context/player-height-context";
 import { handleIncomingFile } from "../utils/fileHandler";
@@ -55,6 +57,17 @@ function RootLayoutNav() {
     const subscription = Linking.addEventListener("url", handleUrl);
     return () => subscription.remove();
   }, [handleInitialUrl, handleUrl]);
+
+  useEffect(() => {
+    // Otimiza threads nativas
+    PerformanceOptimization?.setThreadPriority();
+    PerformanceOptimization?.optimizeForScrolling();
+
+    // Configura cache
+    CacheManager?.getCacheStats().then((stats: any) => {
+      console.log("Cache stats:", stats);
+    });
+  }, []);
 
   return (
     <>

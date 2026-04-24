@@ -3,7 +3,6 @@ import * as MediaLibrary from "expo-media-library";
 import { useEffect, useState } from "react";
 import { fetchLyricsOnline } from "../services/lyrics.service";
 import { SongWithArt } from "../types/interfaces";
-import { getSongCoverArt } from "../utils/getSongCoverArt";
 import { getSongMetadata } from "../utils/getSongMetadata";
 
 const CACHE_KEY_COVERS = "covers_map_v1";
@@ -19,27 +18,6 @@ async function readCoverCache(): Promise<void> {
       Object.entries(obj).forEach(([k, v]) => memoryCovers.set(k, v));
     }
   } catch {}
-}
-
-async function fetchCoverArt(
-  uri: string,
-  musicId: string,
-): Promise<string | undefined> {
-  if (memoryCovers.has(musicId)) return memoryCovers.get(musicId);
-
-  try {
-    const cover = await getSongCoverArt(uri);
-    if (cover) {
-      memoryCovers.set(musicId, cover);
-      const obj = Object.fromEntries(memoryCovers);
-      AsyncStorage.setItem(CACHE_KEY_COVERS, JSON.stringify(obj)).catch(
-        () => {},
-      );
-    }
-    return cover ?? undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export function useMusic({ musicId }: { musicId: string }) {

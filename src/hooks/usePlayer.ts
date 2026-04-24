@@ -1,4 +1,11 @@
+import { addToRecents } from "@/services/music-history.service";
 import { SongWithArt } from "@/types/interfaces";
+import { fetchAndCacheCover } from "@/utils/coverArtCache";
+import { getSongMetadata } from "@/utils/getSongMetadata";
+import {
+  sanitizeArtwork,
+  songToTrack,
+} from "@/utils/song-metadata/converte-songWithArt";
 import { useCallback, useEffect, useRef, useState } from "react";
 import TrackPlayer, {
   Event,
@@ -9,34 +16,7 @@ import TrackPlayer, {
   useProgress,
   useTrackPlayerEvents,
 } from "react-native-track-player";
-import { addToRecents } from "../services/music-history.service";
-import { fetchAndCacheCover } from "../utils/coverArtCache";
-import { getSongMetadata } from "../utils/getSongMetadata";
 
-// ─── Converte SongWithArt → Track
-
-function sanitizeArtwork(artwork: string | undefined): string | undefined {
-  if (!artwork) return undefined;
-  if (artwork.startsWith("file://") || artwork.startsWith("http"))
-    return artwork;
-  if (artwork.startsWith("/")) return `file://${artwork}`;
-  if (artwork.startsWith("data:image")) return artwork; // ← base64
-  return undefined;
-}
-
-function songToTrack(song: SongWithArt): Track {
-  return {
-    id: song.id,
-    url: song.uri,
-    title: song.filename?.replace(/\.[^/.]+$/, "") ?? "Música",
-    artist: song.artist ?? "Artista desconhecido",
-    album: song.albumName ?? "",
-    artwork: sanitizeArtwork(song.coverArt),
-    duration: song.duration,
-  };
-}
-
-// ─── Hook principal
 export function usePlayer() {
   const playbackState = usePlaybackState();
   const { position, duration } = useProgress(500);
@@ -266,13 +246,16 @@ export function usePlayer() {
   }, [isPlaying]);
 
   const togglePlayStop = useCallback(async () => {
-    if (isPlaying) await TrackPlayer.stop();
-    else await TrackPlayer.play();
+    if (isPlaying) await TrackPlayer.play();
+    else await TrackPlayer.stop();
   }, [isPlaying]);
 
   const stopAndClear = useCallback(async () => {
     await TrackPlayer.stop();
-    setCurrentTrack(null);
+    await TrackPlayer.reset(); // Limpa toda a fila
+    setCurrentTrack(null); // Limpa a faixa atual do estado
+    setQueue([]); // Limpa a fila
+    setCurrentIndex(0); // Reseta o índice
   }, []);
 
   const skipToNext = useCallback(async () => {

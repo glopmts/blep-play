@@ -5,7 +5,7 @@ const KEYS = {
   FAVORITES: "music_favorites_v1",
 } as const;
 
-const MAX_RECENTS = 30;
+const MAX_RECENTS = 15;
 
 export interface StoredTrack {
   id: string;

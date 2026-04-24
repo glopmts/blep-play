@@ -9,6 +9,7 @@ interface AlbumThumbnailProps {
   isDark: boolean;
   loadingCovers: boolean;
   type?: "card" | "list";
+  albumId?: string;
 }
 
 const Placeholder = ({ isDark, size }: { isDark: boolean; size: number }) => (
@@ -27,7 +28,13 @@ const Placeholder = ({ isDark, size }: { isDark: boolean; size: number }) => (
 );
 
 const AlbumThumbnail = memo(
-  ({ coverArt, isDark, type = "card", loadingCovers }: AlbumThumbnailProps) => {
+  ({
+    coverArt,
+    isDark,
+    type = "card",
+    loadingCovers,
+    albumId,
+  }: AlbumThumbnailProps) => {
     // Estabiliza a source — evita recriar objeto a cada render
     const source = useMemo(
       () => (coverArt ? { uri: coverArt } : null),
@@ -65,7 +72,7 @@ const AlbumThumbnail = memo(
               contentFit="cover"
               transition={200}
               cachePolicy="memory-disk" // ← cache agressivo
-              recyclingKey={coverArt!} // ← reutiliza célula na FlatList
+              recyclingKey={albumId} // ← reutiliza célula na FlatList
             />
           ) : (
             <Placeholder isDark={isDark} size={40} />
