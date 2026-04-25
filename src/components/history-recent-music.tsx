@@ -9,11 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../context/ThemeContext";
 import { useMusicHistory } from "../hooks/useMusicHistory";
 import { usePlayer } from "../hooks/usePlayer";
-import { Colors, useTheme } from "../hooks/useTheme";
 import { StoredTrack } from "../services/music-history.service";
 import { storedTracksToSongs } from "../services/storedTrackToSong";
+import { Colors } from "../types/colors";
 import { formatDuration } from "../utils/formaTS/formatTimeSong";
 import SkeletonLoadingAlbum from "./loading-skeleton-album";
 
@@ -46,7 +47,7 @@ const RecentCard = ({
 }) => {
   return (
     <View
-      className="flex-row items-center justify-between gap-3 py-2 px-3 mt-6 border-b border-zinc-200/40"
+      className="flex-row items-center justify-between gap-3 py-2 px-3 mt-6 border-b border-zinc-200/10"
       style={
         isCurrentlyPlaying
           ? {
@@ -54,6 +55,8 @@ const RecentCard = ({
               borderColor: "rgba(59,130,246,0.3)",
               borderRadius: 12,
               opacity: 0.7,
+              shadowColor: colors.card,
+              boxShadow: colors.cardMuted,
             }
           : undefined
       }
@@ -83,7 +86,13 @@ const RecentCard = ({
             )}
           </View>
           <View className="flex-col">
-            <Text className="text text-xl truncate w-38" numberOfLines={1}>
+            <Text
+              className="text text-xl truncate"
+              numberOfLines={1}
+              style={{
+                width: 300,
+              }}
+            >
               {song.title}
             </Text>
             <Text className="text-xs text-zinc-400" numberOfLines={1}>
@@ -144,9 +153,14 @@ const HistoryRecentMusic = () => {
     <View>
       <View className="flex-row justify-between gap-3 items-center">
         <View className="flex-row gap-3 items-center">
-          <View className="items-center justify-center dark:bg-zinc-800 p-3 rounded-2xl">
+          <View
+            className="items-center justify-center p-3"
+            style={{
+              borderRadius: colors.rounded.rounded_2xl,
+            }}
+          >
             <Text>
-              <History size={24} color={isDark ? "#a1a1aa" : "#000000"} />
+              <History size={24} color={colors.icon} />
             </Text>
           </View>
           <Text className="text">Músicas Recente</Text>
@@ -163,7 +177,7 @@ const HistoryRecentMusic = () => {
         <View className="mt-8 items-center justify-center">
           <View className="items-center justify-center dark:bg-zinc-800 p-6 rounded-3xl">
             <Text>
-              <History size={40} color={isDark ? "#a1a1aa" : "#000000"} />
+              <History size={40} color={colors.icon} />
             </Text>
           </View>
           <Text className="text text-lg text-zinc-400">

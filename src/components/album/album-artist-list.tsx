@@ -3,7 +3,7 @@ import { GroupedAlbum } from "@/types/interfaces";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Text,
@@ -11,7 +11,7 @@ import {
   View,
   ViewToken,
 } from "react-native";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumThumbnail from "./album-thumbnail";
 
@@ -24,10 +24,21 @@ interface AlbumCardProps {
   onPress: (album: GroupedAlbum) => void;
   isDark: boolean;
   loadingCovers: boolean;
+  coverArt?: string;
 }
 
 const AlbumCard = memo(
-  ({ album, onPress, isDark, loadingCovers }: AlbumCardProps) => {
+  ({ album, onPress, isDark, loadingCovers, coverArt }: AlbumCardProps) => {
+    const [showPlaceholder, setShowPlaceholder] = useState(true);
+
+    useEffect(() => {
+      if (coverArt) {
+        setShowPlaceholder(false);
+      } else if (!loadingCovers) {
+        setShowPlaceholder(false);
+      }
+    }, [coverArt, loadingCovers]);
+
     return (
       <TouchableOpacity
         onPress={() => onPress(album)}
@@ -43,7 +54,7 @@ const AlbumCard = memo(
         <AlbumThumbnail
           coverArt={album.coverArt || null}
           isDark={isDark}
-          loadingCovers={loadingCovers}
+          loadingCovers={showPlaceholder && loadingCovers && !coverArt}
           type="list"
         />
 
@@ -129,7 +140,7 @@ export const AlbumsList = () => {
 
   if (albums.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center p-5 dark:bg-zinc-900">
+      <View className="flex-1 items-center justify-center p-5">
         <Music size={50} color={isDark ? "#d4d4d8" : "#27272a"} />
         <Text className="text-center text-gray-500 dark:text-gray-400 mt-3">
           Nenhum álbum encontrado
@@ -147,6 +158,7 @@ export const AlbumsList = () => {
           onPress={handleAlbumPress}
           isDark={isDark}
           loadingCovers={loadingCovers}
+          coverArt={item.coverArt}
         />
       )}
       keyExtractor={(item) => item.id}

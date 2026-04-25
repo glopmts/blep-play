@@ -1,16 +1,17 @@
 import {
   ActivityIndicator,
+  Pressable,
+  PressableProps,
   Text,
-  TouchableOpacity,
-  TouchableOpacityProps,
+  View,
   ViewStyle,
 } from "react-native";
-import { useTheme } from "../../hooks/useTheme";
+import { useTheme } from "../../context/ThemeContext";
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps extends PressableProps {
   isLoading?: boolean;
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "ghost";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   size?: "small" | "medium" | "large";
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
@@ -34,13 +35,9 @@ const Button = ({
   const getVariantStyles = (): ViewStyle => {
     switch (variant) {
       case "primary":
-        return {
-          backgroundColor: colors.primary,
-        };
+        return { backgroundColor: colors.primary };
       case "secondary":
-        return {
-          backgroundColor: colors.secondary,
-        };
+        return { backgroundColor: colors.secondary };
       case "outline":
         return {
           backgroundColor: "transparent",
@@ -48,89 +45,88 @@ const Button = ({
           borderColor: colors.border,
         };
       case "ghost":
+        return { backgroundColor: colors.border };
+      case "danger":
         return {
-          backgroundColor: "transparent",
+          backgroundColor: colors.danger_v2,
+          borderWidth: 1,
+          borderColor: colors.danger_border,
         };
       default:
-        return {
-          backgroundColor: colors.primary,
-        };
+        return { backgroundColor: colors.primary };
     }
   };
 
   const getSizeStyles = (): ViewStyle => {
     switch (size) {
       case "small":
-        return {
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 6,
-        };
+        return { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 };
       case "medium":
-        return {
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 8,
-        };
+        return { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 14 };
       case "large":
-        return {
-          paddingHorizontal: 24,
-          paddingVertical: 16,
-          borderRadius: 10,
-        };
+        return { paddingHorizontal: 22, paddingVertical: 16, borderRadius: 16 };
       default:
-        return {
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderRadius: 8,
-        };
+        return { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 14 };
     }
   };
 
   const getTextColor = (): string => {
     if (disabled) return colors.textMuted;
-
     switch (variant) {
       case "primary":
+        return "#0A0A0C";
       case "secondary":
         return "#ffffff";
+      case "danger":
+        return colors.danger_title;
       case "outline":
       case "ghost":
-        return isDark ? colors.text : colors.text;
+        return colors.text;
       default:
-        return "#ffffff";
+        return "#0A0A0C";
     }
   };
 
-  const getTextSize = (): string => {
+  const getTextSize = () => {
     switch (size) {
       case "small":
-        return "text-sm";
+        return 13;
       case "medium":
-        return "text-base";
+        return 15;
       case "large":
-        return "text-lg";
+        return 17;
       default:
-        return "text-base";
+        return 15;
     }
   };
 
   const getSpinnerColor = (): string => {
-    if (variant === "primary" || variant === "secondary") {
-      return "#ffffff";
+    if (variant === "primary") return "#0A0A0C";
+    if (variant === "secondary") return "#ffffff";
+    if (variant === "danger") return colors.danger_title;
+    return colors.text;
+  };
+
+  const getIconSize = () => {
+    switch (size) {
+      case "small":
+        return 16;
+      case "large":
+        return 22;
+      default:
+        return 20;
     }
-    return isDark ? colors.text : colors.text;
   };
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         {
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          opacity: disabled || isLoading ? 0.6 : 1,
+          justifyContent: leftIcon || rightIcon ? "space-between" : "center",
+          gap: 10,
+          opacity: disabled || isLoading ? 0.5 : pressed ? 0.75 : 1,
         },
         getVariantStyles(),
         getSizeStyles(),
@@ -138,27 +134,44 @@ const Button = ({
         style as ViewStyle,
       ]}
       disabled={disabled || isLoading}
-      activeOpacity={0.7}
       {...rest}
     >
       {isLoading ? (
-        <ActivityIndicator
-          size={size === "small" ? 16 : 20}
-          color={getSpinnerColor()}
-        />
+        <ActivityIndicator size={getIconSize()} color={getSpinnerColor()} />
       ) : (
         <>
-          {leftIcon && leftIcon}
-          <Text
-            className={`font-semibold ${getTextSize()}`}
-            style={{ color: getTextColor() }}
-          >
-            {children}
-          </Text>
-          {rightIcon && rightIcon}
+          {leftIcon || rightIcon ? (
+            <>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                {leftIcon && leftIcon}
+                <Text
+                  style={{
+                    color: getTextColor(),
+                    fontSize: getTextSize(),
+                    fontWeight: "500",
+                  }}
+                >
+                  {children}
+                </Text>
+              </View>
+              {rightIcon && rightIcon}
+            </>
+          ) : (
+            <Text
+              style={{
+                color: getTextColor(),
+                fontSize: getTextSize(),
+                fontWeight: "500",
+              }}
+            >
+              {children}
+            </Text>
+          )}
         </>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

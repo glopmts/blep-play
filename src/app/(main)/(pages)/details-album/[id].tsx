@@ -1,8 +1,11 @@
+import ActivityIndicatorCustom from "@/components/activityIndicator-Custom";
 import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
+import SearchBar from "@/components/searchBar";
+import { useTheme } from "@/context/ThemeContext";
 import { useAlbumDetails } from "@/hooks/useAlbumDetails";
 import { usePlayer } from "@/hooks/usePlayer";
-import { useTheme } from "@/hooks/useTheme";
+import { useSearch } from "@/hooks/useSearch";
 import { SongWithArt } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,7 +26,6 @@ import {
 
 SongCard.displayName = "SongCard";
 
-// Tela principal
 const AlbumDetails = () => {
   const { id, type } = useLocalSearchParams<{
     id: string;
@@ -49,33 +51,58 @@ const AlbumDetails = () => {
   const flatListRef = useRef<FlatList>(null);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
 
-  // ── Toca a música clicada abrindo o player
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isSearching,
+    clearSearch,
+    hasResults,
+  } = useSearch(albumDetails?.songs || []);
+
+  // Toca a música clicada
   const handleSongPress = useCallback(
     async (index: number) => {
-      if (!albumDetails?.songs || loadingSongIndex !== null) return; // bloqueia
+      const songs = searchQuery
+        ? searchResults.map((r) => r.song)
+        : albumDetails?.songs;
+      if (!songs || loadingSongIndex !== null) return;
+
       setLoadingSongIndex(index);
       try {
-        await playSongs(albumDetails.songs, index);
-        router.navigate({
-          pathname: "/player",
-        });
+        await playSongs(songs, index);
+        router.navigate({ pathname: "/player" });
       } finally {
         setLoadingSongIndex(null);
       }
     },
-    [albumDetails, playSongs, loadingSongIndex],
+    [
+      albumDetails?.songs,
+      searchResults,
+      searchQuery,
+      playSongs,
+      loadingSongIndex,
+    ],
   );
 
-  // ── Tocar álbum inteiro
+  // Tocar álbum inteiro
   const handlePlayAll = useCallback(async () => {
     if (!albumDetails?.songs?.length) return;
     await playSongs(albumDetails.songs, 0);
-    router.navigate({
-      pathname: "/player",
-    });
+    router.navigate({ pathname: "/player" });
   }, [albumDetails, playSongs]);
 
+  // Dados para exibir (resultados da busca ou lista completa)
+  const displayData = useMemo(() => {
+    if (searchQuery) {
+      return searchResults.map((r) => r.song);
+    }
+    return albumDetails?.songs || [];
+  }, [searchQuery, searchResults, albumDetails?.songs]);
+
   const ListFooterComponent = useMemo(() => {
+    if (searchQuery) return null; // Sem paginação na busca
+
     if (!hasMore && albumDetails && albumDetails?.songs?.length > 0) {
       return (
         <View className="py-8 items-center">
@@ -90,7 +117,7 @@ const AlbumDetails = () => {
     if (loadingMore) {
       return (
         <View className="py-8 items-center">
-          <ActivityIndicator size="small" color={isDark ? "#fff" : "#3b82f6"} />
+          <ActivityIndicator size="small" color={colors.iconActive} />
           <Text className="text-gray-500 dark:text-gray-400 text-sm mt-2">
             Carregando mais músicas...
           </Text>
@@ -105,17 +132,17 @@ const AlbumDetails = () => {
     isDark,
     totalSongsCount,
     albumDetails?.songs?.length,
+    searchQuery,
   ]);
 
-  // ── Header
   const ListHeaderComponent = useMemo(() => {
     if (!albumDetails) return null;
 
     return (
       <View>
-        <BackButton isDark={isDark} />
+        <BackButton />
 
-        {/* Hero */}
+        {/* Hero com imagem do álbum */}
         <View style={{ width: "100%", height: IMAGE_SIZE_BACKGROUND }}>
           {albumDetails.coverArt ? (
             <ImageBackground
@@ -131,7 +158,6 @@ const AlbumDetails = () => {
                 colors={["transparent", "rgba(0,0,0,0.9)"]}
                 style={StyleSheet.absoluteFill}
               />
-              {/* Título sobre a imagem */}
               <View
                 style={{
                   position: "absolute",
@@ -168,39 +194,60 @@ const AlbumDetails = () => {
         <View className="px-4 mt-4 mb-2 flex-row items-center justify-between">
           <View>
             <Text className="text-lg font-bold text-black dark:text-white">
-              Todas as Músicas
+              {searchQuery
+                ? `Resultados para "${searchQuery}"`
+                : "Todas as Músicas"}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-              {albumDetails.assetCount}{" "}
-              {albumDetails.assetCount === 1 ? "música" : "músicas"}
+              {searchQuery
+                ? `${displayData.length} ${displayData.length === 1 ? "música encontrada" : "músicas encontradas"}`
+                : `${albumDetails.assetCount} ${albumDetails.assetCount === 1 ? "música" : "músicas"}`}
             </Text>
           </View>
 
-          {/* Botão Tocar tudo */}
-          <TouchableOpacity
-            onPress={handlePlayAll}
-            activeOpacity={0.8}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: "#3b82f6",
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              borderRadius: 20,
-              gap: 6,
-            }}
-          >
-            <Ionicons name="play" size={14} color="#fff" />
-            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
-              Tocar tudo
-            </Text>
-          </TouchableOpacity>
+          {!searchQuery && (
+            <TouchableOpacity
+              onPress={handlePlayAll}
+              activeOpacity={0.8}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#3b82f6",
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                gap: 6,
+              }}
+            >
+              <Ionicons name="play" size={14} color="#fff" />
+              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+                Tocar tudo
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/*  Barra de Busca */}
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          isSearching={isSearching}
+          onClear={clearSearch}
+          colors={colors}
+          placeholder="Buscar música por título, artista..."
+        />
       </View>
     );
-  }, [albumDetails, isDark, handlePlayAll]);
+  }, [
+    albumDetails,
+    isDark,
+    handlePlayAll,
+    searchQuery,
+    displayData.length,
+    isSearching,
+    clearSearch,
+  ]);
 
-  // ── renderItem
   const renderItem = useCallback(
     ({ item, index }: { item: SongWithArt; index: number }) => {
       const isCurrentlyPlaying = currentTrack?.id === item.id;
@@ -214,26 +261,25 @@ const AlbumDetails = () => {
             loadingSongIndex={loadingSongIndex}
             isCurrentlyPlaying={isCurrentlyPlaying}
             loadingCovers={loadingCovers}
-            handleSongPress={handleSongPress}
+            handleSongPress={() => handleSongPress(index)}
           />
         </View>
       );
     },
-    [isDark, currentTrack, handleSongPress],
+    [
+      isDark,
+      currentTrack?.id,
+      loadingSongIndex,
+      loadingCovers,
+      handleSongPress,
+    ],
   );
 
   const keyExtractor = useCallback((item: SongWithArt) => item.id, []);
 
-  // ── Estados de carregamento / erro
+  // Estados de carregamento
   if (loadingDetails && !albumDetails) {
-    return (
-      <View className="infor-alert">
-        <ActivityIndicator
-          size="large"
-          color={isDark ? "#ffffff" : "#3b82f6"}
-        />
-      </View>
-    );
+    return <ActivityIndicatorCustom />;
   }
 
   if (!albumDetails) {
@@ -253,12 +299,12 @@ const AlbumDetails = () => {
   return (
     <View className="content p-0">
       <FlatList
-        data={albumDetails?.songs || []}
+        data={displayData}
         ref={flatListRef}
         ListFooterComponent={ListFooterComponent}
         onEndReachedThreshold={0.3}
         onEndReached={() => {
-          if (hasMore && !loadingMore) {
+          if (!searchQuery && hasMore && !loadingMore) {
             loadMoreSongs();
           }
         }}
@@ -272,7 +318,7 @@ const AlbumDetails = () => {
         removeClippedSubviews={Platform.OS === "android"}
         updateCellsBatchingPeriod={50}
         maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-        contentContainerStyle={{ paddingBottom: 160 }} // espaço pro MiniPlayer
+        contentContainerStyle={{ paddingBottom: 160 }}
       />
     </View>
   );

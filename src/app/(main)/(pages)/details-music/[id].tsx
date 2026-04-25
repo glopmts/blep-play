@@ -33,6 +33,7 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -45,13 +46,15 @@ const DetailsMusic = () => {
 
   const { playerHeight } = usePlayerHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { playlists, handleAddSongToPlaylist } = usePlaylists();
+  const { playlists, handleAddSongToPlaylist, handleRemoveSongFromPlaylist } =
+    usePlaylists();
   const { error, loading, musicDetails } = useMusic({ musicId: id as string });
   const { playSongs, togglePlayPause, currentTrack } = usePlayer();
   const [seeMore, setSeeMore] = useState(false);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
   const [isCopying, setIsCopying] = useState(false);
-  const { openSheet } = useBottomSheet();
+  const { openSheet, closeSheet } = useBottomSheet();
+  const toggleSeeMore = useCallback(() => setSeeMore((p) => !p), []);
 
   const pathname = usePathname();
   const isOnPage = ["player", "details-music", "details-album"].some((p) =>
@@ -67,74 +70,90 @@ const DetailsMusic = () => {
     ? playerHeight + getBottomValue() + 16
     : 32;
 
-  const toggleSeeMore = useCallback(() => setSeeMore((p) => !p), []);
+  const getBottomSheetContent = useCallback(
+    (song: SongWithArt) => {
+      return (
+        <View className="flex-col gap-5 px-4">
+          {playlists.length > 0 ? (
+            playlists.map((c) => {
+              const isMusic = c.songs?.some((s) => s.id === song.id) ?? false;
+
+              return (
+                <Pressable
+                  key={c.id}
+                  className="flex-col flex-1 gap-4 px-4 py-3.5 rounded-2xl dark:bg-zinc-800/70 bg-zinc-50 border dark:border-zinc-700/50 border-zinc-200 active:opacity-80"
+                  onPress={async () => {
+                    if (isMusic) {
+                      await handleRemoveSongFromPlaylist(c.id, song.id);
+                    } else {
+                      await handleAddSongToPlaylist(c.id, song);
+                    }
+                  }}
+                >
+                  <View className="flex-row gap-4 items-center justify-between">
+                    <View className="flex-row gap-3 items-center">
+                      <View className="w-20 h-20 rounded-3xl overflow-hidden dark:bg-zinc-800 bg-zinc-100 items-center justify-center border dark:border-zinc-700 border-zinc-200 shadow-sm">
+                        {c.coverArt ? (
+                          <Image
+                            source={{ uri: c.coverArt }}
+                            style={{ width: "100%", height: "100%" }}
+                            contentFit="cover"
+                            transition={200}
+                            cachePolicy="memory-disk"
+                          />
+                        ) : (
+                          <ListMusicIcon
+                            size={24}
+                            color={colors.icon}
+                            strokeWidth={1.5}
+                          />
+                        )}
+                      </View>
+                      <View className="flex-col gap-2">
+                        <Text className="text">{c.title}</Text>
+                        <Text className="text text-base text-zinc-300">
+                          Musicas: {c.songs?.length || 0}
+                        </Text>
+                      </View>
+                    </View>
+                    {isMusic ? (
+                      <CheckCircle size={28} color={colors.primary} />
+                    ) : (
+                      <ArrowRightCircle
+                        size={28}
+                        color={isDark ? "#71717a" : "#a1a1aa"}
+                      />
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })
+          ) : (
+            <View className="items-center justify-center">
+              <Text className="text text-zinc-300">Nenhuma Playlist</Text>
+            </View>
+          )}
+        </View>
+      );
+    },
+    [
+      playlists,
+      handleAddSongToPlaylist,
+      handleRemoveSongFromPlaylist,
+      isDark,
+      colors,
+    ],
+  );
+  //  ^ selectedSong removido das deps — recebe via parâmetro agora
 
   const handleOpenBottomSheet = useCallback(
     (item: SongWithArt) => {
       openSheet({
         snapPoints: ["60%"],
-        content: (
-          <View className="flex-col gap-5 px-4">
-            {playlists.length > 0 ? (
-              playlists.map((c) => {
-                //  Verifica se a música existe na playlist
-                const isMusic =
-                  c.songs?.some((song) => song.id === item.id) ?? false;
-
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    className="flex-col flex-1 gap-4 px-4 py-3.5 rounded-2xl dark:bg-zinc-800/70 bg-zinc-50 border dark:border-zinc-700/50 border-zinc-200 active:opacity-80"
-                    onPress={() => handleAddSongToPlaylist(c.id, item)}
-                  >
-                    <View className="flex-row gap-4 items-center justify-between">
-                      <View className="flex-row gap-3 items-center">
-                        <View className="w-20 h-20 rounded-3xl overflow-hidden dark:bg-zinc-800 bg-zinc-100 items-center justify-center border dark:border-zinc-700 border-zinc-200 shadow-sm">
-                          {c.coverArt ? (
-                            <Image
-                              source={{ uri: c.coverArt }}
-                              style={{ width: "100%", height: "100%" }}
-                              contentFit="cover"
-                              transition={200}
-                              cachePolicy="memory-disk"
-                            />
-                          ) : (
-                            <ListMusicIcon
-                              size={24}
-                              color={colors.icon}
-                              strokeWidth={1.5}
-                            />
-                          )}
-                        </View>
-                        <View className="flex-col gap-2">
-                          <Text className="text">{c.title}</Text>
-                          <Text className="text text-base text-zinc-300">
-                            Musicas: {c.songs?.length || 0}
-                          </Text>
-                        </View>
-                      </View>
-                      {isMusic ? (
-                        <CheckCircle size={28} color={colors.primary} />
-                      ) : (
-                        <ArrowRightCircle
-                          size={28}
-                          color={isDark ? "#71717a" : "#a1a1aa"}
-                        />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
-            ) : (
-              <View className="items-center justify-center">
-                <Text className="text text-zinc-300">Nenhuma Playlist</Text>
-              </View>
-            )}
-          </View>
-        ),
+        content: () => getBottomSheetContent(item), // ← currying com item atual
       });
     },
-    [openSheet, playlists, handleAddSongToPlaylist, isDark], // ← adicione isDark se usado
+    [openSheet, getBottomSheetContent],
   );
 
   const handleCopyLyrics = useCallback(async (lyrics: string) => {

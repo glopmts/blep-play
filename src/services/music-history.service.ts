@@ -1,4 +1,9 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createMMKV } from "react-native-mmkv";
+
+const storage = createMMKV({
+  id: "music-storage",
+  mode: "multi-process",
+});
 
 const KEYS = {
   RECENTS: "music_recents_v1",
@@ -21,25 +26,27 @@ export interface StoredTrack {
 
 // ─── Helpers
 
-async function readList(key: string): Promise<StoredTrack[]> {
+function readList(key: string): StoredTrack[] {
   try {
-    const raw = await AsyncStorage.getItem(key);
+    const raw = storage.getString(key);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-async function writeList(key: string, list: StoredTrack[]): Promise<void> {
+function writeList(key: string, list: StoredTrack[]): void {
   try {
-    await AsyncStorage.setItem(key, JSON.stringify(list));
-  } catch {}
+    storage.set(key, JSON.stringify(list));
+  } catch {
+    // Silencia erro
+  }
 }
 
 // ─── Recentes
 
 export async function addToRecents(track: StoredTrack): Promise<void> {
-  const list = await readList(KEYS.RECENTS);
+  const list = readList(KEYS.RECENTS);
 
   // Remove se já existia (vai para o topo)
   const filtered = list.filter((t) => t.id !== track.id);
@@ -47,9 +54,9 @@ export async function addToRecents(track: StoredTrack): Promise<void> {
   const updated = [{ ...track, playedAt: Date.now() }, ...filtered].slice(
     0,
     MAX_RECENTS,
-  ); // mantém só os últimos 30
+  );
 
-  await writeList(KEYS.RECENTS, updated);
+  writeList(KEYS.RECENTS, updated);
 }
 
 export async function getRecents(): Promise<StoredTrack[]> {
@@ -57,12 +64,12 @@ export async function getRecents(): Promise<StoredTrack[]> {
 }
 
 export async function clearRecents(): Promise<void> {
-  await AsyncStorage.removeItem(KEYS.RECENTS);
+  storage.remove(KEYS.RECENTS);
 }
 
 export async function removeFromRecents(trackId: string): Promise<void> {
-  const list = await readList(KEYS.RECENTS);
-  await writeList(
+  const list = readList(KEYS.RECENTS);
+  writeList(
     KEYS.RECENTS,
     list.filter((t) => t.id !== trackId),
   );
@@ -71,33 +78,30 @@ export async function removeFromRecents(trackId: string): Promise<void> {
 // ─── Favoritos
 
 export async function addToFavorites(track: StoredTrack): Promise<void> {
-  const list = await readList(KEYS.FAVORITES);
+  const list = readList(KEYS.FAVORITES);
   if (list.some((t) => t.id === track.id)) return; // já existe
-  await writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
+  writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
 }
 
 export async function removeFromFavorites(trackId: string): Promise<void> {
-  const list = await readList(KEYS.FAVORITES);
-  await writeList(
+  const list = readList(KEYS.FAVORITES);
+  writeList(
     KEYS.FAVORITES,
     list.filter((t) => t.id !== trackId),
   );
 }
 
 export async function toggleFavorite(track: StoredTrack): Promise<boolean> {
-  const list = await readList(KEYS.FAVORITES);
+  const list = readList(KEYS.FAVORITES);
   const exists = list.some((t) => t.id === track.id);
   if (exists) {
-    await writeList(
+    writeList(
       KEYS.FAVORITES,
       list.filter((t) => t.id !== track.id),
     );
     return false; // removido
   } else {
-    await writeList(KEYS.FAVORITES, [
-      { ...track, addedAt: Date.now() },
-      ...list,
-    ]);
+    writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
     return true; // adicionado
   }
 }
@@ -107,10 +111,60 @@ export async function getFavorites(): Promise<StoredTrack[]> {
 }
 
 export async function isFavorite(trackId: string): Promise<boolean> {
-  const list = await readList(KEYS.FAVORITES);
+  const list = readList(KEYS.FAVORITES);
   return list.some((t) => t.id === trackId);
 }
 
 export async function clearFavorites(): Promise<void> {
-  await AsyncStorage.removeItem(KEYS.FAVORITES);
+  storage.remove(KEYS.FAVORITES);
 }
+
+// ─── Utilitários adicionais para MMKV
+
+// Obter estatísticas do cache
+export function getStorageStats() {
+  return {
+    recentsCount: readList(KEYS.RECENTS).length,
+    favoritesCount: readList(KEYS.FAVORITES).length,
+    totalSize: storage.size,
+  };
+}
+
+// Limpar todo o storage de música
+export async function clearAllMusicData(): Promise<void> {
+  storage.remove(KEYS.RECENTS);
+  storage.remove(KEYS.FAVORITES);
+}
+
+// Versão síncrona para uso em contextos específicos
+export const musicStorageSync = {
+  getRecents: (): StoredTrack[] => readList(KEYS.RECENTS),
+  getFavorites: (): StoredTrack[] => readList(KEYS.FAVORITES),
+  isFavorite: (trackId: string): boolean => {
+    const list = readList(KEYS.FAVORITES);
+    return list.some((t) => t.id === trackId);
+  },
+  addToRecents: (track: StoredTrack): void => {
+    const list = readList(KEYS.RECENTS);
+    const filtered = list.filter((t) => t.id !== track.id);
+    const updated = [{ ...track, playedAt: Date.now() }, ...filtered].slice(
+      0,
+      MAX_RECENTS,
+    );
+    writeList(KEYS.RECENTS, updated);
+  },
+  toggleFavorite: (track: StoredTrack): boolean => {
+    const list = readList(KEYS.FAVORITES);
+    const exists = list.some((t) => t.id === track.id);
+    if (exists) {
+      writeList(
+        KEYS.FAVORITES,
+        list.filter((t) => t.id !== track.id),
+      );
+      return false;
+    } else {
+      writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
+      return true;
+    }
+  },
+};

@@ -1,5 +1,5 @@
+import { useTheme } from "@/context/ThemeContext";
 import { usePlayer } from "@/hooks/usePlayer";
-import { useTheme } from "@/hooks/useTheme";
 import { formatTime } from "@/utils/formaTS/formatTimeSong";
 import { Ionicons } from "@expo/vector-icons";
 import { Slider } from "@miblanchard/react-native-slider";

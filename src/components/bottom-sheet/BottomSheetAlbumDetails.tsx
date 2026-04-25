@@ -3,14 +3,21 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { ChevronRight, Info, Music, Trash2, X } from "lucide-react-native";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 type Props = {
   album: AlbumWithDetails;
-  isDark: boolean;
+  handleDeleteAlbum: (albumId: string) => void;
   onClose?: () => void; // para fechar o bottom sheet
 };
 
-const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
+const BottomSheetAlbumDetails = ({
+  album,
+  handleDeleteAlbum,
+  onClose,
+}: Props) => {
+  const { colors, isDark } = useTheme();
+
   const handleDelete = () => {
     Alert.alert(
       "Deletar álbum",
@@ -21,8 +28,7 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
           text: "Deletar",
           style: "destructive",
           onPress: () => {
-            // Aqui você chamaria a função de deletar do seu hook/contexto
-            console.log("Deletar álbum:", album.id);
+            handleDeleteAlbum(album.id);
             onClose?.(); // opcional: fechar bottom sheet após deletar
           },
         },
@@ -38,17 +44,8 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
     onClose?.();
   };
 
-  const textPrimary = isDark ? "#ffffff" : "#18181b";
-  const textSecondary = isDark ? "#a1a1aa" : "#71717a";
-  const borderColor = isDark ? "#2c2c2e" : "#e4e4e7";
-
   return (
     <View className="flex-1">
-      {/* Handle de arrasto (indica que pode fechar) */}
-      <View className="items-center pt-2 pb-1">
-        <View className="w-12 h-1 rounded-full bg-gray-400 dark:bg-gray-600" />
-      </View>
-
       <View className="px-5 pt-2 pb-6">
         {/* Cabeçalho com capa e informações */}
         <View className="flex-row items-start gap-4 mb-6">
@@ -77,7 +74,7 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
           <View className="flex-1">
             <Text
               className="text-xl font-bold"
-              style={{ color: textPrimary }}
+              style={{ color: colors.text }}
               numberOfLines={2}
             >
               {album.title}
@@ -85,21 +82,21 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
             {album.artist && (
               <Text
                 className="text-base mt-0.5"
-                style={{ color: textSecondary }}
+                style={{ color: colors.textMuted }}
                 numberOfLines={1}
               >
                 {album.artist}
               </Text>
             )}
             <View className="flex-row items-center mt-1 gap-2">
-              <Text className="text-sm" style={{ color: textSecondary }}>
+              <Text className="text-sm" style={{ color: colors.textMuted }}>
                 {album.assetCount}{" "}
                 {album.assetCount === 1 ? "música" : "músicas"}
               </Text>
               {album.year && (
                 <>
-                  <Text style={{ color: textSecondary }}>•</Text>
-                  <Text className="text-sm" style={{ color: textSecondary }}>
+                  <Text style={{ color: colors.textMuted }}>•</Text>
+                  <Text className="text-sm" style={{ color: colors.textMuted }}>
                     {album.year}
                   </Text>
                 </>
@@ -114,37 +111,38 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               className="p-1"
             >
-              <X size={22} color={textSecondary} />
+              <X size={22} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Ações */}
-        <View className="gap-3 mt-2">
+        <View className="gap-3 mt-2 flex-row justify-between">
           {/* Ver detalhes */}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleDetails}
             style={{
+              flex: 1,
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: isDark ? "#2c2c2e" : "#f4f4f5",
+              backgroundColor: colors.border,
               paddingVertical: 14,
               paddingHorizontal: 18,
               borderRadius: 14,
             }}
           >
             <View className="flex-row items-center gap-3">
-              <Info size={20} color={textPrimary} />
+              <Info size={20} color={colors.textMuted} />
               <Text
                 className="text-base font-medium"
-                style={{ color: textPrimary }}
+                style={{ color: colors.text }}
               >
                 Ver detalhes do álbum
               </Text>
             </View>
-            <ChevronRight size={18} color={textSecondary} />
+            <ChevronRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
           {/* Deletar álbum */}
@@ -155,7 +153,7 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
-              backgroundColor: isDark ? "#3c1e1e" : "#fee2e2",
+              backgroundColor: colors.danger_v2,
               paddingVertical: 14,
               paddingHorizontal: 18,
               borderRadius: 14,
@@ -178,7 +176,7 @@ const BottomSheetAlbumDetails = ({ album, isDark, onClose }: Props) => {
         {/* Rodapé informativo */}
         <Text
           className="text-xs text-center mt-8"
-          style={{ color: textSecondary }}
+          style={{ color: colors.textMuted }}
         >
           Toque fora para fechar • Pressione e segure para mais opções
         </Text>

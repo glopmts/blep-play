@@ -1,7 +1,7 @@
 import { Folder } from "lucide-react-native";
 import type { ComponentType } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { Colors } from "../hooks/useTheme";
+import { Colors } from "../types/colors";
 
 export function HeaderPage({
   isDark,

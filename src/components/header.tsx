@@ -40,6 +40,10 @@ const Header = () => {
         title: "Álbuns",
         subtitle: "Crie e organize seus álbuns",
       },
+      "/configurations": {
+        title: "Configurações",
+        subtitle: "Configurações geral app BlepPlay",
+      },
     };
 
     return (

@@ -2,19 +2,22 @@ import CreatePlaylistModal from "@/components/creater-playlits";
 import Header from "@/components/header";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import SkeletonLoadingAlbum from "@/components/loading-skeleton-album";
+import { useTheme } from "@/context/ThemeContext";
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { useTheme } from "@/hooks/useTheme";
 import { Playlists as Playlist } from "@/types/interfaces";
 import * as Crypto from "expo-crypto";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
   ArrowRight,
+  ChevronRight,
   EllipsisVertical,
+  Info,
   ListMusicIcon,
   PlusIcon,
+  Trash2,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -23,6 +26,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import EmptyState from "../../../components/empty-state";
+import { useBottomSheet } from "../../../context/bottom-sheet-context";
 
 type NaveItem = {
   id: string;
@@ -46,15 +51,11 @@ const Playlists = () => {
   const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] =
     useState<NaveItem["id"]>("minhas-playlists");
-
-  const itensNavegacao: NaveItem[] = [
-    { id: "minhas-playlists", label: "Minhas Playlists", icon: "🎵" },
-    { id: "baixadas", label: "Baixadas", icon: "📥" },
-  ];
+  const { openSheet, closeSheet } = useBottomSheet();
 
   const handleOpenCreateModal = () => {
     setTitle("");
-    setModalVisible(true);
+    setModalVisible((prev) => !prev);
   };
 
   const handleCreatePlaylist = () => {
@@ -73,10 +74,111 @@ const Playlists = () => {
     });
   };
 
+  const getBottomSheetContent = useCallback(
+    (playlist: Playlist) => {
+      return (
+        <View className="flex-col gap-5 px-4">
+          <View className="flex-row gap-3 items-center">
+            <View
+              className="w-24 h-24 rounded-2xl overflow-hidden items-center justify-center"
+              style={{ backgroundColor: colors.cardMuted }}
+            >
+              {playlist.coverArt ? (
+                <Image
+                  source={{ uri: playlist.coverArt }}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                  transition={200}
+                  cachePolicy="memory-disk"
+                />
+              ) : (
+                <ListMusicIcon
+                  size={24}
+                  color={colors.icon}
+                  strokeWidth={1.5}
+                />
+              )}
+            </View>
+            <View className="flex-col gap-2">
+              <Text className="text">{playlist.title}</Text>
+              <Text className="text text-xl text-zinc-300">
+                Total musicas: {playlist.songs?.length || 0}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row items-center justify-between gap-3">
+            <Pressable
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: colors.border,
+                paddingVertical: 14,
+                paddingHorizontal: 18,
+                borderRadius: 14,
+              }}
+            >
+              <View className="flex-row items-center gap-3">
+                <Info size={20} color={colors.textMuted} />
+                <Text
+                  className="text-base font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Ver detalhes
+                </Text>
+              </View>
+              <ChevronRight size={18} color={colors.textMuted} />
+            </Pressable>
+            <Pressable
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: colors.danger_v2,
+                paddingVertical: 14,
+                paddingHorizontal: 18,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: colors.danger_border,
+              }}
+              onPress={() => {
+                handleDeletePlaylist(playlist.id);
+                closeSheet();
+              }}
+            >
+              <View className="flex-row items-center gap-3">
+                <Trash2 size={20} color={colors.danger_title} />
+                <Text
+                  className="text-base font-medium"
+                  style={{ color: colors.danger_title }}
+                >
+                  Deletar playlist
+                </Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      );
+    },
+    [playlists, isDark, colors],
+  );
+
+  const handleOpenBottomSheet = useCallback(
+    (item: Playlist) => {
+      openSheet({
+        snapPoints: ["20%"],
+        content: () => getBottomSheetContent(item), // ← currying com item atual
+      });
+    },
+    [openSheet, getBottomSheetContent],
+  );
+
   // ─── Loading
   if (isLoading) {
     return (
-      <LayoutWithHeader title="Playlists" statusBarOpen={false}>
+      <LayoutWithHeader statusBarOpen={false}>
+        <Header />
         <SkeletonLoadingAlbum numberOfItems={8} numColumns={2} />
       </LayoutWithHeader>
     );
@@ -85,39 +187,12 @@ const Playlists = () => {
   // ─── Empty state
   if (playlists.length === 0) {
     return (
-      <LayoutWithHeader
-        contentClassName="flex-1"
-        header={false}
-        statusBarOpen={false}
-      >
-        <View className="flex-1 items-center justify-center gap-5 px-8">
-          {/* Icon badge */}
-          <View className="w-20 h-20 rounded-3xl dark:bg-zinc-800 bg-zinc-100 items-center justify-center border dark:border-zinc-700 border-zinc-200 shadow-sm">
-            <ListMusicIcon size={36} color={colors.icon} strokeWidth={1.5} />
-          </View>
-
-          <View className="items-center gap-1">
-            <Text className="text-lg font-semibold dark:text-zinc-100 text-zinc-800 tracking-tight">
-              Nenhuma playlist ainda
-            </Text>
-            <Text className="text-sm dark:text-zinc-500 text-zinc-400 text-center leading-relaxed">
-              Organize suas músicas favoritas{"\n"}criando sua primeira
-              playlist.
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={handleOpenCreateModal}
-            activeOpacity={0.82}
-            className="flex-row items-center gap-2 px-7 py-3.5 rounded-2xl bg-indigo-500 shadow-lg shadow-indigo-500/30"
-          >
-            <PlusIcon size={18} color="#fff" strokeWidth={2.5} />
-            <Text className="text-white font-semibold text-sm tracking-wide">
-              Criar playlist
-            </Text>
-          </TouchableOpacity>
-        </View>
-
+      <>
+        <EmptyState
+          variant="playlist"
+          showAction={true}
+          onAction={handleOpenCreateModal}
+        />
         <CreatePlaylistModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
@@ -125,7 +200,7 @@ const Playlists = () => {
           setTitle={setTitle}
           onConfirm={handleCreatePlaylist}
         />
-      </LayoutWithHeader>
+      </>
     );
   }
 
@@ -179,7 +254,7 @@ const Playlists = () => {
         {/* Thumbnail */}
         <View
           className="w-24 h-24 rounded-2xl overflow-hidden items-center justify-center"
-          style={{ backgroundColor: "#1E1E2A" }}
+          style={{ backgroundColor: colors.cardMuted }}
         >
           {item.coverArt ? (
             <Image
@@ -213,7 +288,10 @@ const Playlists = () => {
       <View className="flex-row items-center gap-3">
         {/* Chevron arrow */}
         <ArrowRight size={26} color={colors.icon} strokeWidth={1.5} />
-        <TouchableOpacity hitSlop={8}>
+        <TouchableOpacity
+          hitSlop={8}
+          onPress={() => handleOpenBottomSheet(item)}
+        >
           <EllipsisVertical size={26} color={colors.icon} strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
@@ -246,7 +324,9 @@ const Playlists = () => {
         <View
           className="flex-1"
           style={{
-            backgroundColor: colors.surface_card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: colors.card,
             borderRadius: colors.rounded.rounded_2xl,
           }}
         >

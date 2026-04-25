@@ -41,7 +41,6 @@ export async function saveAlbumsMeta(
       ts: Date.now(),
     };
     storage.set(CACHE_KEY_ALBUMS, JSON.stringify(cacheData));
-    console.log("✅ Albums meta saved to MMKV");
   } catch (error) {
     console.error("Error saving albums meta to MMKV:", error);
   }
@@ -51,7 +50,6 @@ export async function saveAlbumsMeta(
 export async function clearAlbumsCache(): Promise<void> {
   try {
     storage.remove(CACHE_KEY_ALBUMS);
-    console.log("✅ Albums cache cleared");
   } catch (error) {
     console.error("Error clearing albums cache:", error);
   }
@@ -72,7 +70,6 @@ export async function persistAlbumsMeta(
       ts: Date.now(),
     };
     storage.set(CACHE_KEY_ALBUMS, JSON.stringify(cacheData));
-    console.log("✅ Albums meta saved to MMKV");
   } catch (error) {
     console.error("Error saving albums meta to MMKV:", error);
   }

@@ -114,7 +114,7 @@ export default function MainLayout() {
           paddingTop: 4,
         },
 
-        animation: "none",
+        animation: "fade",
       }}
     >
       {tabs.map((tab) => (

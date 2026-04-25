@@ -6,8 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#1A1C22",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.glopblog.blepplay",
@@ -35,6 +34,7 @@
       }
     },
     "android": {
+      "backgroundColor": "#1A1C22",
       "adaptiveIcon": {
         "backgroundColor": "#1A1C22",
         "foregroundImage": "./assets/images/icon.png",

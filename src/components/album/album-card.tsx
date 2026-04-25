@@ -64,13 +64,14 @@ interface ALlbumScreen {
   title?: string;
 }
 
-export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
+export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
   const {
     albums,
     loading,
     loadingCovers,
     selectAlbum,
     onAlbumsVisible,
+    resetAlbumCoverMap,
     refreshAlbums,
     refreshAllAlbumCovers,
   } = useAlbum();
@@ -83,10 +84,10 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (albums.length > 0) {
+        resetAlbumCoverMap(); // ← limpa o mapa para revalidar
         refreshAllAlbumCovers();
       }
     });
-
     return unsubscribe;
   }, [navigation, albums.length, refreshAllAlbumCovers]);
 
@@ -97,7 +98,7 @@ export const AlbumScreen = ({ title, horizontal = true }: ALlbumScreen) => {
         content: (
           <BottomSheetAlbumDetails
             album={album}
-            isDark={isDark}
+            handleDeleteAlbum={() => {}}
             onClose={closeSheet}
           />
         ),

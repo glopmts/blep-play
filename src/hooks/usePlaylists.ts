@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { showPlatformMessage } from "../components/toast-message-plataform";
 import {
   addSongToPlaylist,
   cleanupOldStorage,
@@ -47,7 +48,6 @@ export function usePlaylists() {
     try {
       const data = await getPlaylist();
 
-      // Busca capas em paralelo para melhor performance
       const playlistsWithCovers = await Promise.all(
         data.map(async (playlist) => ({
           ...playlist,
@@ -95,7 +95,6 @@ export function usePlaylists() {
         const created = await createPlaylist(playlist);
 
         if (created) {
-          // Re-sincroniza com o storage para garantir consistência
           await loadAll();
         }
 
@@ -122,9 +121,12 @@ export function usePlaylists() {
         setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
       }
 
+      showPlatformMessage("Playlist deletada com sucesso!");
+      handleRefresh();
       return success;
     } catch (error) {
       console.error("[usePlaylists] Erro ao deletar:", error);
+      showPlatformMessage("[usePlaylists] Erro ao deletar:");
       return false;
     } finally {
       operationInProgress.current = false;
@@ -142,7 +144,7 @@ export function usePlaylists() {
       if (success) {
         setPlaylists([]);
       }
-
+      handleRefresh();
       return success;
     } catch (error) {
       console.error("[usePlaylists] Erro ao limpar:", error);
@@ -155,27 +157,33 @@ export function usePlaylists() {
   // Adicionar música a uma playlist
   const handleAddSongToPlaylist = useCallback(
     async (playlistId: string, song: SongWithArt) => {
-      if (operationInProgress.current) return null;
+      if (operationInProgress.current) {
+        return null;
+      }
+
       operationInProgress.current = true;
 
       try {
         const updated = await addSongToPlaylist(playlistId, song);
-
         if (updated) {
-          setPlaylists((prev) =>
-            prev.map((p) => (p.id === playlistId ? updated : p)),
-          );
-        }
+          setPlaylists((prev) => {
+            const newPlaylists = prev.map((p) =>
+              p.id === playlistId ? updated : p,
+            );
+            return newPlaylists;
+          });
 
+          await loadAll();
+        }
+        showPlatformMessage("Musica adicionada com sucesso!");
         return updated;
       } catch (error) {
-        console.error("[usePlaylists] Erro ao adicionar música:", error);
         return null;
       } finally {
         operationInProgress.current = false;
       }
     },
-    [],
+    [loadAll],
   );
 
   // Remover música de uma playlist
@@ -192,7 +200,8 @@ export function usePlaylists() {
             prev.map((p) => (p.id === playlistId ? updated : p)),
           );
         }
-
+        showPlatformMessage("Musica removida com sucesso!");
+        handleRefresh();
         return updated;
       } catch (error) {
         console.error("[usePlaylists] Erro ao remover música:", error);

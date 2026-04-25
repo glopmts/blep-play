@@ -1,32 +1,5 @@
 import { useColorScheme } from "nativewind";
 
-const CORLORS = [];
-
-export interface Colors {
-  background: string;
-  surface: string;
-  card: string;
-  cardMuted: string;
-  text: string;
-  textMuted: string;
-  border: string;
-  indicator: string;
-  icon: string;
-  iconActive: string;
-  primary: string;
-  primary_strong: string;
-  secondary: string;
-  success: string;
-  danger: string;
-  warning: string;
-  rounded: {
-    rounded_md: number;
-    rounded_2xl: number;
-    rounded_3xl: number;
-    rounded_full: string;
-  };
-}
-
 export function useTheme() {
   const { colorScheme, setColorScheme, toggleColorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";

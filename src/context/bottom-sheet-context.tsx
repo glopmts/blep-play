@@ -3,7 +3,7 @@ import React, { createContext, useCallback, useContext, useState } from "react";
 import { GlobalBottomSheet } from "../components/bottom-sheet/GlobalBottomSheet";
 
 type SheetPayload = {
-  content: React.ReactNode;
+  content: React.ReactNode | (() => React.ReactNode);
   snapPoints?: (string | number)[];
 };
 
@@ -26,12 +26,18 @@ export const BottomSheetProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const [sheetContent, setSheetContent] = useState<React.ReactNode>(null);
+  const [contentFn, setContentFn] = useState<{
+    fn: () => React.ReactNode;
+  } | null>(null);
+
   const [snapPoints, setSnapPoints] = useState<(string | number)[]>(["50%"]);
   const [isOpen, setIsOpen] = useState(false);
 
   const openSheet = useCallback(({ content, snapPoints: sp }: SheetPayload) => {
-    setSheetContent(content);
+    // Envolve em objeto para evitar que o React execute como updater
+    setContentFn({
+      fn: typeof content === "function" ? content : () => content,
+    });
     setSnapPoints(sp ?? ["50%"]);
     setIsOpen(true);
     Haptics.selectionAsync();
@@ -44,10 +50,9 @@ export const BottomSheetProvider = ({
   return (
     <BottomSheetContext.Provider value={{ openSheet, closeSheet, isOpen }}>
       {children}
-      {/* O GlobalBottomSheet lê o context — fica fora do children
-          para sempre estar na camada mais alta */}
       <GlobalBottomSheet
-        content={sheetContent}
+        // Invoca a função a cada render — sempre conteúdo fresco
+        content={contentFn?.fn() ?? null}
         snapPoints={snapPoints}
         isOpen={isOpen}
         onClose={closeSheet}

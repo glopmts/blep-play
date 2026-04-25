@@ -85,6 +85,7 @@ const Input: React.FC<InputProps> = ({
           maxLength={maxLength}
           placeholder={placeholder}
           onFocus={handleFocus}
+          autoFocus={true}
           onBlur={handleBlur}
           className="flex-1 py-3 text-sm dark:text-zinc-100 text-zinc-800 font-normal"
           placeholderTextColor="#52525b"

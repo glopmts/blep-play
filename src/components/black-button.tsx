@@ -1,59 +1,109 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Platform, Pressable, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleProp,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+} from "react-native";
+import { useTheme } from "../context/ThemeContext";
 
 type BackButtonProps = {
-  isDark: boolean;
+  /** Posição CSS do container. "absolute" flutua sobre o conteúdo; "relative" empurra o layout. */
   position?: "static" | "relative" | "absolute" | "fixed" | "sticky";
-  handleSongPress?: () => void;
-  loading?: boolean;
+  /** Exibe um botão extra no lado direito (ex: opções, menu, etc.) */
+  rightAction?: React.ReactNode;
+  /** Handler do botão extra direito */
+  onRightActionPress?: () => void;
+  /** Desabilita o botão extra direito */
+  rightActionDisabled?: boolean;
+  /** @deprecated use rightAction + onRightActionPress */
   children?: React.ReactNode;
+  /** @deprecated use rightAction */
   isBottomOption?: boolean;
+  /** @deprecated use onRightActionPress */
+  handleSongPress?: () => void;
+  /** @deprecated */
+  loading?: boolean;
+  /** @deprecated não tem efeito */
+  isDark?: boolean;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function BackButton({
+  position = "absolute",
+  rightAction,
+  onRightActionPress,
+  rightActionDisabled,
+  // legado
   children,
   isBottomOption,
-  loading,
-  isDark,
   handleSongPress,
-  position = "absolute",
+  loading,
+  style,
 }: BackButtonProps) {
+  const { isDark, colors } = useTheme();
+
+  const showRight = rightAction ?? (isBottomOption ? children : undefined);
+  const rightHandler = onRightActionPress ?? handleSongPress;
+  const rightDisabled = rightActionDisabled ?? loading;
+
   return (
     <View
-      style={{
-        paddingHorizontal: 16,
-        paddingTop: Platform.OS === "ios" ? 60 : 50,
-        position: position,
-        zIndex: 100,
-        left: 0,
-        right: 0,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}
+      style={[
+        {
+          paddingHorizontal: 16,
+          paddingTop: Platform.OS === "ios" ? 60 : 50,
+          position: position,
+          zIndex: 100,
+          left: 0,
+          right: 0,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        },
+        style,
+      ]}
     >
-      <Pressable
+      <TouchableOpacity
         onPress={() =>
           router.canGoBack() ? router.back() : router.replace("/(main)/(tabs)")
         }
-        className="dark:bg-zinc-700/50 bg-zinc-300 w-14 h-14 rounded-full items-center justify-center"
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.card,
+          opacity: 0.7,
+        }}
       >
         <Ionicons
           name="chevron-back"
-          size={29}
-          color={isDark ? "#ffffff" : "#27272a"}
+          size={24}
+          color={isDark ? colors.text : colors.text}
         />
-      </Pressable>
+      </TouchableOpacity>
 
-      {isBottomOption && (
+      {showRight && (
         <TouchableOpacity
-          className="z-30 dark:bg-zinc-700/50 bg-zinc-300 w-14 h-14 rounded-full items-center justify-center"
-          onPress={handleSongPress}
-          disabled={loading}
-          activeOpacity={0.85}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.08)"
+              : "rgba(0,0,0,0.07)",
+          }}
+          onPress={rightHandler}
+          disabled={rightDisabled}
+          activeOpacity={0.7}
         >
-          {children}
+          {showRight}
         </TouchableOpacity>
       )}
     </View>

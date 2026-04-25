@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
-import { StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../hooks/useTheme";
 
@@ -48,13 +48,6 @@ export const LayoutWithHeader = ({
 
   return (
     <>
-      {statusBarOpen && (
-        <StatusBar
-          barStyle={getStatusBarStyle()}
-          backgroundColor={colors.background}
-          translucent={variant === "view"}
-        />
-      )}
       <Container
         style={{
           backgroundColor: colors.surface,

@@ -66,6 +66,24 @@ export async function fetchAndCacheCover(
   }
 }
 
+export async function fetchAndCacheCoverBySong(
+  songId: string,
+  songUri: string,
+): Promise<string | undefined> {
+  // A chave é o songId — se a música mais recente mudou, o cache miss é automático
+  const cached = await getCoverUri(songId);
+  if (cached) return cached;
+
+  const base64Cover = await getSongCoverArt(songUri);
+  if (!base64Cover) return undefined;
+
+  try {
+    return await saveCoverToFile(songId, base64Cover);
+  } catch {
+    return base64Cover;
+  }
+}
+
 export const getAllPlaylistImages = async (playlistId: string) => {
   const data = await getPlaylistById(playlistId);
 

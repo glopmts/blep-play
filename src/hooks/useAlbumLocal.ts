@@ -20,6 +20,7 @@ function isCacheExpired(timestamp: number): boolean {
 
 const priorityQueue = new Set<string>();
 const normalQueue = new Set<string>();
+const albumCoverSongMap = new Map<string, string>();
 
 async function getMostRecentSongFromAlbum(
   albumId: string,
@@ -39,29 +40,6 @@ async function getMostRecentSongFromAlbum(
       error,
     );
     return null;
-  }
-}
-
-//  FUNÇÃO PARA ATUALIZAR CAPA DO ÁLBUM
-async function updateAlbumCover(
-  albumId: string,
-  currentCoverUri?: string,
-): Promise<string | undefined> {
-  try {
-    // Busca a música mais recente
-    const mostRecentSong = await getMostRecentSongFromAlbum(albumId);
-
-    if (!mostRecentSong?.uri) {
-      return currentCoverUri;
-    }
-
-    // Busca a capa da música mais recente
-    const coverUri = await fetchAndCacheCover(albumId, mostRecentSong.uri);
-
-    return coverUri || currentCoverUri;
-  } catch (error) {
-    console.error(`Error updating album cover for ${albumId}:`, error);
-    return currentCoverUri;
   }
 }
 
@@ -122,6 +100,29 @@ export const useAlbum = () => {
     processingRef.current = false;
     if (isMounted.current) setLoadingCovers(false);
   }, []);
+
+  //  FUNÇÃO PARA ATUALIZAR CAPA DO ÁLBUM
+  async function updateAlbumCover(
+    albumId: string,
+    currentCoverUri?: string,
+  ): Promise<string | undefined> {
+    try {
+      // Busca a música mais recente
+      const mostRecentSong = await getMostRecentSongFromAlbum(albumId);
+
+      if (!mostRecentSong?.uri) {
+        return currentCoverUri;
+      }
+
+      // Busca a capa da música mais recente
+      const coverUri = await fetchAndCacheCover(albumId, mostRecentSong.uri);
+
+      return coverUri || currentCoverUri;
+    } catch (error) {
+      console.error(`Error updating album cover for ${albumId}:`, error);
+      return currentCoverUri;
+    }
+  }
 
   //  CARREGAMENTO DE ÁLBUNS ATUALIZADO
   const loadAlbums = useCallback(
@@ -256,6 +257,8 @@ export const useAlbum = () => {
     memoryAlbums.set(album.id, album);
   };
 
+  const resetAlbumCoverMap = () => albumCoverSongMap.clear();
+
   const refreshAlbums = useCallback(async () => {
     await clearAlbumsCache();
     await loadAlbums(true);
@@ -271,6 +274,7 @@ export const useAlbum = () => {
     refreshAlbums,
     onAlbumsVisible,
     refreshAlbumCover,
+    resetAlbumCoverMap,
     refreshAllAlbumCovers,
   };
 };

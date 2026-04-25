@@ -3,15 +3,15 @@ import { AlbumScreen } from "@/components/album/album-card";
 import Header from "@/components/header";
 import { HeaderPage } from "@/components/hearder-page";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme } from "@/context/ThemeContext";
 import { Album } from "lucide-react-native";
 import { View } from "react-native";
 
 const Albums = () => {
-  const { isDark, colors } = useTheme();
+  const { isDark } = useTheme();
 
   return (
-    <LayoutWithHeader>
+    <LayoutWithHeader header={false} statusBarOpen={false}>
       <Header />
       <View style={{ flex: 1 }}>
         {/* Cabeçalho fora do FlatList */}

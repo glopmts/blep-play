@@ -2,35 +2,36 @@ import { Image } from "expo-image";
 import { Music } from "lucide-react-native";
 import { memo, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { Colors } from "../../types/colors";
 import { CARD_WIDTH, IMAGE_SIZE } from "../../utils/image-types";
 
 interface AlbumThumbnailProps {
   coverArt?: string | null;
-  isDark: boolean;
+  isDark?: boolean;
   loadingCovers: boolean;
   type?: "card" | "list";
   albumId?: string;
 }
 
-const Placeholder = ({ isDark, size }: { isDark: boolean; size: number }) => (
+const Placeholder = ({ colors, size }: { colors: Colors; size: number }) => (
   <View
     style={{
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
       borderWidth: 1,
-      borderColor: isDark ? "#404040" : "#a3a3a3",
-      backgroundColor: isDark ? "#262626" : "#e4e4e7",
+      borderColor: colors.border,
+      backgroundColor: colors.card,
     }}
   >
-    <Music size={size} color={isDark ? "#d4d4d8" : "#27272a"} />
+    <Music size={size} color={colors.primary} />
   </View>
 );
 
 const AlbumThumbnail = memo(
   ({
     coverArt,
-    isDark,
     type = "card",
     loadingCovers,
     albumId,
@@ -40,6 +41,7 @@ const AlbumThumbnail = memo(
       () => (coverArt ? { uri: coverArt } : null),
       [coverArt],
     );
+    const { colors, isDark } = useTheme();
 
     if (type === "list") {
       return (
@@ -49,7 +51,7 @@ const AlbumThumbnail = memo(
             aspectRatio: 1,
             borderRadius: 16,
             overflow: "hidden",
-            backgroundColor: isDark ? "#27272a" : "#e4e4e7",
+            backgroundColor: colors.card,
           }}
         >
           {loadingCovers && !coverArt ? (
@@ -60,10 +62,7 @@ const AlbumThumbnail = memo(
                 alignItems: "center",
               }}
             >
-              <ActivityIndicator
-                size="small"
-                color={isDark ? "#fff" : "#3b82f6"}
-              />
+              <ActivityIndicator size="small" color={colors.iconActive} />
             </View>
           ) : source ? (
             <Image
@@ -75,7 +74,7 @@ const AlbumThumbnail = memo(
               recyclingKey={albumId} // ← reutiliza célula na FlatList
             />
           ) : (
-            <Placeholder isDark={isDark} size={40} />
+            <Placeholder colors={colors} size={40} />
           )}
         </View>
       );
@@ -88,7 +87,7 @@ const AlbumThumbnail = memo(
           height: CARD_WIDTH,
           borderRadius: 16,
           overflow: "hidden",
-          backgroundColor: isDark ? "#262626" : "#e4e4e7",
+          backgroundColor: colors.card,
         }}
       >
         {source ? (
@@ -101,7 +100,7 @@ const AlbumThumbnail = memo(
             recyclingKey={coverArt!}
           />
         ) : (
-          <Placeholder isDark={isDark} size={30} />
+          <Placeholder colors={colors} size={30} />
         )}
       </View>
     );

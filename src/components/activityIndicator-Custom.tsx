@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
 import { FC } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import { Colors, useTheme } from "../hooks/useTheme";
+import { useTheme } from "../hooks/useTheme";
+import { Colors } from "../types/colors";
 
 type IndicadoProps = {
   isImage?: boolean;

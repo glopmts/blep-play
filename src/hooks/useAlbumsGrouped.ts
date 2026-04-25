@@ -1,24 +1,27 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as MediaLibrary from "expo-media-library";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { albumsStore } from "../store/albumsStore";
+import { albumsStoreSync } from "../database/cache/albumsStore";
 import { GroupedAlbum, SongWithArt } from "../types/interfaces";
 import { fetchAndCacheCover, getCoverUri } from "../utils/coverArtCache";
 import { extractMusicMetadata, generateAlbumId } from "../utils/musicMetadata";
 
-const ASSETS_CACHE_KEY = "assets_modification_hash";
-
-// Filas de prioridade — fora do hook para persistir entre renders
 const priorityQueue = new Set<string>();
 const normalQueue = new Set<string>();
+const COVER_BATCH_SIZE = 5; // Processar 5 por vez
+const COVER_BATCH_DELAY = 100; // Delay entre batches
 
 export const useAlbumsGrouped = () => {
   const [albums, setAlbums] = useState<GroupedAlbum[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingCovers, setLoadingCovers] = useState(false);
+
   const isMounted = useRef(true);
   const abortRef = useRef(false);
   const processingRef = useRef(false);
+  const isInitializedRef = useRef(false);
+
+  // ← CHAVE: ref sempre atualizada com o estado mais recente
+  const albumsRef = useRef<GroupedAlbum[]>([]);
 
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
@@ -31,68 +34,90 @@ export const useAlbumsGrouped = () => {
     };
   }, []);
 
-  // ── Drena as filas processando capa por capa ──
+  // Mantém albumsRef sincronizado com o estado
+  const setAlbumsSync = useCallback(
+    (updater: GroupedAlbum[] | ((prev: GroupedAlbum[]) => GroupedAlbum[])) => {
+      setAlbums((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        albumsRef.current = next; // ← sempre atualizado
+        return next;
+      });
+    },
+    [],
+  );
+
   const processCoverQueue = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
 
-    const processAlbum = async (albumId: string) => {
-      if (abortRef.current) return;
+    const processBatch = async (ids: string[]) => {
+      // Processar multiplos em paralelo
+      await Promise.all(
+        ids.map(async (albumId) => {
+          if (abortRef.current) return;
 
-      // Já tem no disco — aplica direto sem extrair nada
-      const existing = await getCoverUri(albumId);
-      if (existing) {
-        if (isMounted.current) {
-          setAlbums((prev) =>
-            prev.map((a) =>
-              a.id === albumId && !a.coverArt
-                ? { ...a, coverArt: existing }
-                : a,
-            ),
-          );
-        }
-        return;
-      }
+          const existing = await getCoverUri(albumId);
+          if (existing) {
+            if (isMounted.current) {
+              setAlbumsSync((prev) =>
+                prev.map((a) =>
+                  a.id === albumId && !a.coverArt
+                    ? { ...a, coverArt: existing }
+                    : a,
+                ),
+              );
+            }
+            return;
+          }
 
-      // Busca URI da primeira música do álbum
-      const current =
-        albums.find((a) => a.id === albumId) ??
-        (await albumsStore.load()).find((a) => a.id === albumId);
-      const songUri = current?.songs?.[0]?.uri;
-      if (!songUri) return;
+          const current =
+            albumsRef.current.find((a) => a.id === albumId) ??
+            albumsStoreSync.load().find((a) => a.id === albumId);
 
-      const coverUri = await fetchAndCacheCover(albumId, songUri);
-      if (isMounted.current && coverUri) {
-        setAlbums((prev) =>
-          prev.map((a) =>
-            a.id === albumId ? { ...a, coverArt: coverUri } : a,
-          ),
-        );
-      }
+          const songUri = current?.songs?.[0]?.uri;
+          if (!songUri) return;
 
-      await new Promise((r) => setTimeout(r, 30));
+          const coverUri = await fetchAndCacheCover(albumId, songUri);
+          if (isMounted.current && coverUri) {
+            setAlbumsSync((prev) =>
+              prev.map((a) =>
+                a.id === albumId ? { ...a, coverArt: coverUri } : a,
+              ),
+            );
+          }
+        }),
+      );
     };
 
-    // Esvazia prioritários primeiro, depois normais
     while (priorityQueue.size > 0 || normalQueue.size > 0) {
       if (abortRef.current) break;
 
-      if (priorityQueue.size > 0) {
+      const batch: string[] = [];
+
+      // Prioridade primeiro
+      while (priorityQueue.size > 0 && batch.length < COVER_BATCH_SIZE) {
         const [id] = priorityQueue;
         priorityQueue.delete(id);
-        await processAlbum(id);
-      } else {
+        batch.push(id);
+      }
+
+      // Depois normal
+      while (normalQueue.size > 0 && batch.length < COVER_BATCH_SIZE) {
         const [id] = normalQueue;
         normalQueue.delete(id);
-        await processAlbum(id);
+        batch.push(id);
+      }
+
+      if (batch.length > 0) {
+        await processBatch(batch);
+        await new Promise((r) => setTimeout(r, COVER_BATCH_DELAY));
       }
     }
 
     processingRef.current = false;
     if (isMounted.current) setLoadingCovers(false);
-  }, [albums]);
+  }, []);
 
-  // Chamado pela FlatList via onViewableItemsChanged
   const onAlbumsVisible = useCallback(
     (visibleIds: string[]) => {
       visibleIds.forEach((id) => {
@@ -112,9 +137,9 @@ export const useAlbumsGrouped = () => {
         sortBy: [MediaLibrary.SortBy.modificationTime],
       });
       const latest = assets.assets[0]?.modificationTime ?? 0;
-      const saved = await AsyncStorage.getItem(ASSETS_CACHE_KEY);
-      if (String(latest) !== saved) {
-        await AsyncStorage.setItem(ASSETS_CACHE_KEY, String(latest));
+      const savedHash = albumsStoreSync.loadModificationHash();
+      if (String(latest) !== savedHash) {
+        albumsStoreSync.saveModificationHash(String(latest));
         return true;
       }
       return false;
@@ -123,7 +148,6 @@ export const useAlbumsGrouped = () => {
     }
   };
 
-  // ── Agrupa assets por artista sem buscar capas ──
   const buildGroupedAlbums = async (): Promise<GroupedAlbum[]> => {
     const allAssets = await MediaLibrary.getAssetsAsync({
       mediaType: ["audio"],
@@ -155,7 +179,7 @@ export const useAlbumsGrouped = () => {
         artistName: metadata.artist,
         albumName: metadata.albumName,
         assetCount: songs.length,
-        coverArt: undefined, // sem capa por enquanto
+        coverArt: undefined,
         songs,
       });
     }
@@ -164,13 +188,14 @@ export const useAlbumsGrouped = () => {
   };
 
   const initAlbums = useCallback(async () => {
+    if (isInitializedRef.current && albumsRef.current.length > 0) return;
+
     setLoading(true);
     priorityQueue.clear();
     normalQueue.clear();
 
     try {
-      // ── FASE 1: Cache → UI instantânea ──
-      const stored = await albumsStore.load();
+      const stored = albumsStoreSync.load();
       if (stored.length > 0) {
         const withoutArt = stored.map((a) => ({
           ...a,
@@ -178,29 +203,27 @@ export const useAlbumsGrouped = () => {
           songs: a.songs.map((s) => ({ ...s, coverArt: undefined })),
         })) as GroupedAlbum[];
 
-        albumsStore.setMemory(withoutArt);
+        albumsStoreSync.setMemory(withoutArt);
+
         if (isMounted.current) {
-          setAlbums(withoutArt);
+          setAlbumsSync(withoutArt); // ← usa setAlbumsSync
           setLoading(false);
           setLoadingCovers(true);
+          isInitializedRef.current = true;
         }
 
-        // Enfileira todos — visíveis serão priorizados pela FlatList
         withoutArt.forEach((a) => normalQueue.add(a.id));
         processCoverQueue();
 
-        // Verifica mudanças em background ──
         const hasChanges = await checkForChanges();
-        if (!hasChanges) return; // cache válido, apenas capas em background
+        if (!hasChanges) return;
 
-        // Mudou algo — reprocessa metadados sem bloquear UI
         const fresh = await buildGroupedAlbums();
-        await albumsStore.save(fresh);
-        albumsStore.setMemory(fresh);
+        albumsStoreSync.save(fresh);
+        albumsStoreSync.setMemory(fresh);
 
-        // Preserva capas já carregadas
         if (isMounted.current) {
-          setAlbums((prev) =>
+          setAlbumsSync((prev) =>
             fresh.map((a) => ({
               ...a,
               coverArt: prev.find((p) => p.id === a.id)?.coverArt,
@@ -208,7 +231,6 @@ export const useAlbumsGrouped = () => {
           );
         }
 
-        // Enfileira novos álbuns que podem ter aparecido
         fresh.forEach((a) => {
           if (!stored.find((s) => s.id === a.id)) normalQueue.add(a.id);
         });
@@ -216,15 +238,15 @@ export const useAlbumsGrouped = () => {
         return;
       }
 
-      // ── Primeiro acesso: sem cache ──
       const fresh = await buildGroupedAlbums();
-      await albumsStore.save(fresh);
-      albumsStore.setMemory(fresh);
+      albumsStoreSync.save(fresh);
+      albumsStoreSync.setMemory(fresh);
 
       if (isMounted.current) {
-        setAlbums(fresh);
+        setAlbumsSync(fresh); // ← usa setAlbumsSync
         setLoading(false);
         setLoadingCovers(true);
+        isInitializedRef.current = true;
       }
 
       fresh.forEach((a) => normalQueue.add(a.id));
@@ -234,11 +256,22 @@ export const useAlbumsGrouped = () => {
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [processCoverQueue]);
+  }, [processCoverQueue, setAlbumsSync]);
 
   useEffect(() => {
-    if (permissionResponse?.granted) initAlbums();
+    if (permissionResponse?.granted && !isInitializedRef.current) {
+      initAlbums();
+    }
   }, [permissionResponse?.granted]);
+
+  const refreshAlbums = useCallback(async () => {
+    albumsStoreSync.clear();
+    isInitializedRef.current = false;
+    albumsRef.current = [];
+    priorityQueue.clear();
+    normalQueue.clear();
+    await initAlbums();
+  }, [initAlbums]);
 
   return {
     albums,
@@ -246,7 +279,7 @@ export const useAlbumsGrouped = () => {
     loadingCovers,
     permissionResponse,
     requestPermission,
-    refreshAlbums: initAlbums,
-    onAlbumsVisible, // ← conecta na FlatList
+    refreshAlbums,
+    onAlbumsVisible,
   };
 };

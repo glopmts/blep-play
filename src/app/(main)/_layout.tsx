@@ -1,11 +1,11 @@
 import PlayerMusicRecurrent from "@/components/player-music-current";
 import { AppUpdater } from "@/components/update/app-update-context";
 import { AlbumsProvider } from "@/context/albums-context";
-import { useTheme } from "@/hooks/useTheme";
 import { Stack } from "expo-router";
+import { useTheme } from "../../context/ThemeContext";
 
 const LayoutMain = () => {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <AlbumsProvider>
@@ -15,6 +15,7 @@ const LayoutMain = () => {
           headerTitleStyle: {
             fontWeight: "bold",
           },
+
           headerShown: false,
         }}
       />

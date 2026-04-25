@@ -1,4 +1,3 @@
-// src/services/updateBridge.ts
 // Thin TypeScript wrapper around the Kotlin UpdateModule.
 // Handles missing-module gracefully so the app works in Expo Go / web.
 

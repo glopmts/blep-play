@@ -1,6 +1,7 @@
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import React, { FC, useEffect, useRef } from "react";
-import { StyleSheet, Text, useColorScheme } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { AlbumWithDetails } from "../../types/interfaces";
 
 type BottomSheetProps = {
@@ -12,8 +13,7 @@ const BottomSheetComponent: FC<BottomSheetProps> = ({
   album,
   snapPoints = ["50%"],
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { colors } = useTheme();
   const bottomSheetRef = useRef<BottomSheet>(null);
 
   useEffect(() => {
@@ -24,9 +24,10 @@ const BottomSheetComponent: FC<BottomSheetProps> = ({
   }, []);
 
   const handleSheetChanges = (index: number) => {
-    console.log("handleSheetChanges", index);
     // Opcional: se o usuário fechar, você pode notificar o pai
-    // if (index === -1) { /* fechou */ }
+    if (index === -1) {
+      /* fechou */
+    }
   };
 
   return (
@@ -36,12 +37,10 @@ const BottomSheetComponent: FC<BottomSheetProps> = ({
       onChange={handleSheetChanges}
       index={0} // começa aberto
       enablePanDownToClose={true} // permite fechar arrastando para baixo
-      backgroundStyle={{ backgroundColor: isDark ? "#1c1c1e" : "#ffffff" }}
+      backgroundStyle={{ backgroundColor: colors.card }}
     >
       <BottomSheetView style={styles.contentContainer}>
-        <Text style={{ color: isDark ? "#fff" : "#000" }}>
-          {album?.title} 🎉
-        </Text>
+        <Text style={{ color: colors.text }}>{album?.title} 🎉</Text>
       </BottomSheetView>
     </BottomSheet>
   );
