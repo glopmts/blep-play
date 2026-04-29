@@ -1,29 +1,25 @@
-import { AlbumsList } from "@/components/album/album-artist-list";
-import { AlbumScreen } from "@/components/album/album-card";
-import Header from "@/components/header";
-import { HeaderPage } from "@/components/hearder-page";
-import { LayoutWithHeader } from "@/components/LayoutWithHeader";
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
-import { Album } from "lucide-react-native";
+import { AlbumWithDetails, GroupedAlbum } from "@/types/interfaces";
+import { memo } from "react";
 import { View } from "react-native";
 
+// ─── Tipos dos itens da lista unificada
+type SectionHeader = {
+  _type: "header";
+  title: string;
+  icon?: React.ComponentType<any>;
+};
+type LocalAlbumRow = { _type: "local_row"; items: AlbumWithDetails[] };
+type ArtistAlbumItem = { _type: "artist_album"; album: GroupedAlbum };
+type ListItem = SectionHeader | LocalAlbumRow | ArtistAlbumItem;
+
+// ─── Tela principal
 const Albums = () => {
   const { isDark } = useTheme();
+  const { openSheet, closeSheet } = useBottomSheet();
 
-  return (
-    <LayoutWithHeader header={false} statusBarOpen={false}>
-      <Header />
-      <View style={{ flex: 1 }}>
-        {/* Cabeçalho fora do FlatList */}
-        <HeaderPage isDark={isDark} title="Pastas Dispositivo" />
-        <AlbumScreen />
-
-        {/* Apenas a lista de álbuns */}
-        <HeaderPage isDark={isDark} title="Albums por Artistas" icon={Album} />
-        <AlbumsList />
-      </View>
-    </LayoutWithHeader>
-  );
+  return <View></View>;
 };
 
-export default Albums;
+export default memo(Albums);

@@ -1,21 +1,23 @@
+import { useTheme } from "@/context/ThemeContext";
+import { ReactNode } from "react";
 import {
   ActivityIndicator,
   Pressable,
   PressableProps,
   Text,
+  TextStyle,
   View,
   ViewStyle,
 } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
 
 interface ButtonProps extends PressableProps {
   isLoading?: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   size?: "small" | "medium" | "large";
   fullWidth?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
 }
 
 const Button = ({
@@ -30,7 +32,7 @@ const Button = ({
   style,
   ...rest
 }: ButtonProps) => {
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
 
   const getVariantStyles = (): ViewStyle => {
     switch (variant) {
@@ -87,7 +89,7 @@ const Button = ({
     }
   };
 
-  const getTextSize = () => {
+  const getTextSize = (): number => {
     switch (size) {
       case "small":
         return 13;
@@ -107,7 +109,7 @@ const Button = ({
     return colors.text;
   };
 
-  const getIconSize = () => {
+  const getIconSize = (): number => {
     switch (size) {
       case "small":
         return 16;
@@ -116,6 +118,75 @@ const Button = ({
       default:
         return 20;
     }
+  };
+
+  const textStyle: TextStyle = {
+    color: getTextColor(),
+    fontSize: getTextSize(),
+    fontWeight: "500",
+  };
+
+  // Função para extrair texto puro do children
+  const getTextFromChildren = (node: ReactNode): string => {
+    if (typeof node === "string") return node;
+    if (typeof node === "number") return String(node);
+    if (Array.isArray(node)) {
+      return node.map(getTextFromChildren).join("");
+    }
+    if (typeof node === "object" && node !== null && "props" in node) {
+      return getTextFromChildren((node as any).props.children);
+    }
+    return "";
+  };
+
+  // Verifica se o children é apenas texto
+  const isPlainText = (node: ReactNode): boolean => {
+    if (typeof node === "string" || typeof node === "number") return true;
+    if (Array.isArray(node)) return node.length === 1 && isPlainText(node[0]);
+    return false;
+  };
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <ActivityIndicator size={getIconSize()} color={getSpinnerColor()} />
+      );
+    }
+
+    const hasIcons = leftIcon || rightIcon;
+    const isTextOnly = isPlainText(children);
+
+    // Se tem ícones e o children é texto puro, usa a estrutura com ícones
+    if (hasIcons && isTextOnly) {
+      return (
+        <>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            {leftIcon && leftIcon}
+            <Text style={textStyle}>{children}</Text>
+          </View>
+          {rightIcon && rightIcon}
+        </>
+      );
+    }
+
+    // Se tem ícones mas o children é complexo, renderiza tudo junto
+    if (hasIcons && !isTextOnly) {
+      return (
+        <>
+          {leftIcon && leftIcon}
+          <View style={{ flex: 1 }}>{children}</View>
+          {rightIcon && rightIcon}
+        </>
+      );
+    }
+
+    // Se o children é texto puro, renderiza com Text
+    if (isTextOnly) {
+      return <Text style={textStyle}>{children}</Text>;
+    }
+
+    // Se o children é complexo, renderiza diretamente
+    return children;
   };
 
   return (
@@ -136,41 +207,7 @@ const Button = ({
       disabled={disabled || isLoading}
       {...rest}
     >
-      {isLoading ? (
-        <ActivityIndicator size={getIconSize()} color={getSpinnerColor()} />
-      ) : (
-        <>
-          {leftIcon || rightIcon ? (
-            <>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-              >
-                {leftIcon && leftIcon}
-                <Text
-                  style={{
-                    color: getTextColor(),
-                    fontSize: getTextSize(),
-                    fontWeight: "500",
-                  }}
-                >
-                  {children}
-                </Text>
-              </View>
-              {rightIcon && rightIcon}
-            </>
-          ) : (
-            <Text
-              style={{
-                color: getTextColor(),
-                fontSize: getTextSize(),
-                fontWeight: "500",
-              }}
-            >
-              {children}
-            </Text>
-          )}
-        </>
-      )}
+      {renderContent()}
     </Pressable>
   );
 };

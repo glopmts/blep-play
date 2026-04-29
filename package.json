@@ -38,6 +38,7 @@
     "expo-glass-effect": "~55.0.10",
     "expo-haptics": "~55.0.14",
     "expo-image": "~55.0.8",
+    "expo-image-manipulator": "^55.0.15",
     "expo-image-picker": "^55.0.19",
     "expo-intent-launcher": "~55.0.12",
     "expo-linear-gradient": "~55.0.13",
@@ -46,8 +47,10 @@
     "expo-media-library": "~55.0.14",
     "expo-music-info-2": "^2.0.0",
     "expo-notifications": "~55.0.19",
+    "expo-quick-actions": "^6.0.1",
     "expo-router": "~55.0.12",
     "expo-splash-screen": "~55.0.17",
+    "expo-sqlite": "~55.0.15",
     "expo-status-bar": "~55.0.5",
     "expo-symbols": "~55.0.7",
     "expo-system-ui": "~55.0.15",
@@ -55,7 +58,6 @@
     "expo-web-browser": "~55.0.14",
     "expo-widgets": "^55.0.13",
     "lucide-react-native": "^1.8.0",
-    "music-metadata-browser": "^2.5.11",
     "nativewind": "^4.2.3",
     "patch-package": "^8.0.1",
     "prettier-plugin-tailwindcss": "^0.5.14",
@@ -70,7 +72,8 @@
     "react-native-track-player": "^5.0.0-alpha0-nightly-359af5a12d712d3b685530aed9b9625865a25d74",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "^0.8.1",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",

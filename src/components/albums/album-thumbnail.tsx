@@ -1,15 +1,15 @@
+import { useTheme } from "@/context/ThemeContext";
+import { Colors } from "@/types/colors";
+import { CARD_WIDTH, IMAGE_SIZE } from "@/utils/image-types";
 import { Image } from "expo-image";
 import { Music } from "lucide-react-native";
 import { memo, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
-import { Colors } from "../../types/colors";
-import { CARD_WIDTH, IMAGE_SIZE } from "../../utils/image-types";
 
 interface AlbumThumbnailProps {
   coverArt?: string | null;
   isDark?: boolean;
-  loadingCovers: boolean;
+  loadingCovers?: boolean;
   type?: "card" | "list";
   albumId?: string;
 }
@@ -30,17 +30,13 @@ const Placeholder = ({ colors, size }: { colors: Colors; size: number }) => (
 );
 
 const AlbumThumbnail = memo(
-  ({
-    coverArt,
-    type = "card",
-    loadingCovers,
-    albumId,
-  }: AlbumThumbnailProps) => {
+  ({ coverArt, type = "card", loadingCovers }: AlbumThumbnailProps) => {
     // Estabiliza a source — evita recriar objeto a cada render
     const source = useMemo(
       () => (coverArt ? { uri: coverArt } : null),
       [coverArt],
     );
+
     const { colors, isDark } = useTheme();
 
     if (type === "list") {
@@ -64,14 +60,14 @@ const AlbumThumbnail = memo(
             >
               <ActivityIndicator size="small" color={colors.iconActive} />
             </View>
-          ) : source ? (
+          ) : coverArt ? (
             <Image
-              source={source}
-              style={{ width: "100%", height: "100%" }}
+              source={{ uri: coverArt }}
+              style={{ width: "100%", height: "100%" }} // <-- Mudança aqui
               contentFit="cover"
               transition={200}
-              cachePolicy="memory-disk" // ← cache agressivo
-              recyclingKey={albumId} // ← reutiliza célula na FlatList
+              cachePolicy="memory-disk"
+              recyclingKey={coverArt!}
             />
           ) : (
             <Placeholder colors={colors} size={40} />
@@ -105,11 +101,6 @@ const AlbumThumbnail = memo(
       </View>
     );
   },
-  // Re-renderiza só se a capa ou o tema mudarem
-  (prev, next) =>
-    prev.coverArt === next.coverArt &&
-    prev.isDark === next.isDark &&
-    prev.loadingCovers === next.loadingCovers,
 );
 
 AlbumThumbnail.displayName = "AlbumThumbnail";

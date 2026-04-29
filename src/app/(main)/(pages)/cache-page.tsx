@@ -3,7 +3,7 @@ import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { useTheme } from "@/context/ThemeContext";
 import { cacheManager } from "@/services/cacheManager.service";
 import { Clock, Database, HardDrive, Image, Trash2 } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -156,27 +156,6 @@ const CachePage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
-  useEffect(() => {
-    loadCacheStats();
-  }, []);
-
-  const loadCacheStats = async () => {
-    try {
-      setIsLoadingStats(true);
-      const cacheStats = await cacheManager.getCacheStats();
-      setStats(cacheStats);
-    } catch {
-      setStats({
-        imageCacheSize: 0,
-        mmkvKeys: [],
-        totalSize: 0,
-        lastCleared: null,
-      });
-    } finally {
-      setIsLoadingStats(false);
-    }
-  };
-
   const handleClearCache = async () => {
     Alert.alert(
       "Limpar Cache",
@@ -191,7 +170,6 @@ const CachePage = () => {
             try {
               const result = await cacheManager.safeClearCache();
               if (result.success) {
-                await loadCacheStats();
                 Alert.alert("Sucesso", "Cache limpo com sucesso!");
               } else {
                 Alert.alert("Erro", `Falha ao limpar cache: ${result.error}`);
@@ -216,7 +194,7 @@ const CachePage = () => {
           setLoading(true);
           try {
             await cacheManager.clearSpecificCache("images");
-            await loadCacheStats();
+
             Alert.alert("Sucesso", "Cache de imagens limpo!");
           } catch {
             Alert.alert("Erro", "Falha ao limpar cache de imagens");
@@ -230,8 +208,6 @@ const CachePage = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadCacheStats();
-    setRefreshing(false);
   }, []);
 
   const formatSize = (mb: number): string => {
@@ -418,7 +394,6 @@ const CachePage = () => {
                 Não foi possível carregar as estatísticas
               </Text>
               <TouchableOpacity
-                onPress={loadCacheStats}
                 style={{
                   paddingHorizontal: 20,
                   paddingVertical: 10,

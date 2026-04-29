@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert } from "react-native";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import {
   addSongToPlaylist,
@@ -13,49 +14,30 @@ import {
   setPlaylistSongs,
   updatePlaylist,
 } from "../services/playlists.service";
-import { Playlists, SongWithArt } from "../types/interfaces";
-import { fetchAndCacheCover } from "../utils/coverArtCache";
+import { Playlists, TrackDetails } from "../types/interfaces";
+import { getTrackCoverSync } from "./useTrackCover";
 
-export function usePlaylists() {
+export function usePlaylists(id?: string | null) {
   const [playlists, setPlaylists] = useState<Playlists[]>([]);
   const [isLoading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [playlist, setPlaylist] = useState<Playlists | null>(null);
 
   // Previne operações enquanto outra está em andamento
   const operationInProgress = useRef(false);
-
-  const getPlaylistCoverArt = async (
-    playlist: Playlists,
-  ): Promise<string | undefined> => {
-    // Se já tem capa, retorna ela
-    if (playlist.coverArt) return playlist.coverArt;
-
-    // Se não tem músicas, retorna undefined
-    if (!playlist.songs || playlist.songs.length === 0) return undefined;
-
-    // Busca capa da primeira música
-    const firstSong = playlist.songs[0];
-    try {
-      return await fetchAndCacheCover(firstSong.id, firstSong.uri);
-    } catch (error) {
-      console.error(`Erro ao buscar capa para música ${firstSong.id}:`, error);
-      return undefined;
-    }
-  };
 
   // Carrega todas as playlists do storage
   const loadAll = useCallback(async () => {
     try {
       const data = await getPlaylist();
 
-      const playlistsWithCovers = await Promise.all(
-        data.map(async (playlist) => ({
-          ...playlist,
-          coverArt: await getPlaylistCoverArt(playlist),
-        })),
-      );
+      // Garante que músicas de cada playlist estão ordenadas (mais nova primeiro)
+      const playlistsWithOrder = data.map((playlist) => ({
+        ...playlist,
+        songs: [...(playlist.songs ?? [])].reverse(), // Mais nova primeiro
+      }));
 
-      setPlaylists(playlistsWithCovers);
+      setPlaylists(playlistsWithOrder);
     } catch (error) {
       console.error("[usePlaylists] Erro ao carregar:", error);
     }
@@ -156,7 +138,7 @@ export function usePlaylists() {
 
   // Adicionar música a uma playlist
   const handleAddSongToPlaylist = useCallback(
-    async (playlistId: string, song: SongWithArt) => {
+    async (playlistId: string, song: TrackDetails) => {
       if (operationInProgress.current) {
         return null;
       }
@@ -215,7 +197,7 @@ export function usePlaylists() {
 
   // Substituir todas as músicas de uma playlist
   const handleSetPlaylistSongs = useCallback(
-    async (playlistId: string, songs: SongWithArt[]) => {
+    async (playlistId: string, songs: TrackDetails[]) => {
       if (operationInProgress.current) return null;
       operationInProgress.current = true;
 
@@ -278,12 +260,55 @@ export function usePlaylists() {
     return getPlaylistById(id);
   }, []);
 
+  const fetchData = async () => {
+    if (!id) return;
+
+    setLoading(true);
+    try {
+      const playlistData = await getPlaylistById(id);
+
+      if (!playlistData) {
+        Alert.alert("Playlist não encontrada!");
+        return;
+      }
+
+      // Ordena músicas: mais recente primeiro
+      const sortedSongs = [...(playlistData.songs ?? [])].reverse();
+
+      const sortedPlaylist = {
+        ...playlistData,
+        songs: sortedSongs,
+      };
+
+      // Busca capa da primeira música (mais recente)
+      if (sortedSongs.length > 0) {
+        const firstSong = sortedSongs[0];
+        const cover = await getTrackCoverSync(firstSong.filePath, firstSong.id);
+        sortedPlaylist.coverArt = cover || "";
+      }
+
+      setPlaylist(sortedPlaylist);
+    } catch (e) {
+      console.error("Erro ao buscar Playlist", e);
+      Alert.alert(
+        "Erro ao buscar Playlist: " +
+          (e instanceof Error ? e.message : String(e)),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [id]);
+
   return {
     // Estado
     playlists,
     isLoading,
     refreshing,
-
+    playlist,
     // Ações
     loadAll,
     handleRefresh,

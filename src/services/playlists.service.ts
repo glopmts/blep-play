@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Playlists, SongWithArt } from "../types/interfaces";
+import { Playlists, TrackDetails } from "../types/interfaces";
 
 const KEYS = {
   PLAYLISTS: "playlists_v3", // Nova versão otimizada
@@ -30,19 +30,18 @@ async function withLock<T>(fn: () => Promise<T>): Promise<T> {
  * Remove campos pesados das músicas para economizar espaço
  * Mantém apenas os campos essenciais para identificação e reprodução
  */
-function minimizeSong(song: SongWithArt): Partial<SongWithArt> {
+function minimizeSong(song: TrackDetails): Partial<TrackDetails> {
   return {
     id: song.id,
     uri: song.uri,
-    filename: song.filename,
     duration: song.duration,
-    albumName: song.albumName,
     title: song.title,
     artist: song.artist,
     album: song.album,
+    filePath: song.filePath,
     // NÃO salva coverArt base64 - será carregado dinamicamente
     // NÃO salva lyrics - muito grande
-    mediaType: song.mediaType,
+    mimeType: song.mimeType,
   };
 }
 
@@ -56,7 +55,7 @@ function minimizePlaylist(playlist: Playlists): Playlists {
     musicId: playlist.musicId,
     playedAt: playlist.playedAt,
     // Não salva coverArt diretamente - será derivado das músicas
-    songs: (playlist.songs ?? []).map(minimizeSong) as SongWithArt[],
+    songs: (playlist.songs ?? []).map(minimizeSong) as TrackDetails[],
   };
 }
 
@@ -193,10 +192,11 @@ export async function createPlaylist(
       id: playlist.id,
       title: playlist.title,
       musicId: playlist.musicId,
-      songs: playlist.songs ?? [],
+      songs: playlist.songs ?? [], // Mantém a ordem original
       playedAt: Date.now(),
     };
 
+    // Nova playlist no topo da lista de playlists
     const updated = [newPlaylist, ...list];
     const success = await writePlaylists(updated);
 
@@ -231,7 +231,7 @@ export async function clearPlaylist(): Promise<boolean> {
 
 export async function addSongToPlaylist(
   playlistId: string,
-  song: SongWithArt,
+  song: TrackDetails,
 ): Promise<Playlists | null> {
   return withLock(async () => {
     const list = await readPlaylists();
@@ -252,7 +252,7 @@ export async function addSongToPlaylist(
 
     const updatedPlaylist: Playlists = {
       ...playlist,
-      songs: [...songs, song],
+      songs: [song, ...songs],
     };
 
     const updated = [...list];
@@ -294,7 +294,7 @@ export async function removeSongFromPlaylist(
 
 export async function setPlaylistSongs(
   playlistId: string,
-  songs: SongWithArt[],
+  songs: TrackDetails[],
 ): Promise<Playlists | null> {
   return withLock(async () => {
     const list = await readPlaylists();

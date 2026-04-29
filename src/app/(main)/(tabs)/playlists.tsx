@@ -62,7 +62,11 @@ const Playlists = () => {
     if (!title.trim()) {
       return Alert.alert("Campo obrigatório", "Dê um nome à sua playlist.");
     }
-    handleCreaterPlaylist({ id: Crypto.randomUUID(), title: title.trim() });
+    handleCreaterPlaylist({
+      id: Crypto.randomUUID(),
+      title: title.trim(),
+      songs: [],
+    });
     setModalVisible(false);
     setTitle("");
   };
@@ -177,7 +181,7 @@ const Playlists = () => {
   // ─── Loading
   if (isLoading) {
     return (
-      <LayoutWithHeader statusBarOpen={false}>
+      <LayoutWithHeader statusBarOpen={false} header={false}>
         <Header />
         <SkeletonLoadingAlbum numberOfItems={8} numColumns={2} />
       </LayoutWithHeader>

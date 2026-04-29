@@ -1,27 +1,48 @@
-// ─── Converte SongWithArt → Track
-
 import { Track } from "react-native-track-player";
-import { SongWithArt } from "../../types/interfaces";
+import { getOrPersistCover } from "../../database/cache/coverArtCache";
+import { TrackDetails } from "../../types/interfaces";
 
 export function sanitizeArtwork(
   artwork: string | undefined,
 ): string | undefined {
   if (!artwork) return undefined;
-  if (artwork.startsWith("file://") || artwork.startsWith("http"))
-    return artwork;
+  if (artwork.startsWith("file://")) return artwork;
+  if (artwork.startsWith("http")) return artwork;
   if (artwork.startsWith("/")) return `file://${artwork}`;
-  if (artwork.startsWith("data:image")) return artwork; // ← base64
+  // base64 → inválido para notificação, descarta
   return undefined;
 }
 
-export function songToTrack(song: SongWithArt): Track {
+/**
+ * Versão async: resolve capa do cache em disco antes de montar o Track.
+ * Use sempre que possível — garante que a notificação mostra a imagem.
+ */
+export async function songToTrackWithArt(song: TrackDetails): Promise<Track> {
+  // Tenta pegar path do cache (rápido se já existir)
+  const coverPath = await getOrPersistCover(song.id, song.coverArt);
+
   return {
     id: song.id,
     url: song.uri,
-    title: song.filename?.replace(/\.[^/.]+$/, "") ?? "Música",
+    title: song.title?.replace(/\.[^/.]+$/, "") ?? "Música",
     artist: song.artist ?? "Artista desconhecido",
-    album: song.albumName ?? "",
-    artwork: sanitizeArtwork(song.coverArt),
-    duration: song.duration,
+    album: song.album ?? "",
+    artwork: coverPath ? `file://${coverPath}` : undefined,
+    duration: song.duration / 1000, // TrackPlayer usa segundos
   };
+}
+
+// Versão síncrona — só usa se já tiver path em mãos
+export function songToTrack(song: TrackDetails): Track {
+  return {
+    id: song.id,
+    url: song.uri,
+    title: song.title?.replace(/\.[^/.]+$/, "") ?? "Música",
+    artist: song.artist ?? "Artista desconhecido",
+    album: song.album ?? "",
+    artwork: sanitizeArtwork(song.coverArt ?? undefined),
+    duration: song.duration / 1000,
+    // campo extra — acessível via (track as any).coverArt no evento
+    coverArt: song.coverArt ?? undefined,
+  } as Track;
 }

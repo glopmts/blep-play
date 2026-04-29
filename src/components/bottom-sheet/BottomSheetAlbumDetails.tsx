@@ -1,38 +1,41 @@
-import { AlbumWithDetails } from "@/types/interfaces";
+import { useTheme } from "@/context/ThemeContext";
+import { confirmAndDeleteAlbum } from "@/services/deletealbum.service";
+import { AlbumInterface } from "@/types/interfaces";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { ChevronRight, Info, Music, Trash2, X } from "lucide-react-native";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
-import { useTheme } from "../../context/ThemeContext";
+import { useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { showPlatformMessage } from "../toast-message-plataform";
 
 type Props = {
-  album: AlbumWithDetails;
-  handleDeleteAlbum: (albumId: string) => void;
-  onClose?: () => void; // para fechar o bottom sheet
+  album: AlbumInterface;
+  onDeleted?: (albumId: string) => void;
+  onClose?: () => void;
+  refreshAlbums?: () => void;
 };
 
 const BottomSheetAlbumDetails = ({
   album,
-  handleDeleteAlbum,
+  onDeleted,
   onClose,
+  refreshAlbums,
 }: Props) => {
   const { colors, isDark } = useTheme();
+  const [deleting, setDeleting] = useState(false);
 
   const handleDelete = () => {
-    Alert.alert(
-      "Deletar álbum",
-      `Tem certeza que deseja deletar "${album.title}"? Essa ação não poderá ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Deletar",
-          style: "destructive",
-          onPress: () => {
-            handleDeleteAlbum(album.id);
-            onClose?.(); // opcional: fechar bottom sheet após deletar
-          },
-        },
-      ],
+    confirmAndDeleteAlbum(
+      album,
+      (deletedCount) => {
+        onDeleted?.(album.id);
+        onClose?.();
+        refreshAlbums?.();
+        showPlatformMessage("Album deletado com sucesso!");
+      },
+      (_reason) => {
+        setDeleting(false);
+      },
     );
   };
 
@@ -50,9 +53,9 @@ const BottomSheetAlbumDetails = ({
         {/* Cabeçalho com capa e informações */}
         <View className="flex-row items-start gap-4 mb-6">
           <View className="w-20 h-20 rounded-xl overflow-hidden shadow-md shadow-black/20">
-            {album.coverArt ? (
+            {album.artworkBase64 ? (
               <Image
-                source={{ uri: album.coverArt }}
+                source={{ uri: album.artworkBase64 }}
                 style={{ width: "100%", height: "100%" }}
                 contentFit="cover"
                 transition={200}
@@ -77,7 +80,7 @@ const BottomSheetAlbumDetails = ({
               style={{ color: colors.text }}
               numberOfLines={2}
             >
-              {album.title}
+              {album.album}
             </Text>
             {album.artist && (
               <Text
@@ -90,8 +93,8 @@ const BottomSheetAlbumDetails = ({
             )}
             <View className="flex-row items-center mt-1 gap-2">
               <Text className="text-sm" style={{ color: colors.textMuted }}>
-                {album.assetCount}{" "}
-                {album.assetCount === 1 ? "música" : "músicas"}
+                {album.numberOfSongs}{" "}
+                {album.numberOfSongs === 1 ? "música" : "músicas"}
               </Text>
               {album.year && (
                 <>
@@ -104,7 +107,6 @@ const BottomSheetAlbumDetails = ({
             </View>
           </View>
 
-          {/* Botão de fechar (opcional, já que pode arrastar) */}
           {onClose && (
             <TouchableOpacity
               onPress={onClose}
@@ -149,31 +151,38 @@ const BottomSheetAlbumDetails = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={handleDelete}
+            disabled={deleting}
             style={{
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "center",
+              gap: 10,
               backgroundColor: colors.danger_v2,
               paddingVertical: 14,
               paddingHorizontal: 18,
               borderRadius: 14,
               borderWidth: 1,
               borderColor: isDark ? "#7f1a1a" : "#fecaca",
+              opacity: deleting ? 0.6 : 1,
             }}
           >
-            <View className="flex-row items-center gap-3">
+            {deleting ? (
+              <ActivityIndicator
+                size="small"
+                color={isDark ? "#f87171" : "#dc2626"}
+              />
+            ) : (
               <Trash2 size={20} color={isDark ? "#f87171" : "#dc2626"} />
-              <Text
-                className="text-base font-medium"
-                style={{ color: isDark ? "#f87171" : "#dc2626" }}
-              >
-                Deletar álbum
-              </Text>
-            </View>
+            )}
+            <Text
+              className="text-base font-medium"
+              style={{ color: isDark ? "#f87171" : "#dc2626" }}
+            >
+              {deleting ? "Deletando..." : "Deletar álbum"}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Rodapé informativo */}
         <Text
           className="text-xs text-center mt-8"
           style={{ color: colors.textMuted }}

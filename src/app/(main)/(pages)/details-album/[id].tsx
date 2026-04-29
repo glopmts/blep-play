@@ -3,10 +3,10 @@ import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
 import SearchBar from "@/components/searchBar";
 import { useTheme } from "@/context/ThemeContext";
-import { useAlbumDetails } from "@/hooks/useAlbumDetails";
+import { useAlbumDetailsLocal } from "@/hooks/useAlbumDetailsLocal";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useSearch } from "@/hooks/useSearch";
-import { SongWithArt } from "@/types/interfaces";
+import { TrackDetails } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,23 +27,11 @@ import {
 SongCard.displayName = "SongCard";
 
 const AlbumDetails = () => {
-  const { id, type } = useLocalSearchParams<{
+  const { id } = useLocalSearchParams<{
     id: string;
-    type: "album_local" | "album_artist";
   }>();
 
-  const {
-    albumDetails,
-    loadingDetails,
-    loadingCovers,
-    hasMore,
-    loadMoreSongs,
-    loadingMore,
-    totalSongsCount,
-  } = useAlbumDetails({
-    albumId: id as string,
-    type,
-  });
+  const { album, error, loading } = useAlbumDetailsLocal(id);
 
   const { playSongs, currentTrack } = usePlayer();
   const { isDark, colors } = useTheme();
@@ -58,14 +46,14 @@ const AlbumDetails = () => {
     isSearching,
     clearSearch,
     hasResults,
-  } = useSearch(albumDetails?.songs || []);
+  } = useSearch(album?.songs || []);
 
   // Toca a música clicada
   const handleSongPress = useCallback(
     async (index: number) => {
       const songs = searchQuery
         ? searchResults.map((r) => r.song)
-        : albumDetails?.songs;
+        : album?.songs;
       if (!songs || loadingSongIndex !== null) return;
 
       setLoadingSongIndex(index);
@@ -76,45 +64,27 @@ const AlbumDetails = () => {
         setLoadingSongIndex(null);
       }
     },
-    [
-      albumDetails?.songs,
-      searchResults,
-      searchQuery,
-      playSongs,
-      loadingSongIndex,
-    ],
+    [album?.songs, searchResults, searchQuery, playSongs, loadingSongIndex],
   );
 
   // Tocar álbum inteiro
   const handlePlayAll = useCallback(async () => {
-    if (!albumDetails?.songs?.length) return;
-    await playSongs(albumDetails.songs, 0);
+    if (!album?.songs?.length) return;
+    await playSongs(album.songs, 0);
     router.navigate({ pathname: "/player" });
-  }, [albumDetails, playSongs]);
+  }, [album, playSongs]);
 
-  // Dados para exibir (resultados da busca ou lista completa)
   const displayData = useMemo(() => {
     if (searchQuery) {
       return searchResults.map((r) => r.song);
     }
-    return albumDetails?.songs || [];
-  }, [searchQuery, searchResults, albumDetails?.songs]);
+    return album?.songs || [];
+  }, [searchQuery, searchResults, album?.songs]);
 
   const ListFooterComponent = useMemo(() => {
-    if (searchQuery) return null; // Sem paginação na busca
+    if (searchQuery) return null;
 
-    if (!hasMore && albumDetails && albumDetails?.songs?.length > 0) {
-      return (
-        <View className="py-8 items-center">
-          <Text className="text-gray-500 dark:text-gray-400 text-sm">
-            {totalSongsCount} {totalSongsCount === 1 ? "música" : "músicas"} no
-            álbum
-          </Text>
-        </View>
-      );
-    }
-
-    if (loadingMore) {
+    if (loading) {
       return (
         <View className="py-8 items-center">
           <ActivityIndicator size="small" color={colors.iconActive} />
@@ -126,27 +96,18 @@ const AlbumDetails = () => {
     }
 
     return null;
-  }, [
-    loadingMore,
-    hasMore,
-    isDark,
-    totalSongsCount,
-    albumDetails?.songs?.length,
-    searchQuery,
-  ]);
+  }, [isDark, album?.songs?.length, searchQuery]);
 
   const ListHeaderComponent = useMemo(() => {
-    if (!albumDetails) return null;
+    if (!album) return null;
 
     return (
-      <View>
-        <BackButton />
-
+      <View className="relative">
         {/* Hero com imagem do álbum */}
         <View style={{ width: "100%", height: IMAGE_SIZE_BACKGROUND }}>
-          {albumDetails.coverArt ? (
+          {album.artworkBase64 ? (
             <ImageBackground
-              source={{ uri: albumDetails.coverArt }}
+              source={{ uri: album.artworkBase64 }}
               style={{
                 flex: 1,
                 borderBottomEndRadius: 20,
@@ -177,7 +138,7 @@ const AlbumDetails = () => {
                   }}
                   numberOfLines={2}
                 >
-                  {albumDetails.title}
+                  {album.album}
                 </Text>
               </View>
             </ImageBackground>
@@ -201,7 +162,7 @@ const AlbumDetails = () => {
             <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {searchQuery
                 ? `${displayData.length} ${displayData.length === 1 ? "música encontrada" : "músicas encontradas"}`
-                : `${albumDetails.assetCount} ${albumDetails.assetCount === 1 ? "música" : "músicas"}`}
+                : `${album.numberOfSongs} ${album.numberOfSongs === 1 ? "música" : "músicas"}`}
             </Text>
           </View>
 
@@ -228,18 +189,20 @@ const AlbumDetails = () => {
         </View>
 
         {/*  Barra de Busca */}
-        <SearchBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          isSearching={isSearching}
-          onClear={clearSearch}
-          colors={colors}
-          placeholder="Buscar música por título, artista..."
-        />
+        {album.songs?.length && album.songs?.length > 10 && (
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            isSearching={isSearching}
+            onClear={clearSearch}
+            colors={colors}
+            placeholder="Buscar música por título, artista..."
+          />
+        )}
       </View>
     );
   }, [
-    albumDetails,
+    album,
     isDark,
     handlePlayAll,
     searchQuery,
@@ -249,7 +212,7 @@ const AlbumDetails = () => {
   ]);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: SongWithArt; index: number }) => {
+    ({ item, index }: { item: TrackDetails; index: number }) => {
       const isCurrentlyPlaying = currentTrack?.id === item.id;
       return (
         <View className="px-4">
@@ -260,29 +223,22 @@ const AlbumDetails = () => {
             isLoading={loadingSongIndex === index}
             loadingSongIndex={loadingSongIndex}
             isCurrentlyPlaying={isCurrentlyPlaying}
-            loadingCovers={loadingCovers}
             handleSongPress={() => handleSongPress(index)}
           />
         </View>
       );
     },
-    [
-      isDark,
-      currentTrack?.id,
-      loadingSongIndex,
-      loadingCovers,
-      handleSongPress,
-    ],
+    [isDark, currentTrack?.id, loadingSongIndex, handleSongPress],
   );
 
-  const keyExtractor = useCallback((item: SongWithArt) => item.id, []);
+  const keyExtractor = useCallback((item: TrackDetails) => item.id, []);
 
   // Estados de carregamento
-  if (loadingDetails && !albumDetails) {
+  if (!album) {
     return <ActivityIndicatorCustom />;
   }
 
-  if (!albumDetails) {
+  if (!album) {
     return (
       <View className="infor-alert">
         <Text className="text-1">Álbum não encontrado</Text>
@@ -298,16 +254,12 @@ const AlbumDetails = () => {
 
   return (
     <View className="content p-0">
+      <BackButton />
       <FlatList
         data={displayData}
         ref={flatListRef}
         ListFooterComponent={ListFooterComponent}
         onEndReachedThreshold={0.3}
-        onEndReached={() => {
-          if (!searchQuery && hasMore && !loadingMore) {
-            loadMoreSongs();
-          }
-        }}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}

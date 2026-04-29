@@ -1,5 +1,9 @@
 import * as FileSystem from "expo-file-system/legacy";
 
+const MAX_READ_BYTES = 20 * 1024 * 1024;
+
+// ─── Helpers binários
+
 function decodeSynchsafe(bytes: Uint8Array, offset: number): number {
   return (
     ((bytes[offset] & 0x7f) << 21) |
@@ -18,53 +22,89 @@ function readUint32BE(bytes: Uint8Array, offset: number): number {
   );
 }
 
+/**
+ * Converte content:// URI para file:// copiando para cache temporário.
+ * file:// URIs passam direto.
+ */
+async function resolveReadableUri(uri: string): Promise<string> {
+  if (!uri.startsWith("content://")) return uri;
+
+  const tmpPath = `${FileSystem.cacheDirectory}tmp_audio_read_${Date.now()}.audio`;
+  await FileSystem.copyAsync({ from: uri, to: tmpPath });
+  return tmpPath;
+}
+
+/**
+ * Converte Uint8Array → base64 usando chunks para evitar stack overflow
+ * em imagens grandes (~2MB+).
+ */
 function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 8192;
   let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   }
   return btoa(binary);
 }
 
-/** Extrai capa de MP3/ID3v2 */
+function normalizeMime(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes("png")) return "image/png";
+  if (lower.includes("gif")) return "image/gif";
+  if (lower.includes("webp")) return "image/webp";
+  // jpeg / jpg / JPG / qualquer outro → fallback jpeg
+  return "image/jpeg";
+}
+
+// ─── Parsers de formato
+
 function extractCoverFromID3(bytes: Uint8Array): string | undefined {
+  // Assinatura "ID3"
   if (bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) {
     return undefined;
   }
 
   const majorVersion = bytes[3];
   const id3Size = decodeSynchsafe(bytes, 6);
-  const id3End = 10 + id3Size;
+  const id3End = Math.min(10 + id3Size, bytes.length);
 
   let pos = 10;
 
-  while (pos < id3End - 10) {
+  while (pos + 10 < id3End) {
     const frameIdSize = majorVersion === 2 ? 3 : 4;
-    const frameId = String.fromCharCode(...bytes.slice(pos, pos + frameIdSize));
 
-    if (frameId === "\x00\x00\x00\x00") break;
+    // Fim dos frames (padding de zeros)
+    if (bytes[pos] === 0) break;
+
+    const frameId = String.fromCharCode(
+      ...bytes.subarray(pos, pos + frameIdSize),
+    );
 
     let frameSize: number;
+    let headerSize: number;
+
     if (majorVersion === 2) {
       frameSize =
         (bytes[pos + 3] << 16) | (bytes[pos + 4] << 8) | bytes[pos + 5];
-      pos += 6;
+      headerSize = 6;
     } else if (majorVersion === 4) {
       frameSize = decodeSynchsafe(bytes, pos + 4);
-      pos += 10;
+      headerSize = 10;
     } else {
       frameSize = readUint32BE(bytes, pos + 4);
-      pos += 10;
+      headerSize = 10;
     }
 
-    const frameEnd = pos + frameSize;
+    pos += headerSize;
+    const frameEnd = Math.min(pos + frameSize, bytes.length);
 
     if (frameId === "APIC" || frameId === "PIC") {
-      const frameData = bytes.slice(pos, frameEnd);
-      let offset = 1;
+      const frameData = bytes.subarray(pos, frameEnd);
+      let offset = 1; // pula encoding byte
 
       let mimeType: string;
       if (frameId === "PIC") {
+        // ID3v2.2: 3 bytes fixos para formato (p.ex. "JPG", "PNG")
         mimeType = String.fromCharCode(
           frameData[1],
           frameData[2],
@@ -72,17 +112,20 @@ function extractCoverFromID3(bytes: Uint8Array): string | undefined {
         );
         offset = 4;
       } else {
+        // ID3v2.3/2.4: MIME terminado em \0
         let mimeEnd = offset;
         while (mimeEnd < frameData.length && frameData[mimeEnd] !== 0)
           mimeEnd++;
-        mimeType = String.fromCharCode(...frameData.slice(offset, mimeEnd));
+        mimeType = String.fromCharCode(...frameData.subarray(offset, mimeEnd));
         offset = mimeEnd + 1;
       }
 
-      offset += 1; // picture type
+      offset += 1; // picture type byte
 
+      // Pula descrição (encoding-aware)
       const encoding = frameData[0];
       if (encoding === 1 || encoding === 2) {
+        // UTF-16: termina em \0\0
         while (
           offset + 1 < frameData.length &&
           !(frameData[offset] === 0 && frameData[offset + 1] === 0)
@@ -91,25 +134,18 @@ function extractCoverFromID3(bytes: Uint8Array): string | undefined {
         }
         offset += 2;
       } else {
+        // Latin-1 / UTF-8: termina em \0
         while (offset < frameData.length && frameData[offset] !== 0) offset++;
         offset += 1;
       }
 
-      const imageBytes = frameData.slice(offset);
+      const imageBytes = frameData.subarray(offset);
       if (imageBytes.length === 0) {
         pos = frameEnd;
         continue;
       }
 
-      const mime = mimeType.includes("png")
-        ? "image/png"
-        : mimeType.includes("jpg") ||
-            mimeType.includes("jpeg") ||
-            mimeType === "JPG"
-          ? "image/jpeg"
-          : mimeType || "image/jpeg";
-
-      return `data:${mime};base64,${bytesToBase64(imageBytes)}`;
+      return `data:${normalizeMime(mimeType)};base64,${bytesToBase64(imageBytes)}`;
     }
 
     pos = frameEnd;
@@ -118,14 +154,8 @@ function extractCoverFromID3(bytes: Uint8Array): string | undefined {
   return undefined;
 }
 
-/** Lê string UTF-8 de tamanho fixo */
-function readUtf8(bytes: Uint8Array, offset: number, length: number): string {
-  return String.fromCharCode(...bytes.slice(offset, offset + length));
-}
-
-/** Extrai capa de FLAC (bloco METADATA_BLOCK_PICTURE) */
 function extractCoverFromFLAC(bytes: Uint8Array): string | undefined {
-  // FLAC começa com "fLaC" (0x66 0x4C 0x61 0x43)
+  // Assinatura "fLaC"
   if (
     bytes[0] !== 0x66 ||
     bytes[1] !== 0x4c ||
@@ -141,7 +171,6 @@ function extractCoverFromFLAC(bytes: Uint8Array): string | undefined {
     const blockHeader = bytes[pos];
     const isLast = (blockHeader & 0x80) !== 0;
     const blockType = blockHeader & 0x7f;
-
     const blockSize =
       (bytes[pos + 1] << 16) | (bytes[pos + 2] << 8) | bytes[pos + 3];
 
@@ -150,37 +179,31 @@ function extractCoverFromFLAC(bytes: Uint8Array): string | undefined {
 
     // Tipo 6 = METADATA_BLOCK_PICTURE
     if (blockType === 6 && blockSize > 32) {
-      let offset = pos;
+      let offset = pos + 4; // pula picture type
 
-      // Picture type (4 bytes) — 3 = Cover (front)
-      offset += 4;
-
-      // MIME type length + string
       const mimeLength = readUint32BE(bytes, offset);
       offset += 4;
-      const mimeType = readUtf8(bytes, offset, mimeLength);
+      const mimeType = String.fromCharCode(
+        ...bytes.subarray(offset, offset + mimeLength),
+      );
       offset += mimeLength;
 
-      // Description length + string
       const descLength = readUint32BE(bytes, offset);
       offset += 4 + descLength;
 
-      // Width, Height, Color depth, Color count (4 bytes cada)
-      offset += 16;
+      offset += 16; // width, height, color depth, color count
 
-      // Tamanho dos dados da imagem
       const dataLength = readUint32BE(bytes, offset);
       offset += 4;
 
-      const imageBytes = bytes.slice(offset, offset + dataLength);
+      const imageBytes = bytes.subarray(offset, offset + dataLength);
       if (imageBytes.length === 0) {
         pos = blockEnd;
         if (isLast) break;
         continue;
       }
 
-      const mime = mimeType || "image/jpeg";
-      return `data:${mime};base64,${bytesToBase64(imageBytes)}`;
+      return `data:${normalizeMime(mimeType)};base64,${bytesToBase64(imageBytes)}`;
     }
 
     pos = blockEnd;
@@ -190,13 +213,11 @@ function extractCoverFromFLAC(bytes: Uint8Array): string | undefined {
   return undefined;
 }
 
-/** Detecta formato e extrai a capa */
 function extractCover(bytes: Uint8Array): string | undefined {
-  // ID3v2 (MP3, alguns WAV)
+  // ID3v2 (MP3, AAC embalado, alguns WAV)
   if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
     return extractCoverFromID3(bytes);
   }
-
   // FLAC
   if (
     bytes[0] === 0x66 &&
@@ -206,23 +227,35 @@ function extractCover(bytes: Uint8Array): string | undefined {
   ) {
     return extractCoverFromFLAC(bytes);
   }
-
   return undefined;
 }
+
+// ─── API Públic
 
 export const getSongCoverArt = async (
   fileUri: string,
 ): Promise<string | undefined> => {
+  let tmpPath: string | null = null;
+
   try {
-    const fileInfo = await FileSystem.getInfoAsync(fileUri);
+    let readableUri = fileUri;
+
+    // content:// não é legível diretamente pelo FileSystem
+    if (fileUri.startsWith("content://")) {
+      tmpPath = `${FileSystem.cacheDirectory}tmp_audio_${Date.now()}.audio`;
+      await FileSystem.copyAsync({ from: fileUri, to: tmpPath });
+      readableUri = tmpPath;
+    }
+
+    const fileInfo = await FileSystem.getInfoAsync(readableUri);
     if (!fileInfo.exists) return undefined;
 
-    const fileSize = (fileInfo as any).size ?? 0;
+    const fileSize = (fileInfo as { size?: number }).size ?? 0;
     if (fileSize === 0) return undefined;
 
-    const bytesToRead = Math.min(fileSize, 5 * 1024 * 1024); // Lê até 5MB para extrair capa
+    const bytesToRead = Math.min(fileSize, MAX_READ_BYTES);
 
-    const base64Data = await FileSystem.readAsStringAsync(fileUri, {
+    const base64Data = await FileSystem.readAsStringAsync(readableUri, {
       encoding: FileSystem.EncodingType.Base64,
       position: 0,
       length: bytesToRead,
@@ -236,7 +269,14 @@ export const getSongCoverArt = async (
 
     return extractCover(bytes);
   } catch (error) {
-    console.error("Erro ao buscar capa:", error);
+    console.error("[getSongCoverArt] Erro:", error);
     return undefined;
+  } finally {
+    // Limpa o arquivo temporário sempre
+    if (tmpPath) {
+      await FileSystem.deleteAsync(tmpPath, { idempotent: true }).catch(
+        () => {},
+      );
+    }
   }
 };

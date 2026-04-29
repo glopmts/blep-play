@@ -40,8 +40,7 @@ export default function PlayerScreen() {
     toggleShuffle,
     loadExternalTrack,
   } = usePlayer();
-  const [isReady, setIsReady] = useState(false);
-  const [hasWaited, setHasWaited] = useState(false);
+  const [isReady, setIsReady] = useState(!!currentTrack);
 
   const { uri, fileName } = useLocalSearchParams<{
     uri?: string;
@@ -49,9 +48,8 @@ export default function PlayerScreen() {
   }>();
 
   useEffect(() => {
-    const timer = setTimeout(() => setHasWaited(true), 800);
-    return () => clearTimeout(timer);
-  }, []);
+    if (currentTrack) setIsReady(true);
+  }, [currentTrack]);
 
   useEffect(() => {
     if (!uri) {
@@ -66,17 +64,12 @@ export default function PlayerScreen() {
         return;
       }
       await loadExternalTrack(uri, fileName ?? undefined);
-      setIsReady(true);
+      // isReady será setado pelo useEffect do currentTrack
     };
     handleDeepLink().catch(console.error);
   }, [uri]);
 
-  useEffect(() => {
-    if (currentTrack) setIsReady(true);
-    else if (hasWaited) setIsReady(false);
-  }, [currentTrack, hasWaited]);
-
-  if ((!currentTrack || !isReady) && hasWaited) {
+  if (!currentTrack || !isReady) {
     return (
       <View
         className="flex-1 items-center justify-center"

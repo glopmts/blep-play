@@ -4,66 +4,22 @@ import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useTheme } from "@/hooks/useTheme";
-import { Playlists } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { ListMusicIcon } from "lucide-react-native";
-import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
-import { getAllPlaylistImages } from "../../../../utils/coverArtCache";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 const PlayListDetails = () => {
   const { isDark } = useTheme();
-  const { handleDeletePlaylist, getPlaylistById } = usePlaylists();
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const { playlist } = usePlaylists(id);
   const [isLoading, setLoading] = useState(false);
   const { playSongs, currentTrack } = usePlayer();
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-
-  const [playlist, setPlaylist] = useState<Playlists | null>(null);
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id) {
-        Alert.alert("Nenhum id encontrado!");
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const [playlistData, songsWithImages] = await Promise.all([
-          getPlaylistById(id),
-          getAllPlaylistImages(id),
-        ]);
-
-        if (!playlistData) {
-          Alert.alert("Playlist não encontrada!");
-          return;
-        }
-
-        setPlaylist({
-          ...playlistData,
-          songs: songsWithImages,
-          coverArt:
-            songsWithImages.find((song) => song.coverArt)?.coverArt ||
-            playlistData.coverArt,
-        });
-      } catch (e) {
-        console.error("Erro ao buscar Playlist", e);
-        Alert.alert(
-          "Erro ao buscar Playlist: " +
-            (e instanceof Error ? e.message : String(e)),
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
 
   // ── Toca a música clicada abrindo o player
   const handleSongPress = useCallback(

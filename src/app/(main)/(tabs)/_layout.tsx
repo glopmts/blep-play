@@ -1,11 +1,12 @@
 import { tabs } from "@/constants/data";
+import { useTheme } from "@/hooks/useTheme";
+import * as MediaLibrary from "expo-media-library";
 import * as Notifications from "expo-notifications";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
-import { PermissionsAndroid, Platform, View } from "react-native";
-import { useAlbum } from "../../../hooks/useAlbumLocal";
-import { useAlbumsGrouped } from "../../../hooks/useAlbumsGrouped";
-import { useTheme } from "../../../hooks/useTheme";
+import { Alert, View } from "react-native";
+
+/// Pedir acesso as notificações aparelho
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -18,13 +19,19 @@ Notifications.setNotificationHandler({
 });
 
 const requestNotificationPermission = async () => {
-  if (Platform.OS === "android" && Platform.Version >= 33) {
-    const granted = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
-    return granted === PermissionsAndroid.RESULTS.GRANTED;
-  }
-  return true;
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+
+  if (existingStatus === "granted") return true;
+
+  const { status } = await Notifications.requestPermissionsAsync({
+    android: {
+      allowAlert: true,
+      allowBadge: true,
+      allowSound: true,
+    },
+  });
+
+  return status === "granted";
 };
 
 function TabIcon({
@@ -56,27 +63,39 @@ function TabIcon({
 
 export default function MainLayout() {
   const { isDark, colors } = useTheme();
+  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
 
-  const { refreshAlbums, permissionResponse, requestPermission } = useAlbum();
-  const {
-    refreshAlbums: refreshGroupedAlbums,
-    permissionResponse: permissionResponse2,
-    requestPermission: requestPermission2,
-  } = useAlbumsGrouped();
+  async function getAlbums() {
+    if (permissionResponse?.status !== "granted") {
+      const { status } = await requestPermission();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permissão necessária",
+          "Permita o acesso à biblioteca de mídia para usar este recurso.",
+        );
+        return false;
+      }
+    }
+    return true;
+  }
 
   useEffect(() => {
-    requestNotificationPermission();
-    requestPermission();
-    requestPermission2();
+    const requestAll = async () => {
+      const albumsAllowed = await getAlbums();
+      if (albumsAllowed) {
+      }
+
+      const notificationsAllowed = await requestNotificationPermission();
+      if (!notificationsAllowed) {
+        Alert.alert(
+          "Permissão para notificações",
+          "Permita notificações para receber alertas importantes.",
+        );
+      }
+    };
+
+    requestAll();
   }, []);
-
-  useEffect(() => {
-    if (permissionResponse?.granted) refreshAlbums();
-  }, [permissionResponse?.granted]);
-
-  useEffect(() => {
-    if (permissionResponse2?.granted) refreshGroupedAlbums();
-  }, [permissionResponse2?.granted]);
 
   const ACTIVE_COLOR = "#A6FF4c";
   const INACTIVE_COLOR = isDark ? "#52525b" : "#a1a1aa";
@@ -94,7 +113,6 @@ export default function MainLayout() {
           height: 84,
           paddingBottom: 16,
           paddingTop: 8,
-          // Sombra superior sutil no modo claro
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: isDark ? 0 : 0.04,
@@ -113,7 +131,6 @@ export default function MainLayout() {
         tabBarItemStyle: {
           paddingTop: 4,
         },
-
         animation: "fade",
       }}
     >

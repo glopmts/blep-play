@@ -1,6 +1,6 @@
+import { getOrPersistCover } from "@/database/cache/coverArtCache";
 import { addToRecents } from "@/services/music-history.service";
-import { SongWithArt } from "@/types/interfaces";
-import { fetchAndCacheCover } from "@/utils/coverArtCache";
+import { TrackDetails } from "@/types/interfaces";
 import { getSongMetadata } from "@/utils/getSongMetadata";
 import {
   sanitizeArtwork,
@@ -64,48 +64,6 @@ export function usePlayer() {
       mounted = false;
     };
   }, []);
-
-  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
-    if (!event.track) return;
-
-    // Aguarda o TrackPlayer confirmar a nova faixa ativa
-    await new Promise((r) => setTimeout(r, 100));
-
-    const idx = await TrackPlayer.getActiveTrackIndex();
-    const track = await TrackPlayer.getActiveTrack();
-    if (!track) return;
-
-    let artwork = sanitizeArtwork(track.artwork as string);
-
-    // Se não tem artwork válida, busca do cache
-    if (!artwork) {
-      const songUri = String(track.url);
-      const albumId = String(track.id);
-      artwork = (await fetchAndCacheCover(albumId, songUri)) ?? undefined;
-
-      if (idx != null && artwork) {
-        await TrackPlayer.updateMetadataForTrack(idx, { artwork });
-        await TrackPlayer.updateNowPlayingMetadata({
-          title: track.title,
-          artist: track.artist,
-          artwork,
-        });
-      }
-    }
-
-    setCurrentTrack({ ...track, artwork });
-    setCurrentIndex(idx ?? 0);
-
-    await addToRecents({
-      id: String(track.id),
-      url: String(track.url),
-      title: String(track.title ?? ""),
-      artist: track.artist as string | undefined,
-      album: track.album as string | undefined,
-      artwork,
-      duration: track.duration,
-    });
-  });
 
   // ── Carregar faixa externa (deep link / notificação) ──
 
@@ -186,21 +144,21 @@ export function usePlayer() {
 
   // ── Carregar lista e tocar ───
   const playSongs = useCallback(
-    async (songs: SongWithArt[], startIndex = 0) => {
+    async (songs: TrackDetails[], startIndex = 0) => {
       if (isLoadingRef.current) return;
       isLoadingRef.current = true;
 
       try {
-        // Converte todas sem esperar o cache (rápido)
-        const tracks = songs.map((song) => songToTrack(song));
+        const tracks = songs.map((s) => songToTrack(s));
 
-        // Só converte a capa da faixa atual antes de tocar
-        if (songs[startIndex]?.albumId) {
-          tracks[startIndex].artwork = await fetchAndCacheCover(
-            String(songs[startIndex].id), // ← era albumId, agora song.id
-            songs[startIndex].uri,
-          );
-        }
+        const startSong = songs[startIndex];
+
+        // Verifica se tem coverArt antes de tentar processar
+        const startArtwork = startSong.coverArt
+          ? await getOrPersistCover(startSong.id, startSong.coverArt)
+          : null;
+
+        if (startArtwork) tracks[startIndex].artwork = startArtwork;
 
         await TrackPlayer.reset();
         await TrackPlayer.add(tracks);
@@ -215,23 +173,20 @@ export function usePlayer() {
           title: tracks[startIndex].title,
           artist: tracks[startIndex].artist,
           album: tracks[startIndex].album,
-          artwork: tracks[startIndex].artwork,
+          artwork: startArtwork ?? undefined,
         });
 
-        // Converte as demais capas em background
-        tracks.forEach(async (track, idx) => {
-          if (idx === startIndex) return;
-          const artwork = await fetchAndCacheCover(
-            String(songs[idx].id), // ← song.id único por música
-            songs[idx].uri,
-          );
+        // Resolve capas das demais em background
+        songs.forEach(async (song, idx) => {
+          if (idx === startIndex || !song.coverArt) return;
+          const artwork = await getOrPersistCover(song.id, song.coverArt);
           if (artwork) {
             await TrackPlayer.updateMetadataForTrack(idx, { artwork });
-            tracks[idx].artwork = artwork;
+            tracks[idx] = { ...tracks[idx], artwork };
           }
         });
       } catch (error) {
-        console.error("Erro ao tocar músicas:", error);
+        console.error("[playSongs] erro:", error);
       } finally {
         isLoadingRef.current = false;
       }
@@ -239,6 +194,49 @@ export function usePlayer() {
     [],
   );
 
+  // Evento de troca de faixa — sempre busca file:// do cache
+  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
+    if (!event.track) return;
+
+    await new Promise((r) => setTimeout(r, 100));
+
+    const idx = await TrackPlayer.getActiveTrackIndex();
+    const track = await TrackPlayer.getActiveTrack();
+    if (!track) return;
+
+    // Artwork já é file:// ? usa direto
+    let artwork = sanitizeArtwork(track.artwork as string);
+
+    // Não tem ou é base64 → busca do cache em disco
+    if (!artwork) {
+      const songId = String(track.id);
+      // coverArt pode estar no track como campo extra
+      const base64 = (track as any).coverArt as string | undefined;
+      artwork = (await getOrPersistCover(songId, base64)) ?? undefined;
+
+      if (idx != null && artwork) {
+        await TrackPlayer.updateMetadataForTrack(idx, { artwork });
+        await TrackPlayer.updateNowPlayingMetadata({
+          title: track.title,
+          artist: track.artist,
+          artwork,
+        });
+      }
+    }
+
+    setCurrentTrack({ ...track, artwork });
+    setCurrentIndex(idx ?? 0);
+
+    await addToRecents({
+      id: String(track.id),
+      url: String(track.url),
+      title: String(track.title ?? ""),
+      artist: track.artist as string | undefined,
+      album: track.album as string | undefined,
+      artwork,
+      duration: track.duration,
+    });
+  });
   // ── Controles──
   const togglePlayPause = useCallback(async () => {
     if (isPlaying) await TrackPlayer.pause();

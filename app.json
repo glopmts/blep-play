@@ -56,19 +56,37 @@
           "action": "VIEW",
           "category": ["DEFAULT", "BROWSABLE"],
           "data": [
-            { "mimeType": "audio/*" },
-            { "mimeType": "audio/mpeg" },
-            { "mimeType": "audio/mp4" },
-            { "mimeType": "audio/flac" },
-            { "mimeType": "audio/wav" },
-            { "mimeType": "audio/ogg" },
-            { "mimeType": "audio/aac" }
+            {
+              "mimeType": "audio/*"
+            },
+            {
+              "mimeType": "audio/mpeg"
+            },
+            {
+              "mimeType": "audio/mp4"
+            },
+            {
+              "mimeType": "audio/flac"
+            },
+            {
+              "mimeType": "audio/wav"
+            },
+            {
+              "mimeType": "audio/ogg"
+            },
+            {
+              "mimeType": "audio/aac"
+            }
           ]
         },
         {
           "action": "SEND",
           "category": ["DEFAULT"],
-          "data": [{ "mimeType": "audio/*" }]
+          "data": [
+            {
+              "mimeType": "audio/*"
+            }
+          ]
         }
       ]
     },
@@ -100,6 +118,15 @@
         }
       ],
       [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
+          "isAccessMediaLocationEnabled": true,
+          "granularPermissions": ["audio", "photo"]
+        }
+      ],
+      [
         "expo-document-picker",
         {
           "iCloudContainerEnvironment": "Production"
@@ -116,10 +143,21 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/splash.png",
+          "icon": "./assets/images/notification_icon.png",
           "color": "#ffffff",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false
+        }
+      ],
+      "expo-quick-actions",
+      [
+        "expo-sqlite",
+        {
+          "android": {
+            // Override the shared configuration for Android
+            "enableFTS": false,
+            "useSQLCipher": false
+          }
         }
       ]
     ],

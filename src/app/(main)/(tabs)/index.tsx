@@ -1,4 +1,4 @@
-import { AlbumScreen } from "@/components/album/album-card";
+import { AlbumScreen } from "@/components/albums/album-screen";
 import Header from "@/components/header";
 import { HeaderPage } from "@/components/hearder-page";
 import HistoryRecentMusic from "@/components/history-recent-music";

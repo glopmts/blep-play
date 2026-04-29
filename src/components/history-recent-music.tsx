@@ -13,7 +13,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useMusicHistory } from "../hooks/useMusicHistory";
 import { usePlayer } from "../hooks/usePlayer";
 import { StoredTrack } from "../services/music-history.service";
-import { storedTracksToSongs } from "../services/storedTrackToSong";
+import { storedTracksToSongs } from "../services/storedTrackToSong.service";
 import { Colors } from "../types/colors";
 import { formatDuration } from "../utils/formaTS/formatTimeSong";
 import SkeletonLoadingAlbum from "./loading-skeleton-album";
@@ -175,19 +175,27 @@ const HistoryRecentMusic = () => {
       </View>
       {recents.length === 0 ? (
         <View className="mt-8 items-center justify-center">
-          <View className="items-center justify-center dark:bg-zinc-800 p-6 rounded-3xl">
+          <View
+            className="items-center justify-center dark:bg-zinc-800 p-6"
+            style={{
+              borderRadius: colors.rounded.rounded_3xl,
+            }}
+          >
             <Text>
               <History size={40} color={colors.icon} />
             </Text>
           </View>
-          <Text className="text text-lg text-zinc-400">
+          <Text className="text text-lg text-zinc-400 mt-3">
             Nenhuma música recente.
           </Text>
-          <TouchableOpacity className="btn mt-4" onPress={() => reload()}>
+          <TouchableOpacity
+            className="btn mt-4 border dark:border-zinc-600"
+            onPress={() => reload()}
+          >
             {loading ? (
               <ActivityIndicator size={20} color={colors.iconActive} />
             ) : (
-              <Text className="text text-base">Recarregar pagina</Text>
+              <Text className="text-white text-xl">Recarregar pagina</Text>
             )}
           </TouchableOpacity>
         </View>

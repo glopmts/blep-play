@@ -1,13 +1,13 @@
-import { SongWithArt } from "@/types/interfaces";
+import { TrackDetails } from "@/types/interfaces";
 import { useCallback, useEffect, useState } from "react";
 
 interface SearchResult {
-  song: SongWithArt;
+  song: TrackDetails;
   matchType: "title" | "artist" | "album";
   score: number;
 }
 
-export const useSearch = (songs: SongWithArt[]) => {
+export const useSearch = (songs: TrackDetails[]) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -41,7 +41,7 @@ export const useSearch = (songs: SongWithArt[]) => {
           matchType = "artist";
         }
         // Busca no álbum
-        else if (song.albumName?.toLowerCase().includes(searchTerm)) {
+        else if (song.album?.toLowerCase().includes(searchTerm)) {
           score = 60;
           matchType = "album";
         }

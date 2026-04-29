@@ -1,9 +1,6 @@
 import { createMMKV } from "react-native-mmkv";
 
-const storage = createMMKV({
-  id: "music-storage",
-  mode: "multi-process",
-});
+const storage = createMMKV({ id: "music-storage", mode: "multi-process" });
 
 const KEYS = {
   RECENTS: "music_recents_v1",
@@ -18,13 +15,13 @@ export interface StoredTrack {
   title: string;
   artist?: string;
   album?: string;
+  albumId?: string;
+  // Sempre file:// — nunca base64
   artwork?: string;
   duration?: number;
-  playedAt?: number; // timestamp — só em recentes
-  addedAt?: number; // timestamp — só em favoritos
+  playedAt?: number;
+  addedAt?: number;
 }
-
-// ─── Helpers
 
 function readList(key: string): StoredTrack[] {
   try {
@@ -38,24 +35,20 @@ function readList(key: string): StoredTrack[] {
 function writeList(key: string, list: StoredTrack[]): void {
   try {
     storage.set(key, JSON.stringify(list));
-  } catch {
-    // Silencia erro
-  }
+  } catch {}
 }
 
 // ─── Recentes
 
 export async function addToRecents(track: StoredTrack): Promise<void> {
+  // Rejeita base64 — só salva file:// ou http://
+  const artwork = isValidArtworkUri(track.artwork) ? track.artwork : undefined;
   const list = readList(KEYS.RECENTS);
-
-  // Remove se já existia (vai para o topo)
   const filtered = list.filter((t) => t.id !== track.id);
-
-  const updated = [{ ...track, playedAt: Date.now() }, ...filtered].slice(
-    0,
-    MAX_RECENTS,
-  );
-
+  const updated = [
+    { ...track, artwork, playedAt: Date.now() },
+    ...filtered,
+  ].slice(0, MAX_RECENTS);
   writeList(KEYS.RECENTS, updated);
 }
 
@@ -68,10 +61,9 @@ export async function clearRecents(): Promise<void> {
 }
 
 export async function removeFromRecents(trackId: string): Promise<void> {
-  const list = readList(KEYS.RECENTS);
   writeList(
     KEYS.RECENTS,
-    list.filter((t) => t.id !== trackId),
+    readList(KEYS.RECENTS).filter((t) => t.id !== trackId),
   );
 }
 
@@ -79,15 +71,18 @@ export async function removeFromRecents(trackId: string): Promise<void> {
 
 export async function addToFavorites(track: StoredTrack): Promise<void> {
   const list = readList(KEYS.FAVORITES);
-  if (list.some((t) => t.id === track.id)) return; // já existe
-  writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
+  if (list.some((t) => t.id === track.id)) return;
+  const artwork = isValidArtworkUri(track.artwork) ? track.artwork : undefined;
+  writeList(KEYS.FAVORITES, [
+    { ...track, artwork, addedAt: Date.now() },
+    ...list,
+  ]);
 }
 
 export async function removeFromFavorites(trackId: string): Promise<void> {
-  const list = readList(KEYS.FAVORITES);
   writeList(
     KEYS.FAVORITES,
-    list.filter((t) => t.id !== trackId),
+    readList(KEYS.FAVORITES).filter((t) => t.id !== trackId),
   );
 }
 
@@ -99,11 +94,14 @@ export async function toggleFavorite(track: StoredTrack): Promise<boolean> {
       KEYS.FAVORITES,
       list.filter((t) => t.id !== track.id),
     );
-    return false; // removido
-  } else {
-    writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
-    return true; // adicionado
+    return false;
   }
+  const artwork = isValidArtworkUri(track.artwork) ? track.artwork : undefined;
+  writeList(KEYS.FAVORITES, [
+    { ...track, artwork, addedAt: Date.now() },
+    ...list,
+  ]);
+  return true;
 }
 
 export async function getFavorites(): Promise<StoredTrack[]> {
@@ -111,47 +109,50 @@ export async function getFavorites(): Promise<StoredTrack[]> {
 }
 
 export async function isFavorite(trackId: string): Promise<boolean> {
-  const list = readList(KEYS.FAVORITES);
-  return list.some((t) => t.id === trackId);
+  return readList(KEYS.FAVORITES).some((t) => t.id === trackId);
 }
 
 export async function clearFavorites(): Promise<void> {
   storage.remove(KEYS.FAVORITES);
 }
 
-// ─── Utilitários adicionais para MMKV
-
-// Obter estatísticas do cache
-export function getStorageStats() {
-  return {
-    recentsCount: readList(KEYS.RECENTS).length,
-    favoritesCount: readList(KEYS.FAVORITES).length,
-    totalSize: storage.size,
-  };
-}
-
-// Limpar todo o storage de música
 export async function clearAllMusicData(): Promise<void> {
   storage.remove(KEYS.RECENTS);
   storage.remove(KEYS.FAVORITES);
 }
 
-// Versão síncrona para uso em contextos específicos
+// ─── Utilitário
+
+function isValidArtworkUri(uri?: string): boolean {
+  if (!uri) return false;
+  return uri.startsWith("file://") || uri.startsWith("http");
+}
+
+export function getStorageStats() {
+  return {
+    recentsCount: readList(KEYS.RECENTS).length,
+    favoritesCount: readList(KEYS.FAVORITES).length,
+    totalSize: storage.byteSize,
+  };
+}
+
 export const musicStorageSync = {
   getRecents: (): StoredTrack[] => readList(KEYS.RECENTS),
   getFavorites: (): StoredTrack[] => readList(KEYS.FAVORITES),
-  isFavorite: (trackId: string): boolean => {
-    const list = readList(KEYS.FAVORITES);
-    return list.some((t) => t.id === trackId);
-  },
-  addToRecents: (track: StoredTrack): void => {
+  isFavorite: (id: string) => readList(KEYS.FAVORITES).some((t) => t.id === id),
+  addToRecents: (track: StoredTrack) => {
+    const artwork = isValidArtworkUri(track.artwork)
+      ? track.artwork
+      : undefined;
     const list = readList(KEYS.RECENTS);
     const filtered = list.filter((t) => t.id !== track.id);
-    const updated = [{ ...track, playedAt: Date.now() }, ...filtered].slice(
-      0,
-      MAX_RECENTS,
+    writeList(
+      KEYS.RECENTS,
+      [{ ...track, artwork, playedAt: Date.now() }, ...filtered].slice(
+        0,
+        MAX_RECENTS,
+      ),
     );
-    writeList(KEYS.RECENTS, updated);
   },
   toggleFavorite: (track: StoredTrack): boolean => {
     const list = readList(KEYS.FAVORITES);
@@ -162,9 +163,14 @@ export const musicStorageSync = {
         list.filter((t) => t.id !== track.id),
       );
       return false;
-    } else {
-      writeList(KEYS.FAVORITES, [{ ...track, addedAt: Date.now() }, ...list]);
-      return true;
     }
+    const artwork = isValidArtworkUri(track.artwork)
+      ? track.artwork
+      : undefined;
+    writeList(KEYS.FAVORITES, [
+      { ...track, artwork, addedAt: Date.now() },
+      ...list,
+    ]);
+    return true;
   },
 };

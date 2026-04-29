@@ -1,17 +1,17 @@
 import { useBottomSheet } from "@/context/bottom-sheet-context";
-import { useAlbum } from "@/hooks/useAlbumLocal";
+import { useAlbumCover } from "@/hooks/albums-hooks/useAlbumCover";
+import { useAlbums } from "@/hooks/useAlbums";
 import { useTheme } from "@/hooks/useTheme";
-import { AlbumWithDetails } from "@/types/interfaces";
+import { AlbumInterface } from "@/types/interfaces";
 import { FlashList } from "@shopify/flash-list";
-import { router, useNavigation } from "expo-router";
+import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Text, TouchableOpacity, View, ViewToken } from "react-native";
+import React, { memo, useCallback, useRef, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
 import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumThumbnail from "./album-thumbnail";
 
-// Componente Card
 const AlbumCard = memo(
   ({
     album,
@@ -20,22 +20,29 @@ const AlbumCard = memo(
     loadingCovers,
     handleOpenBottomSheet,
   }: {
-    album: AlbumWithDetails;
-    onPress: (album: AlbumWithDetails) => void;
+    album: AlbumInterface;
+    onPress: (album: AlbumInterface) => void;
     isDark: boolean;
-    loadingCovers: boolean;
-    handleOpenBottomSheet: (album: AlbumWithDetails) => void;
+    loadingCovers?: boolean;
+    handleOpenBottomSheet: (album: AlbumInterface) => void;
   }) => {
+    const coverUri = useAlbumCover(album.id, album.artworkBase64);
+
     return (
       <TouchableOpacity
         onPress={() => onPress(album)}
         className="flex-col gap-3 items-center justify-center mb-4 p-3"
         activeOpacity={0.7}
-        onLongPress={() => handleOpenBottomSheet(album)}
         delayLongPress={500}
+        onLongPress={() =>
+          handleOpenBottomSheet({
+            ...album,
+            artworkBase64: coverUri,
+          })
+        }
       >
         <AlbumThumbnail
-          coverArt={album.coverArt || null}
+          coverArt={coverUri}
           isDark={isDark}
           loadingCovers={loadingCovers}
           type="card"
@@ -46,10 +53,7 @@ const AlbumCard = memo(
             className="text-base font-semibold text-black dark:text-white mb-1"
             numberOfLines={1}
           >
-            {album.title}
-          </Text>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            {album.assetCount} {album.assetCount === 1 ? "música" : "músicas"}
+            {album.album}
           </Text>
         </View>
       </TouchableOpacity>
@@ -65,65 +69,28 @@ interface ALlbumScreen {
 }
 
 export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
-  const {
-    albums,
-    loading,
-    loadingCovers,
-    selectAlbum,
-    onAlbumsVisible,
-    resetAlbumCoverMap,
-    refreshAlbums,
-    refreshAllAlbumCovers,
-  } = useAlbum();
-  const { isDark, colors } = useTheme();
-  const navigation = useNavigation();
+  const { albums, loading, refreshing, refresh } = useAlbums();
+  const { isDark } = useTheme();
 
-  useState<AlbumWithDetails | null>(null);
+  useState<AlbumInterface | null>(null);
   const { openSheet, closeSheet } = useBottomSheet();
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      if (albums.length > 0) {
-        resetAlbumCoverMap(); // ← limpa o mapa para revalidar
-        refreshAllAlbumCovers();
-      }
-    });
-    return unsubscribe;
-  }, [navigation, albums.length, refreshAllAlbumCovers]);
-
   const handleOpenBottomSheet = useCallback(
-    (album: AlbumWithDetails) => {
+    (album: AlbumInterface) => {
       openSheet({
         snapPoints: ["40%"],
-        content: (
-          <BottomSheetAlbumDetails
-            album={album}
-            handleDeleteAlbum={() => {}}
-            onClose={closeSheet}
-          />
-        ),
+        content: <BottomSheetAlbumDetails album={album} onClose={closeSheet} />,
       });
     },
     [openSheet],
   );
 
-  const handleAlbumPress = (album: AlbumWithDetails) => {
-    selectAlbum(album);
+  const handleAlbumPress = (album: AlbumInterface) => {
     router.navigate({
       pathname: "/details-album/[id]",
-      params: { id: album.id, type: "album_local" },
+      params: { id: album.id },
     });
   };
-
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const visibleIds = viewableItems
-        .map((v) => v.item?.id)
-        .filter(Boolean) as string[];
-      onAlbumsVisible(visibleIds);
-    },
-    [onAlbumsVisible],
-  );
 
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 20, // 20% do item visível já conta
@@ -158,7 +125,6 @@ export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
             album={item}
             onPress={handleAlbumPress}
             isDark={isDark}
-            loadingCovers={loadingCovers}
             handleOpenBottomSheet={handleOpenBottomSheet}
           />
         )}
@@ -166,10 +132,9 @@ export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
         showsVerticalScrollIndicator={false}
         contentContainerClassName="gap-4"
         horizontal={horizontal}
-        onRefresh={refreshAlbums}
         refreshing={loading}
-        onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        onRefresh={refresh}
         showsHorizontalScrollIndicator={false}
       />
     </View>

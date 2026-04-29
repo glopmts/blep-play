@@ -1,16 +1,18 @@
-import { SongWithArt } from "@/types/interfaces";
+import { TrackDetails } from "@/types/interfaces";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
 import { memo } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { useTrackCover } from "../../hooks/useTrackCover";
+import { formatDuration } from "../../utils/formaTS/formatTimeSong";
 
 type SongCardProps = {
-  song: SongWithArt;
+  song: TrackDetails;
   index: number;
   isDark: boolean;
-  loadingCovers: boolean;
+  loadingCovers?: boolean;
   isLoading: boolean;
   loadingSongIndex: number | null;
   isCurrentlyPlaying: boolean;
@@ -28,12 +30,10 @@ const SongCard = memo(
     loadingSongIndex,
     handleSongPress,
   }: SongCardProps) => {
-    const formatDuration = (duration?: number) => {
-      if (!duration && duration !== 0) return "--:--";
-      const mins = Math.floor(duration / 60);
-      const secs = Math.floor(duration % 60);
-      return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
+    const { cover, loading: coverLoading } = useTrackCover(
+      song.filePath,
+      song.id,
+    );
 
     {
       isLoading ? (
@@ -75,7 +75,7 @@ const SongCard = memo(
       >
         {/* Artwork */}
         <View className="bg-zinc-400 dark:bg-zinc-700 w-16 h-16 rounded-lg overflow-hidden">
-          {loadingCovers ? (
+          {coverLoading ? (
             <View
               style={{
                 flex: 1,
@@ -88,9 +88,9 @@ const SongCard = memo(
                 color={isDark ? "#fff" : "#3b82f6"}
               />
             </View>
-          ) : song.coverArt ? (
+          ) : song.filePath ? (
             <Image
-              source={{ uri: song.coverArt }}
+              source={cover}
               style={{ width: "100%", height: "100%" }}
               contentFit="cover"
             />
@@ -118,10 +118,10 @@ const SongCard = memo(
             }`}
             numberOfLines={1}
           >
-            {song.filename?.replace(/\.[^/.]+$/, "") || `Música ${index + 1}`}
+            {song.title?.replace(/\.[^/.]+$/, "") || `Música ${index + 1}`}
           </Text>
           <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {song.genre ?? song.artist ?? "—"}
+            {song.mimeType ?? song.artist ?? "—"}
           </Text>
         </View>
 

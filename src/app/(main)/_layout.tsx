@@ -1,6 +1,5 @@
 import PlayerMusicRecurrent from "@/components/player-music-current";
 import { AppUpdater } from "@/components/update/app-update-context";
-import { AlbumsProvider } from "@/context/albums-context";
 import { Stack } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -8,7 +7,7 @@ const LayoutMain = () => {
   const { isDark, colors } = useTheme();
 
   return (
-    <AlbumsProvider>
+    <>
       <Stack
         screenOptions={{
           headerTintColor: isDark ? "#fff" : "#000",
@@ -21,7 +20,7 @@ const LayoutMain = () => {
       />
       <AppUpdater autoCheck={true} />
       <PlayerMusicRecurrent />
-    </AlbumsProvider>
+    </>
   );
 };
 

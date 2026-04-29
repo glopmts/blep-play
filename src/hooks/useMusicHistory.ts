@@ -25,7 +25,9 @@ export function useMusicHistory() {
     const [r, f] = await Promise.all([getRecents(), getFavorites()]);
     setRecents(r);
     setFavorites(f);
-    setLoading(false);
+    setTimeout(() => {
+      setLoading(false);
+    }, 200);
   };
 
   const handleAddToRecents = useCallback(async (track: StoredTrack) => {

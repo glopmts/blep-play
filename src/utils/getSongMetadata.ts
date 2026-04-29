@@ -30,6 +30,15 @@ function readUint32BE(bytes: Uint8Array, offset: number): number {
   );
 }
 
+function readUint32LE(bytes: Uint8Array, offset: number): number {
+  return (
+    bytes[offset] |
+    (bytes[offset + 1] << 8) |
+    (bytes[offset + 2] << 16) |
+    (bytes[offset + 3] << 24)
+  );
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
   const CHUNK = 8192;
   let binary = "";
@@ -39,17 +48,14 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-// Decodifica string ID3 respeitando encoding
 function decodeID3String(bytes: Uint8Array, encoding: number): string {
   try {
     if (encoding === 0) {
-      // ISO-8859-1
       return String.fromCharCode(...bytes)
         .replace(/\x00/g, "")
         .trim();
     }
     if (encoding === 1 || encoding === 2) {
-      // UTF-16 com ou sem BOM
       const hasBOM = bytes[0] === 0xff && bytes[1] === 0xfe;
       const start = hasBOM ? 2 : 0;
       let str = "";
@@ -61,9 +67,7 @@ function decodeID3String(bytes: Uint8Array, encoding: number): string {
       return str.trim();
     }
     if (encoding === 3) {
-      // UTF-8
-      const decoder = new TextDecoder("utf-8");
-      return decoder.decode(bytes).replace(/\x00/g, "").trim();
+      return new TextDecoder("utf-8").decode(bytes).replace(/\x00/g, "").trim();
     }
   } catch {}
   return String.fromCharCode(...bytes)
@@ -73,7 +77,6 @@ function decodeID3String(bytes: Uint8Array, encoding: number): string {
 
 function extractFromID3(bytes: Uint8Array): SongMetadata {
   const meta: SongMetadata = {};
-
   if (bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) return meta;
 
   const majorVersion = bytes[3];
@@ -84,7 +87,6 @@ function extractFromID3(bytes: Uint8Array): SongMetadata {
   while (pos < id3End - 10) {
     const frameIdSize = majorVersion === 2 ? 3 : 4;
     const frameId = String.fromCharCode(...bytes.slice(pos, pos + frameIdSize));
-
     if (frameId === "\x00\x00\x00\x00") break;
 
     let frameSize: number;
@@ -133,12 +135,11 @@ function extractFromID3(bytes: Uint8Array): SongMetadata {
       case "TRK":
         meta.track = decodeID3String(content, encoding);
         break;
+
       case "APIC":
       case "PIC": {
         let offset = 1;
-        if (frameId === "PIC") {
-          offset = 4;
-        } else {
+        if (frameId !== "PIC") {
           let mimeEnd = offset;
           while (mimeEnd < frameData.length && frameData[mimeEnd] !== 0)
             mimeEnd++;
@@ -146,7 +147,7 @@ function extractFromID3(bytes: Uint8Array): SongMetadata {
             ...frameData.slice(offset, mimeEnd),
           );
           offset = mimeEnd + 1;
-          offset += 1; // picture type
+          offset += 1;
           if (encoding === 1 || encoding === 2) {
             while (
               offset + 1 < frameData.length &&
@@ -167,12 +168,10 @@ function extractFromID3(bytes: Uint8Array): SongMetadata {
         }
         break;
       }
+
       case "USLT": {
-        // Unsynchronised lyrics tag
-        // Estrutura: encoding(1) + language(3) + description + \x00 + lyrics
-        let offset = 1; // pula encoding
-        offset += 3; // pula language (ex: "eng")
-        // pula description até o null terminator
+        let offset = 1;
+        offset += 3;
         if (encoding === 1 || encoding === 2) {
           while (
             offset + 1 < content.length &&
@@ -197,7 +196,6 @@ function extractFromID3(bytes: Uint8Array): SongMetadata {
 
 function extractFromFLAC(bytes: Uint8Array): SongMetadata {
   const meta: SongMetadata = {};
-
   if (
     bytes[0] !== 0x66 ||
     bytes[1] !== 0x4c ||
@@ -217,15 +215,12 @@ function extractFromFLAC(bytes: Uint8Array): SongMetadata {
     pos += 4;
     const blockEnd = pos + blockSize;
 
-    // Tipo 4 = VORBIS_COMMENT (metadados texto do FLAC)
     if (blockType === 4) {
       let offset = pos;
       const vendorLen = readUint32LE(bytes, offset);
       offset += 4 + vendorLen;
-
       const commentCount = readUint32LE(bytes, offset);
       offset += 4;
-
       for (let i = 0; i < commentCount; i++) {
         const len = readUint32LE(bytes, offset);
         offset += 4;
@@ -233,12 +228,10 @@ function extractFromFLAC(bytes: Uint8Array): SongMetadata {
           bytes.slice(offset, offset + len),
         );
         offset += len;
-
         const eq = comment.indexOf("=");
         if (eq === -1) continue;
         const key = comment.slice(0, eq).toUpperCase();
         const val = comment.slice(eq + 1).trim();
-
         switch (key) {
           case "TITLE":
             meta.title = val;
@@ -267,9 +260,8 @@ function extractFromFLAC(bytes: Uint8Array): SongMetadata {
       }
     }
 
-    // Tipo 6 = PICTURE
     if (blockType === 6 && blockSize > 32) {
-      let offset = pos + 4; // pula picture type
+      let offset = pos + 4;
       const mimeLen = readUint32BE(bytes, offset);
       offset += 4;
       const mimeType = new TextDecoder().decode(
@@ -278,7 +270,7 @@ function extractFromFLAC(bytes: Uint8Array): SongMetadata {
       offset += mimeLen;
       const descLen = readUint32BE(bytes, offset);
       offset += 4 + descLen;
-      offset += 16; // width, height, depth, colors
+      offset += 16;
       const dataLen = readUint32BE(bytes, offset);
       offset += 4;
       const imageBytes = bytes.slice(offset, offset + dataLen);
@@ -294,13 +286,27 @@ function extractFromFLAC(bytes: Uint8Array): SongMetadata {
   return meta;
 }
 
-function readUint32LE(bytes: Uint8Array, offset: number): number {
-  return (
-    bytes[offset] |
-    (bytes[offset + 1] << 8) |
-    (bytes[offset + 2] << 16) |
-    (bytes[offset + 3] << 24)
-  );
+// Converte base64 retornado pelo FileSystem para Uint8Array de forma segura
+function base64ToBytes(b64: string): Uint8Array {
+  // Remove qualquer whitespace/quebra de linha que o FileSystem possa inserir
+  const clean = b64.replace(/[\s\r\n]/g, "");
+  const bin = atob(clean);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+// Lê apenas os primeiros N bytes de um arquivo como Uint8Array
+async function readFileBytes(
+  fileUri: string,
+  length: number,
+): Promise<Uint8Array> {
+  const b64 = await FileSystem.readAsStringAsync(fileUri, {
+    encoding: FileSystem.EncodingType.Base64,
+    position: 0,
+    length,
+  });
+  return base64ToBytes(b64);
 }
 
 export async function getSongMetadata(fileUri: string): Promise<SongMetadata> {
@@ -311,34 +317,22 @@ export async function getSongMetadata(fileUri: string): Promise<SongMetadata> {
     const fileSize = (fileInfo as any).size ?? 0;
     if (fileSize === 0) return {};
 
-    // Detecta tamanho do ID3 antes de ler tudo
-    const headerB64 = await FileSystem.readAsStringAsync(fileUri, {
-      encoding: FileSystem.EncodingType.Base64,
-      position: 0,
-      length: 10,
-    });
-    const headerBin = atob(headerB64);
-    const header = new Uint8Array(headerBin.length);
-    for (let i = 0; i < headerBin.length; i++)
-      header[i] = headerBin.charCodeAt(i);
+    // Leitura 1: apenas 10 bytes para detectar formato e tamanho do ID3
+    const header = await readFileBytes(fileUri, 10);
 
-    let bytesToRead = Math.min(fileSize, 2 * 1024 * 1024); // 2MB fallback
+    let bytesToRead: number;
 
-    // Para MP3: lê exatamente o bloco ID3
     if (header[0] === 0x49 && header[1] === 0x44 && header[2] === 0x33) {
+      // MP3/ID3: lê exatamente o bloco ID3 declarado no header
       const id3Size = decodeSynchsafe(header, 6);
       bytesToRead = Math.min(fileSize, id3Size + 10);
+    } else {
+      // FLAC ou outro: 2MB é suficiente para metadados + capa
+      bytesToRead = Math.min(fileSize, 2 * 1024 * 1024);
     }
 
-    const b64 = await FileSystem.readAsStringAsync(fileUri, {
-      encoding: FileSystem.EncodingType.Base64,
-      position: 0,
-      length: bytesToRead,
-    });
-
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    // Leitura 2: bloco exato necessário
+    const bytes = await readFileBytes(fileUri, bytesToRead);
 
     const meta =
       bytes[0] === 0x66 ? extractFromFLAC(bytes) : extractFromID3(bytes);

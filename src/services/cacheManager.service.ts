@@ -1,9 +1,7 @@
-import { storage as mmkvStorage } from "@/database/cache/albumsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
-import { albumsStoreSync } from "../database/cache/albumsStore";
-import { clearAlbumsCache } from "../database/cache/albuns-cache";
+import { showPlatformMessage } from "../components/toast-message-plataform";
 
 const CACHE_DIRS = {
   IMAGES: `${FileSystem.cacheDirectory}ImageManager/`,
@@ -34,19 +32,12 @@ class CacheManager {
   // Limpar todo o cache do app
   async clearAllCache(): Promise<void> {
     try {
-      console.log("🗑️ Iniciando limpeza completa do cache...");
-
-      // 1. Limpar cache de imagens (Expo Image)
       await this.clearImageCache();
 
-      // 2. Limpar cache de arquivos temporários
       await this.clearTempFiles();
 
       // 3. Limpar AsyncStorage (recentes, favoritos, etc)
       await this.clearAsyncStorage();
-
-      // 4. Limpar MMKV (álbuns em cache)
-      await this.clearMMKV();
 
       // 5. Limpar cache de álbuns customizado
       await this.clearAlbumsData();
@@ -55,7 +46,7 @@ class CacheManager {
       await this.clearNavigationCache();
 
       this.lastCleared = new Date();
-      console.log("✅ Cache limpo com sucesso!");
+      showPlatformMessage("✅ Cache limpo com sucesso!");
     } catch (error) {
       console.error("❌ Erro ao limpar cache:", error);
       throw error;
@@ -138,32 +129,10 @@ class CacheManager {
     }
   }
 
-  // 4. Limpar MMKV
-  private async clearMMKV(): Promise<void> {
-    try {
-      // Limpar cache de álbuns
-      await clearAlbumsCache();
-
-      // Limpar storage principal
-      albumsStoreSync.clear();
-
-      // Limpar todas as chaves do MMKV
-      const allKeys = mmkvStorage.getAllKeys();
-      for (const key of allKeys) {
-        mmkvStorage.remove(key);
-      }
-
-      console.log(`🗂️ ${allKeys.length} chaves do MMKV removidas`);
-    } catch (error) {
-      console.error("Erro ao limpar MMKV:", error);
-    }
-  }
-
   // 5. Limpar dados de álbuns
   private async clearAlbumsData(): Promise<void> {
     try {
       // Limpar cache em memória
-      albumsStoreSync.clear();
 
       // Remover diretório de álbuns
       const albumsDir = CACHE_DIRS.ALBUMS;
@@ -212,53 +181,6 @@ class CacheManager {
       console.error("Erro ao recriar diretórios:", error);
     }
   }
-
-  // Obter estatísticas do cache
-  async getCacheStats(): Promise<CacheStats> {
-    let imageCacheSize = 0;
-
-    try {
-      // Calcular tamanho do cache de imagens
-      const dirs = Object.values(CACHE_DIRS);
-      for (const dir of dirs) {
-        if (dir) {
-          try {
-            const dirInfo = await FileSystem.getInfoAsync(dir);
-            if (dirInfo.exists && "size" in dirInfo) {
-              const size = (dirInfo as any).size;
-              if (typeof size === "number") {
-                imageCacheSize += size;
-              }
-            }
-          } catch (error) {
-            console.log(`⚠️ Erro ao calcular tamanho de ${dir}:`, error);
-          }
-        }
-      }
-
-      // Obter chaves do AsyncStorage
-      const asyncStorageKeys = await AsyncStorage.getAllKeys();
-
-      // Obter chaves do MMKV
-      const mmkvKeys = mmkvStorage.getAllKeys();
-
-      return {
-        imageCacheSize: Math.round(imageCacheSize / 1024 / 1024), // MB
-        mmkvKeys: mmkvKeys,
-        totalSize: Math.round(imageCacheSize / 1024 / 1024),
-        lastCleared: this.lastCleared,
-      };
-    } catch (error) {
-      console.error("Erro ao obter estatísticas:", error);
-      return {
-        imageCacheSize: 0,
-        mmkvKeys: [],
-        totalSize: 0,
-        lastCleared: this.lastCleared,
-      };
-    }
-  }
-
   // Limpar cache específico por tipo
   async clearSpecificCache(
     type: "images" | "temp" | "async" | "mmkv",
@@ -272,9 +194,6 @@ class CacheManager {
         break;
       case "async":
         await this.clearAsyncStorage();
-        break;
-      case "mmkv":
-        await this.clearMMKV();
         break;
     }
   }

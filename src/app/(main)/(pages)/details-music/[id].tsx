@@ -1,14 +1,15 @@
+import ActivityIndicatorCustom from "@/components/activityIndicator-Custom";
 import { BackButton } from "@/components/black-button";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { showPlatformMessage } from "@/components/toast-message-plataform";
 import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { usePlayerHeight } from "@/context/player-height-context";
-import { useMusic } from "@/hooks/useMusic";
+import { useMusicDetails } from "@/hooks/useMusicDetails";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useTheme } from "@/hooks/useTheme";
 import { METADATA_MUSIC } from "@/lib/metada-music";
-import { SongWithArt } from "@/types/interfaces";
+import { TrackDetails } from "@/types/interfaces";
 import { formatDuration } from "@/utils/formaTS/formatTimeSong";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import * as Clipboard from "expo-clipboard";
@@ -40,6 +41,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTrackCover } from "../../../../hooks/useTrackCover";
 
 const DetailsMusic = () => {
   const { isDark, colors } = useTheme();
@@ -48,13 +50,20 @@ const DetailsMusic = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { playlists, handleAddSongToPlaylist, handleRemoveSongFromPlaylist } =
     usePlaylists();
-  const { error, loading, musicDetails } = useMusic({ musicId: id as string });
+  const { error, loading, musicDetails } = useMusicDetails(
+    id ? String(id) : "",
+  );
+
   const { playSongs, togglePlayPause, currentTrack } = usePlayer();
   const [seeMore, setSeeMore] = useState(false);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
   const [isCopying, setIsCopying] = useState(false);
   const { openSheet, closeSheet } = useBottomSheet();
   const toggleSeeMore = useCallback(() => setSeeMore((p) => !p), []);
+  const { cover } = useTrackCover(
+    musicDetails?.filePath || "",
+    musicDetails?.id,
+  );
 
   const pathname = usePathname();
   const isOnPage = ["player", "details-music", "details-album"].some((p) =>
@@ -71,7 +80,7 @@ const DetailsMusic = () => {
     : 32;
 
   const getBottomSheetContent = useCallback(
-    (song: SongWithArt) => {
+    (song: TrackDetails) => {
       return (
         <View className="flex-col gap-5 px-4">
           {playlists.length > 0 ? (
@@ -147,7 +156,7 @@ const DetailsMusic = () => {
   //  ^ selectedSong removido das deps — recebe via parâmetro agora
 
   const handleOpenBottomSheet = useCallback(
-    (item: SongWithArt) => {
+    (item: TrackDetails) => {
       openSheet({
         snapPoints: ["60%"],
         content: () => getBottomSheetContent(item), // ← currying com item atual
@@ -183,17 +192,22 @@ const DetailsMusic = () => {
     [musicDetails, playSongs, loadingSongIndex, currentTrack, togglePlayPause],
   );
 
-  if (loading && !musicDetails) {
+  if (loading) {
     return (
-      <View className="infor-alert">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View className="flex-1">
+        <ActivityIndicatorCustom />
       </View>
     );
   }
 
   if (!musicDetails || error) {
     return (
-      <View className="infor-alert gap-4">
+      <View
+        className="flex-1 items-center justify-center gap-4"
+        style={{
+          backgroundColor: colors.surface,
+        }}
+      >
         <View className="dark:bg-zinc-800 bg-zinc-200 p-6 rounded-2xl">
           <Music size={48} color={isDark ? "#71717a" : "#a1a1aa"} />
         </View>
@@ -229,9 +243,9 @@ const DetailsMusic = () => {
           className="hero-container"
           style={{ height: IMAGE_SIZE_BACKGROUND }}
         >
-          {musicDetails.coverArt ? (
+          {cover ? (
             <ImageBackground
-              source={{ uri: musicDetails.coverArt }}
+              source={{ uri: cover }}
               style={{
                 flex: 1,
                 borderBottomLeftRadius: 24,
@@ -342,7 +356,7 @@ const DetailsMusic = () => {
             <View className="meta-row">
               <Text className="meta-label">Arquivo</Text>
               <Text className="meta-value">
-                {musicDetails.filename?.split(".").pop()?.toUpperCase()} •{" "}
+                {musicDetails.title?.split(".").pop()?.toUpperCase()} •{" "}
                 {formatDuration(musicDetails.duration)}
               </Text>
             </View>

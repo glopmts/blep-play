@@ -1,20 +1,27 @@
 import * as Linking from "expo-linking";
+import * as QuickActions from "expo-quick-actions";
+import { useQuickAction } from "expo-quick-actions/hooks";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
-import { NativeModules } from "react-native";
+import { NativeModules, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { PlayerSetup } from "../context/player-context";
 import { PlayerHeightProvider } from "../context/player-height-context";
-import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { ThemeProvider } from "../context/ThemeContext";
 import "../css/global.css";
 import { handleIncomingFile } from "../utils/fileHandler";
+
+///NativeModules React
 const { PerformanceOptimization, CacheManager } = NativeModules;
 
 function RootLayoutNav() {
-  const { colors } = useTheme();
+  const action = useQuickAction();
+
+  console.log("action", action);
+  ///processUrl audios links
   const processUrl = useCallback(async (url: string) => {
     // Ignora deep links internos do Expo
     if (url.startsWith("exp+") || url.startsWith("exp://")) return;
@@ -71,16 +78,32 @@ function RootLayoutNav() {
     });
   }, []);
 
+  useEffect(() => {
+    QuickActions.setItems([
+      {
+        title: "Playlists",
+        icon: Platform.select({
+          ios: "symbol:heart.fill",
+          android: "asset:heart",
+        }),
+        id: "playlists",
+        params: {
+          href: "/playlists",
+        },
+      },
+    ]);
+  }, []);
+
   return (
     <>
       <StatusBar style="auto" />
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "fade", // 'slide_from_right' | 'fade' | 'flip'
-          animationDuration: 300,
+          animation: "slide_from_bottom", // player sobe/desce naturalmente
+          animationDuration: 250,
           gestureEnabled: true,
-          contentStyle: { backgroundColor: colors.background },
+          gestureDirection: "vertical", // gesto de swipe pra baixo fecha o player
         }}
       />
     </>
@@ -90,15 +113,15 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
-      <BottomSheetProvider>
-        <ThemeProvider>
+      <ThemeProvider>
+        <BottomSheetProvider>
           <PlayerHeightProvider>
             <PlayerSetup>
               <RootLayoutNav />
             </PlayerSetup>
           </PlayerHeightProvider>
-        </ThemeProvider>
-      </BottomSheetProvider>
+        </BottomSheetProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

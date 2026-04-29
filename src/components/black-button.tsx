@@ -7,6 +7,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { Pressable } from "react-native-gesture-handler";
 import { useTheme } from "../context/ThemeContext";
 
 type BackButtonProps = {
@@ -66,7 +67,7 @@ export function BackButton({
         style,
       ]}
     >
-      <TouchableOpacity
+      <Pressable
         onPress={() =>
           router.canGoBack() ? router.back() : router.replace("/(main)/(tabs)")
         }
@@ -85,7 +86,7 @@ export function BackButton({
           size={24}
           color={isDark ? colors.text : colors.text}
         />
-      </TouchableOpacity>
+      </Pressable>
 
       {showRight && (
         <TouchableOpacity
