@@ -3,9 +3,9 @@ import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
 import SearchBar from "@/components/searchBar";
 import { useTheme } from "@/context/ThemeContext";
-import { useAlbumDetailsLocal } from "@/hooks/useAlbumDetailsLocal";
+import { useAlbumDetailsLocal } from "@/hooks/albums-hooks/useAlbumDetailsLocal";
 import { usePlayer } from "@/hooks/usePlayer";
-import { useSearch } from "@/hooks/useSearch";
+import { useSearchSong } from "@/hooks/useSearchSong";
 import { TrackDetails } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,7 +46,7 @@ const AlbumDetails = () => {
     isSearching,
     clearSearch,
     hasResults,
-  } = useSearch(album?.songs || []);
+  } = useSearchSong(album?.songs || []);
 
   // Toca a música clicada
   const handleSongPress = useCallback(

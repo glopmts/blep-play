@@ -275,7 +275,6 @@ const DetailsMusic = () => {
             </View>
           )}
           <BackButton
-            isDark={isDark}
             isBottomOption={true}
             handleSongPress={() => handleOpenBottomSheet(musicDetails)}
           >

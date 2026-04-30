@@ -7,7 +7,7 @@ interface SearchResult {
   score: number;
 }
 
-export const useSearch = (songs: TrackDetails[]) => {
+export const useSearchSong = (songs: TrackDetails[]) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);

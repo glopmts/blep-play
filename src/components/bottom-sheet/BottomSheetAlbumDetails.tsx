@@ -1,5 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
-import { confirmAndDeleteAlbum } from "@/services/deletealbum.service";
+import { confirmAndDeleteAlbum } from "@/services/delete-album.service";
 import { AlbumInterface } from "@/types/interfaces";
 import { Image } from "expo-image";
 import { router } from "expo-router";

@@ -1,6 +1,6 @@
 import { Text, TouchableOpacity, View } from "react-native";
-import Input from "./ui/input";
-import Modal from "./ui/modal";
+import Input from "../ui/input";
+import Modal from "../ui/modal";
 
 interface CreatePlaylistModalProps {
   visible: boolean;

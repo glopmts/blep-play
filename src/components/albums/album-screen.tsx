@@ -1,77 +1,29 @@
 import { useBottomSheet } from "@/context/bottom-sheet-context";
-import { useAlbumCover } from "@/hooks/albums-hooks/useAlbumCover";
-import { useAlbums } from "@/hooks/useAlbums";
+import { useAlbums } from "@/hooks/albums-hooks/useAlbums";
 import { useTheme } from "@/hooks/useTheme";
 import { AlbumInterface } from "@/types/interfaces";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { memo, useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
-import AlbumThumbnail from "./album-thumbnail";
-
-const AlbumCard = memo(
-  ({
-    album,
-    onPress,
-    isDark,
-    loadingCovers,
-    handleOpenBottomSheet,
-  }: {
-    album: AlbumInterface;
-    onPress: (album: AlbumInterface) => void;
-    isDark: boolean;
-    loadingCovers?: boolean;
-    handleOpenBottomSheet: (album: AlbumInterface) => void;
-  }) => {
-    const coverUri = useAlbumCover(album.id, album.artworkBase64);
-
-    return (
-      <TouchableOpacity
-        onPress={() => onPress(album)}
-        className="flex-col gap-3 items-center justify-center mb-4 p-3"
-        activeOpacity={0.7}
-        delayLongPress={500}
-        onLongPress={() =>
-          handleOpenBottomSheet({
-            ...album,
-            artworkBase64: coverUri,
-          })
-        }
-      >
-        <AlbumThumbnail
-          coverArt={coverUri}
-          isDark={isDark}
-          loadingCovers={loadingCovers}
-          type="card"
-          albumId={album.id}
-        />
-        <View className="">
-          <Text
-            className="text-base font-semibold text-black dark:text-white mb-1"
-            numberOfLines={1}
-          >
-            {album.album}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  },
-);
-
-AlbumCard.displayName = "AlbumCard";
+import AlbumCard from "./LocalAlbumCard";
 
 interface ALlbumScreen {
   horizontal?: boolean;
   title?: string;
+  initialAlbumsToShow?: number;
 }
 
-export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
+export const AlbumScreen = ({
+  horizontal = true,
+  initialAlbumsToShow = 8, // Mostrar apenas 8 álbuns inicialmente
+}: ALlbumScreen) => {
   const { albums, loading, refreshing, refresh } = useAlbums();
   const { isDark } = useTheme();
-
+  const [showAllAlbums, setShowAllAlbums] = useState(false);
   useState<AlbumInterface | null>(null);
   const { openSheet, closeSheet } = useBottomSheet();
 
@@ -93,13 +45,42 @@ export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
   };
 
   const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 20, // 20% do item visível já conta
+    itemVisiblePercentThreshold: 20,
   }).current;
+
+  // Determinar quais álbuns mostrar baseado no estado
+  const displayedAlbums = showAllAlbums
+    ? albums
+    : albums.slice(0, initialAlbumsToShow);
+
+  const hasMoreAlbums = albums.length > initialAlbumsToShow && !showAllAlbums;
+
+  const ListFooterComponent = () => {
+    if (!hasMoreAlbums) return null;
+
+    return (
+      <TouchableOpacity
+        onPress={() => router.navigate("/(main)/(tabs)/albums")}
+        className="items-center justify-center py-8 px-4"
+        activeOpacity={0.7}
+      >
+        <View className="bg-primary-500 dark:bg-primary-400 rounded-lg px-6 py-3">
+          <Text className="text font-semibold text-center text-base">
+            Ver restante dos álbuns ({albums.length - initialAlbumsToShow}{" "}
+            restantes)
+          </Text>
+        </View>
+        <Text className="text-gray-500 dark:text-gray-400 text-sm mt-2 text-center">
+          Toque para carregar mais álbuns
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
       <View className="flex">
-        <SkeletonLoadingAlbum horizontal={true} />
+        <SkeletonLoadingAlbum horizontal={horizontal} />
       </View>
     );
   }
@@ -116,26 +97,28 @@ export const AlbumScreen = ({ horizontal = true }: ALlbumScreen) => {
   }
 
   return (
-    <View className="">
-      {/* Lista de Álbuns */}
+    <View>
       <FlashList
-        data={albums}
+        data={displayedAlbums}
         renderItem={({ item }) => (
           <AlbumCard
             album={item}
             onPress={handleAlbumPress}
-            isDark={isDark}
             handleOpenBottomSheet={handleOpenBottomSheet}
           />
         )}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="gap-4"
+        contentContainerClassName="gap-4 pb-4"
         horizontal={horizontal}
-        refreshing={loading}
+        refreshing={refreshing}
         viewabilityConfig={viewabilityConfig}
         onRefresh={refresh}
         showsHorizontalScrollIndicator={false}
+        ListFooterComponent={ListFooterComponent}
+        contentContainerStyle={{
+          paddingBottom: 120, // Padding extra no final
+        }}
       />
     </View>
   );

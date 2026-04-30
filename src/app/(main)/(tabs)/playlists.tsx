@@ -1,19 +1,20 @@
-import CreatePlaylistModal from "@/components/creater-playlits";
+import CreatePlaylistModal from "@/components//playlist/creater-playlits";
+import EmptyState from "@/components/empty-state";
 import Header from "@/components/header";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import SkeletonLoadingAlbum from "@/components/loading-skeleton-album";
+import { PlaylistCover } from "@/components/playlist/playlist-cover";
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { Playlists as Playlist } from "@/types/interfaces";
 import * as Crypto from "expo-crypto";
-import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
   ArrowRight,
   ChevronRight,
   EllipsisVertical,
   Info,
-  ListMusicIcon,
   PlusIcon,
   Trash2,
 } from "lucide-react-native";
@@ -26,8 +27,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import EmptyState from "../../../components/empty-state";
-import { useBottomSheet } from "../../../context/bottom-sheet-context";
 
 type NaveItem = {
   id: string;
@@ -83,26 +82,7 @@ const Playlists = () => {
       return (
         <View className="flex-col gap-5 px-4">
           <View className="flex-row gap-3 items-center">
-            <View
-              className="w-24 h-24 rounded-2xl overflow-hidden items-center justify-center"
-              style={{ backgroundColor: colors.cardMuted }}
-            >
-              {playlist.coverArt ? (
-                <Image
-                  source={{ uri: playlist.coverArt }}
-                  style={{ width: "100%", height: "100%" }}
-                  contentFit="cover"
-                  transition={200}
-                  cachePolicy="memory-disk"
-                />
-              ) : (
-                <ListMusicIcon
-                  size={24}
-                  color={colors.icon}
-                  strokeWidth={1.5}
-                />
-              )}
-            </View>
+            <PlaylistCover coverArt={playlist.coverArt} />
             <View className="flex-col gap-2">
               <Text className="text">{playlist.title}</Text>
               <Text className="text text-xl text-zinc-300">
@@ -256,22 +236,7 @@ const Playlists = () => {
         onPress={() => handlePlaylistDetails(item.id)}
       >
         {/* Thumbnail */}
-        <View
-          className="w-24 h-24 rounded-2xl overflow-hidden items-center justify-center"
-          style={{ backgroundColor: colors.cardMuted }}
-        >
-          {item.coverArt ? (
-            <Image
-              source={{ uri: item.coverArt }}
-              style={{ width: "100%", height: "100%" }}
-              contentFit="cover"
-              transition={200}
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <ListMusicIcon size={24} color={colors.icon} strokeWidth={1.5} />
-          )}
-        </View>
+        <PlaylistCover coverArt={item.coverArt} />
 
         {/* Text info */}
         <View className="gap-0.5">

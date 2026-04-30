@@ -1,3 +1,4 @@
+import * as FileSystem from "expo-file-system/legacy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 import { showPlatformMessage } from "../components/toast-message-plataform";
@@ -23,25 +24,75 @@ export function usePlaylists(id?: string | null) {
   const [refreshing, setRefreshing] = useState(false);
   const [playlist, setPlaylist] = useState<Playlists | null>(null);
 
-  // Previne operações enquanto outra está em andamento
   const operationInProgress = useRef(false);
+
+  // Função para verificar se a imagem personalizada ainda existe
+  const checkCustomCoverExists = useCallback(
+    async (coverPath: string | null | undefined): Promise<boolean> => {
+      if (!coverPath) return false;
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(coverPath);
+        return fileInfo.exists;
+      } catch {
+        return false;
+      }
+    },
+    [],
+  );
+
+  // Função para obter a capa da playlist (prioriza capa personalizada)
+  const getPlaylistCover = useCallback(
+    async (playlist: Playlists): Promise<string | null> => {
+      // 1. Verificar se existe capa personalizada
+      if (playlist.customCoverArt) {
+        const exists = await checkCustomCoverExists(playlist.customCoverArt);
+        if (exists) {
+          return playlist.customCoverArt;
+        }
+        // Se a imagem não existe mais, limpar a referência
+        if (playlist.customCoverArt) {
+          await updatePlaylist(playlist.id, { customCoverArt: null });
+        }
+      }
+
+      // 2. Se não tem capa personalizada, usar a capa da primeira música
+      if (playlist.songs && playlist.songs.length > 0) {
+        const firstSong = playlist.songs[0];
+        const songCover = await getTrackCoverSync(
+          firstSong.filePath,
+          firstSong.id,
+        );
+        if (songCover) {
+          return songCover;
+        }
+      }
+
+      return null;
+    },
+    [checkCustomCoverExists, getTrackCoverSync],
+  );
 
   // Carrega todas as playlists do storage
   const loadAll = useCallback(async () => {
     try {
       const data = await getPlaylist();
 
-      // Garante que músicas de cada playlist estão ordenadas (mais nova primeiro)
-      const playlistsWithOrder = data.map((playlist) => ({
-        ...playlist,
-        songs: [...(playlist.songs ?? [])].reverse(), // Mais nova primeiro
-      }));
+      const playlistsWithCovers = await Promise.all(
+        data.map(async (playlist) => {
+          const coverArt = await getPlaylistCover(playlist);
 
-      setPlaylists(playlistsWithOrder);
+          return {
+            ...playlist,
+            coverArt, // Capa calculada (personalizada ou da música)
+          };
+        }),
+      );
+
+      setPlaylists(playlistsWithCovers);
     } catch (error) {
       console.error("[usePlaylists] Erro ao carregar:", error);
     }
-  }, []);
+  }, [getPlaylistCover]);
 
   // Carregamento inicial + limpeza de versões antigas
   useEffect(() => {
@@ -62,10 +113,57 @@ export function usePlaylists(id?: string | null) {
     setRefreshing(true);
     try {
       await loadAll();
+      if (id) {
+        await fetchData();
+      }
     } finally {
       setRefreshing(false);
     }
-  }, [loadAll]);
+  }, [loadAll, id]);
+
+  const fetchPlaylistById = useCallback(
+    async (id: string) => {
+      try {
+        const playlistData = await getPlaylistById(id);
+        if (!playlistData) return null;
+
+        const sortedSongs = [...(playlistData.songs ?? [])];
+        const sortedPlaylist = { ...playlistData, songs: sortedSongs };
+
+        // Usar a nova lógica para obter a capa
+        const cover = await getPlaylistCover(sortedPlaylist);
+        sortedPlaylist.coverArt = cover || undefined;
+
+        return sortedPlaylist;
+      } catch (e) {
+        console.error("Erro ao buscar Playlist", e);
+        Alert.alert(
+          "Erro ao buscar Playlist: " +
+            (e instanceof Error ? e.message : String(e)),
+        );
+        return null;
+      }
+    },
+    [getPlaylistCover],
+  );
+
+  const findPlaylistById = useCallback(
+    (id: string): Playlists | undefined => {
+      return playlists.find((p) => p.id === id);
+    },
+    [playlists],
+  );
+
+  const fetchData = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const playlistData = await fetchPlaylistById(id);
+      setPlaylist(playlistData);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, fetchPlaylistById]);
 
   // Criar nova playlist
   const handleCreatePlaylist = useCallback(
@@ -139,33 +237,41 @@ export function usePlaylists(id?: string | null) {
   // Adicionar música a uma playlist
   const handleAddSongToPlaylist = useCallback(
     async (playlistId: string, song: TrackDetails) => {
-      if (operationInProgress.current) {
-        return null;
-      }
-
+      if (operationInProgress.current) return null;
       operationInProgress.current = true;
 
       try {
         const updated = await addSongToPlaylist(playlistId, song);
         if (updated) {
+          // Atualiza a playlist localmente
           setPlaylists((prev) => {
             const newPlaylists = prev.map((p) =>
-              p.id === playlistId ? updated : p,
+              p.id === playlistId
+                ? {
+                    ...p,
+                    songs: [song, ...p.songs],
+                  }
+                : p,
             );
             return newPlaylists;
           });
 
-          await loadAll();
+          if (playlist?.id === playlistId) {
+            const updatedPlaylist = await fetchPlaylistById(playlistId);
+            setPlaylist(updatedPlaylist);
+          }
+
+          showPlatformMessage("Música adicionada com sucesso!");
         }
-        showPlatformMessage("Musica adicionada com sucesso!");
         return updated;
       } catch (error) {
+        console.error("[usePlaylists] Erro ao adicionar música:", error);
         return null;
       } finally {
         operationInProgress.current = false;
       }
     },
-    [loadAll],
+    [playlist, fetchPlaylistById],
   );
 
   // Remover música de uma playlist
@@ -176,14 +282,25 @@ export function usePlaylists(id?: string | null) {
 
       try {
         const updated = await removeSongFromPlaylist(playlistId, songId);
-
         if (updated) {
           setPlaylists((prev) =>
-            prev.map((p) => (p.id === playlistId ? updated : p)),
+            prev.map((p) =>
+              p.id === playlistId
+                ? {
+                    ...p,
+                    songs: p.songs.filter((s) => s.id !== songId),
+                  }
+                : p,
+            ),
           );
+
+          if (playlist?.id === playlistId) {
+            const updatedPlaylist = await fetchPlaylistById(playlistId);
+            setPlaylist(updatedPlaylist);
+          }
+
+          showPlatformMessage("Música removida com sucesso!");
         }
-        showPlatformMessage("Musica removida com sucesso!");
-        handleRefresh();
         return updated;
       } catch (error) {
         console.error("[usePlaylists] Erro ao remover música:", error);
@@ -192,7 +309,7 @@ export function usePlaylists(id?: string | null) {
         operationInProgress.current = false;
       }
     },
-    [],
+    [playlist, fetchPlaylistById],
   );
 
   // Substituir todas as músicas de uma playlist
@@ -221,7 +338,7 @@ export function usePlaylists(id?: string | null) {
     [],
   );
 
-  // Atualizar dados da playlist (título, etc)
+  // Atualizar dados da playlist (incluindo customCoverArt)
   const handleUpdatePlaylist = useCallback(
     async (playlistId: string, updates: Partial<Omit<Playlists, "id">>) => {
       if (operationInProgress.current) return null;
@@ -234,6 +351,11 @@ export function usePlaylists(id?: string | null) {
           setPlaylists((prev) =>
             prev.map((p) => (p.id === playlistId ? updated : p)),
           );
+
+          if (playlist?.id === playlistId) {
+            const newCover = await getPlaylistCover(updated);
+            setPlaylist({ ...updated, coverArt: newCover || undefined });
+          }
         }
 
         return updated;
@@ -244,60 +366,8 @@ export function usePlaylists(id?: string | null) {
         operationInProgress.current = false;
       }
     },
-    [],
+    [playlist, getPlaylistCover],
   );
-
-  // Buscar playlist por ID (do estado local)
-  const findPlaylistById = useCallback(
-    (id: string): Playlists | undefined => {
-      return playlists.find((p) => p.id === id);
-    },
-    [playlists],
-  );
-
-  // Buscar playlist por ID (do storage - para dados frescos)
-  const fetchPlaylistById = useCallback(async (id: string) => {
-    return getPlaylistById(id);
-  }, []);
-
-  const fetchData = async () => {
-    if (!id) return;
-
-    setLoading(true);
-    try {
-      const playlistData = await getPlaylistById(id);
-
-      if (!playlistData) {
-        Alert.alert("Playlist não encontrada!");
-        return;
-      }
-
-      // Ordena músicas: mais recente primeiro
-      const sortedSongs = [...(playlistData.songs ?? [])].reverse();
-
-      const sortedPlaylist = {
-        ...playlistData,
-        songs: sortedSongs,
-      };
-
-      // Busca capa da primeira música (mais recente)
-      if (sortedSongs.length > 0) {
-        const firstSong = sortedSongs[0];
-        const cover = await getTrackCoverSync(firstSong.filePath, firstSong.id);
-        sortedPlaylist.coverArt = cover || "";
-      }
-
-      setPlaylist(sortedPlaylist);
-    } catch (e) {
-      console.error("Erro ao buscar Playlist", e);
-      Alert.alert(
-        "Erro ao buscar Playlist: " +
-          (e instanceof Error ? e.message : String(e)),
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchData();

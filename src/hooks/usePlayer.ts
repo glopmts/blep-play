@@ -152,8 +152,6 @@ export function usePlayer() {
         const tracks = songs.map((s) => songToTrack(s));
 
         const startSong = songs[startIndex];
-
-        // Verifica se tem coverArt antes de tentar processar
         const startArtwork = startSong.coverArt
           ? await getOrPersistCover(startSong.id, startSong.coverArt)
           : null;
@@ -175,16 +173,6 @@ export function usePlayer() {
           album: tracks[startIndex].album,
           artwork: startArtwork ?? undefined,
         });
-
-        // Resolve capas das demais em background
-        songs.forEach(async (song, idx) => {
-          if (idx === startIndex || !song.coverArt) return;
-          const artwork = await getOrPersistCover(song.id, song.coverArt);
-          if (artwork) {
-            await TrackPlayer.updateMetadataForTrack(idx, { artwork });
-            tracks[idx] = { ...tracks[idx], artwork };
-          }
-        });
       } catch (error) {
         console.error("[playSongs] erro:", error);
       } finally {
@@ -204,13 +192,10 @@ export function usePlayer() {
     const track = await TrackPlayer.getActiveTrack();
     if (!track) return;
 
-    // Artwork já é file:// ? usa direto
     let artwork = sanitizeArtwork(track.artwork as string);
 
-    // Não tem ou é base64 → busca do cache em disco
     if (!artwork) {
       const songId = String(track.id);
-      // coverArt pode estar no track como campo extra
       const base64 = (track as any).coverArt as string | undefined;
       artwork = (await getOrPersistCover(songId, base64)) ?? undefined;
 
@@ -237,6 +222,7 @@ export function usePlayer() {
       duration: track.duration,
     });
   });
+
   // ── Controles──
   const togglePlayPause = useCallback(async () => {
     if (isPlaying) await TrackPlayer.pause();

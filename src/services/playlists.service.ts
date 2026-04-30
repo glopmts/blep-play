@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Playlists, TrackDetails } from "../types/interfaces";
 
 const KEYS = {
-  PLAYLISTS: "playlists_v3", // Nova versão otimizada
+  PLAYLISTS: "playlists_v3",
 } as const;
 
 // Limite máximo de tamanho (4MB para ter margem de segurança)
@@ -54,7 +54,7 @@ function minimizePlaylist(playlist: Playlists): Playlists {
     title: playlist.title,
     musicId: playlist.musicId,
     playedAt: playlist.playedAt,
-    // Não salva coverArt diretamente - será derivado das músicas
+    customCoverArt: playlist.customCoverArt ?? null,
     songs: (playlist.songs ?? []).map(minimizeSong) as TrackDetails[],
   };
 }
@@ -192,6 +192,7 @@ export async function createPlaylist(
       id: playlist.id,
       title: playlist.title,
       musicId: playlist.musicId,
+      customCoverArt: playlist.customCoverArt,
       songs: playlist.songs ?? [], // Mantém a ordem original
       playedAt: Date.now(),
     };

@@ -176,9 +176,10 @@ const HistoryRecentMusic = () => {
       {recents.length === 0 ? (
         <View className="mt-8 items-center justify-center">
           <View
-            className="items-center justify-center dark:bg-zinc-800 p-6"
+            className="items-center justify-center p-6"
             style={{
               borderRadius: colors.rounded.rounded_3xl,
+              backgroundColor: colors.cardMuted,
             }}
           >
             <Text>

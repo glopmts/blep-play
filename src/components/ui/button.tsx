@@ -1,215 +1,183 @@
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme } from "@/hooks/useTheme";
 import { ReactNode } from "react";
 import {
   ActivityIndicator,
-  Pressable,
-  PressableProps,
+  StyleSheet,
   Text,
-  TextStyle,
+  TouchableOpacity,
   View,
-  ViewStyle,
 } from "react-native";
 
-interface ButtonProps extends PressableProps {
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "danger"
+  | "success"
+  | "warning"
+  | "outline"
+  | "ghost";
+type ButtonSize = "sm" | "md" | "lg";
+type ButtonRadius = "md" | "2xl" | "3xl" | "full";
+
+interface ButtonProps {
+  onPress?: () => void;
+  onLongPress?: () => void;
+  label?: string;
+  icon?: ReactNode;
+  iconPosition?: "left" | "right";
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  radius?: ButtonRadius;
+  disabled?: boolean;
   isLoading?: boolean;
-  children: ReactNode;
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "small" | "medium" | "large";
+  flex?: number;
   fullWidth?: boolean;
-  leftIcon?: ReactNode;
-  rightIcon?: ReactNode;
 }
 
-const Button = ({
-  isLoading,
-  children,
+export function Button({
+  onPress,
+  onLongPress,
+  label,
+  icon,
+  iconPosition = "right",
   variant = "primary",
-  size = "medium",
+  size = "md",
+  radius = "2xl",
+  disabled = false,
+  isLoading = false,
+  flex,
   fullWidth = false,
-  leftIcon,
-  rightIcon,
-  disabled,
-  style,
-  ...rest
-}: ButtonProps) => {
-  const { colors } = useTheme();
+}: ButtonProps) {
+  const { colors, isDark } = useTheme();
 
-  const getVariantStyles = (): ViewStyle => {
-    switch (variant) {
-      case "primary":
-        return { backgroundColor: colors.primary };
-      case "secondary":
-        return { backgroundColor: colors.secondary };
-      case "outline":
-        return {
-          backgroundColor: "transparent",
-          borderWidth: 1,
-          borderColor: colors.border,
-        };
-      case "ghost":
-        return { backgroundColor: colors.border };
-      case "danger":
-        return {
-          backgroundColor: colors.danger_v2,
-          borderWidth: 1,
-          borderColor: colors.danger_border,
-        };
-      default:
-        return { backgroundColor: colors.primary };
-    }
+  const backgroundColors: Record<ButtonVariant, string> = {
+    primary: colors.primary,
+    secondary: colors.secondary,
+    danger: colors.danger,
+    success: colors.success,
+    warning: colors.warning,
+    outline: "transparent",
+    ghost: "transparent",
   };
 
-  const getSizeStyles = (): ViewStyle => {
-    switch (size) {
-      case "small":
-        return { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 };
-      case "medium":
-        return { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 14 };
-      case "large":
-        return { paddingHorizontal: 22, paddingVertical: 16, borderRadius: 16 };
-      default:
-        return { paddingHorizontal: 18, paddingVertical: 14, borderRadius: 14 };
-    }
+  const textColors: Record<ButtonVariant, string> = {
+    primary: "#0A0A0C",
+    secondary: "#ffffff",
+    danger: "#ffffff",
+    success: "#ffffff",
+    warning: "#0A0A0C",
+    outline: colors.text,
+    ghost: colors.text,
   };
 
-  const getTextColor = (): string => {
-    if (disabled) return colors.textMuted;
-    switch (variant) {
-      case "primary":
-        return "#0A0A0C";
-      case "secondary":
-        return "#ffffff";
-      case "danger":
-        return colors.danger_title;
-      case "outline":
-      case "ghost":
-        return colors.text;
-      default:
-        return "#0A0A0C";
-    }
+  const borderColors: Record<ButtonVariant, string> = {
+    primary: "transparent",
+    secondary: "transparent",
+    danger: "transparent",
+    success: "transparent",
+    warning: "transparent",
+    outline: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)",
+    ghost: "transparent",
   };
 
-  const getTextSize = (): number => {
-    switch (size) {
-      case "small":
-        return 13;
-      case "medium":
-        return 15;
-      case "large":
-        return 17;
-      default:
-        return 15;
-    }
+  const paddings: Record<ButtonSize, { vertical: number; horizontal: number }> =
+    {
+      sm: { vertical: 8, horizontal: 14 },
+      md: { vertical: 13, horizontal: 18 },
+      lg: { vertical: 17, horizontal: 24 },
+    };
+
+  const fontSizes: Record<ButtonSize, number> = {
+    sm: 13,
+    md: 15,
+    lg: 17,
   };
 
-  const getSpinnerColor = (): string => {
-    if (variant === "primary") return "#0A0A0C";
-    if (variant === "secondary") return "#ffffff";
-    if (variant === "danger") return colors.danger_title;
-    return colors.text;
+  const iconSizes: Record<ButtonSize, number> = {
+    sm: 14,
+    md: 18,
+    lg: 22,
   };
 
-  const getIconSize = (): number => {
-    switch (size) {
-      case "small":
-        return 16;
-      case "large":
-        return 22;
-      default:
-        return 20;
-    }
+  const radiusMap: Record<ButtonRadius, number | string> = {
+    md: colors.rounded.rounded_md,
+    "2xl": colors.rounded.rounded_2xl,
+    "3xl": colors.rounded.rounded_3xl,
+    full: 999,
   };
 
-  const textStyle: TextStyle = {
-    color: getTextColor(),
-    fontSize: getTextSize(),
-    fontWeight: "500",
-  };
-
-  // Função para extrair texto puro do children
-  const getTextFromChildren = (node: ReactNode): string => {
-    if (typeof node === "string") return node;
-    if (typeof node === "number") return String(node);
-    if (Array.isArray(node)) {
-      return node.map(getTextFromChildren).join("");
-    }
-    if (typeof node === "object" && node !== null && "props" in node) {
-      return getTextFromChildren((node as any).props.children);
-    }
-    return "";
-  };
-
-  // Verifica se o children é apenas texto
-  const isPlainText = (node: ReactNode): boolean => {
-    if (typeof node === "string" || typeof node === "number") return true;
-    if (Array.isArray(node)) return node.length === 1 && isPlainText(node[0]);
-    return false;
-  };
-
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <ActivityIndicator size={getIconSize()} color={getSpinnerColor()} />
-      );
-    }
-
-    const hasIcons = leftIcon || rightIcon;
-    const isTextOnly = isPlainText(children);
-
-    // Se tem ícones e o children é texto puro, usa a estrutura com ícones
-    if (hasIcons && isTextOnly) {
-      return (
-        <>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            {leftIcon && leftIcon}
-            <Text style={textStyle}>{children}</Text>
-          </View>
-          {rightIcon && rightIcon}
-        </>
-      );
-    }
-
-    // Se tem ícones mas o children é complexo, renderiza tudo junto
-    if (hasIcons && !isTextOnly) {
-      return (
-        <>
-          {leftIcon && leftIcon}
-          <View style={{ flex: 1 }}>{children}</View>
-          {rightIcon && rightIcon}
-        </>
-      );
-    }
-
-    // Se o children é texto puro, renderiza com Text
-    if (isTextOnly) {
-      return <Text style={textStyle}>{children}</Text>;
-    }
-
-    // Se o children é complexo, renderiza diretamente
-    return children;
-  };
+  const bg = backgroundColors[variant];
+  const textColor = textColors[variant];
+  const borderColor = borderColors[variant];
+  const pad = paddings[size];
+  const fontSize = fontSizes[size];
+  const borderRadius = radiusMap[radius] as number;
+  const isDisabled = disabled || isLoading;
 
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <TouchableOpacity
+      onPress={onPress}
+      onLongPress={onLongPress}
+      disabled={isDisabled}
+      activeOpacity={0.75}
+      style={[
+        styles.base,
         {
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: leftIcon || rightIcon ? "space-between" : "center",
-          gap: 10,
-          opacity: disabled || isLoading ? 0.5 : pressed ? 0.75 : 1,
+          backgroundColor: bg,
+          borderColor,
+          borderWidth: variant === "outline" ? 1 : 0,
+          borderRadius,
+          paddingVertical: pad.vertical,
+          paddingHorizontal: pad.horizontal,
+          opacity: isDisabled ? 0.5 : 1,
+          flex: flex ?? undefined,
+          alignSelf: fullWidth ? "stretch" : "auto",
         },
-        getVariantStyles(),
-        getSizeStyles(),
-        fullWidth && { width: "100%" },
-        style as ViewStyle,
       ]}
-      disabled={disabled || isLoading}
-      {...rest}
     >
-      {renderContent()}
-    </Pressable>
+      {isLoading ? (
+        <ActivityIndicator
+          size="small"
+          color={
+            variant === "primary" || variant === "warning"
+              ? "#0A0A0C"
+              : "#ffffff"
+          }
+        />
+      ) : (
+        <View style={styles.content}>
+          {icon && iconPosition === "left" && (
+            <View style={{ marginRight: label ? 6 : 0 }}>{icon}</View>
+          )}
+          {label && (
+            <Text
+              style={{
+                color: textColor,
+                fontSize,
+                fontWeight: "600",
+              }}
+            >
+              {label}
+            </Text>
+          )}
+          {icon && iconPosition === "right" && (
+            <View style={{ marginLeft: label ? 6 : 0 }}>{icon}</View>
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
   );
-};
+}
 
-export default Button;
+const styles = StyleSheet.create({
+  base: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

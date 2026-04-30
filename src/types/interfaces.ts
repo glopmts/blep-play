@@ -47,7 +47,7 @@ export interface AlbumWithDetails {
 
 export interface AlbumInterface {
   id: string;
-  album: string;
+  album: string; //name ou title album
   artist: string;
   numberOfSongs: number;
   year: number;
@@ -68,7 +68,8 @@ export interface GroupedAlbum {
 export interface Playlists {
   id: string;
   musicId?: string;
-  coverArt?: string | undefined;
+  coverArt?: string | null;
+  customCoverArt?: string | null;
   title: string;
   songs: TrackDetails[];
   playedAt?: number; // timestamp — só em recentes

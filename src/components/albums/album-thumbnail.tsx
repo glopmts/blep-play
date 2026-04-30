@@ -2,17 +2,9 @@ import { useTheme } from "@/context/ThemeContext";
 import { Colors } from "@/types/colors";
 import { CARD_WIDTH, IMAGE_SIZE } from "@/utils/image-types";
 import { Image } from "expo-image";
-import { Music } from "lucide-react-native";
+import { Music, Music2 } from "lucide-react-native";
 import { memo, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-
-interface AlbumThumbnailProps {
-  coverArt?: string | null;
-  isDark?: boolean;
-  loadingCovers?: boolean;
-  type?: "card" | "list";
-  albumId?: string;
-}
 
 const Placeholder = ({ colors, size }: { colors: Colors; size: number }) => (
   <View
@@ -29,15 +21,28 @@ const Placeholder = ({ colors, size }: { colors: Colors; size: number }) => (
   </View>
 );
 
+interface AlbumThumbnailProps {
+  coverArt?: string | null;
+  isDark?: boolean;
+  loadingCovers?: boolean;
+  isCurrentlyPlaying?: boolean;
+  type?: "card" | "list";
+  albumId?: string;
+}
+
 const AlbumThumbnail = memo(
-  ({ coverArt, type = "card", loadingCovers }: AlbumThumbnailProps) => {
-    // Estabiliza a source — evita recriar objeto a cada render
+  ({
+    coverArt,
+    type = "card",
+    loadingCovers,
+    isCurrentlyPlaying, // ← Receber a prop
+  }: AlbumThumbnailProps) => {
     const source = useMemo(
       () => (coverArt ? { uri: coverArt } : null),
       [coverArt],
     );
 
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
 
     if (type === "list") {
       return (
@@ -48,6 +53,7 @@ const AlbumThumbnail = memo(
             borderRadius: 16,
             overflow: "hidden",
             backgroundColor: colors.card,
+            position: "relative",
           }}
         >
           {loadingCovers && !coverArt ? (
@@ -63,7 +69,7 @@ const AlbumThumbnail = memo(
           ) : coverArt ? (
             <Image
               source={{ uri: coverArt }}
-              style={{ width: "100%", height: "100%" }} // <-- Mudança aqui
+              style={{ width: "100%", height: "100%" }}
               contentFit="cover"
               transition={200}
               cachePolicy="memory-disk"
@@ -71,6 +77,21 @@ const AlbumThumbnail = memo(
             />
           ) : (
             <Placeholder colors={colors} size={40} />
+          )}
+
+          {isCurrentlyPlaying && (
+            <View
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                backgroundColor: "rgba(0,0,0,0.7)",
+                borderRadius: 20,
+                padding: 4,
+              }}
+            >
+              <Music2 size={16} color={colors.success || "#22c55e"} />
+            </View>
           )}
         </View>
       );
@@ -84,6 +105,7 @@ const AlbumThumbnail = memo(
           borderRadius: 16,
           overflow: "hidden",
           backgroundColor: colors.card,
+          position: "relative",
         }}
       >
         {source ? (
@@ -98,10 +120,25 @@ const AlbumThumbnail = memo(
         ) : (
           <Placeholder colors={colors} size={30} />
         )}
+
+        {isCurrentlyPlaying && (
+          <View
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              backgroundColor: "rgba(0,0,0,0.7)",
+              borderRadius: 20,
+              padding: 6,
+              zIndex: 10,
+            }}
+          >
+            <Music2 size={20} color={colors.success || "#22c55e"} />
+          </View>
+        )}
       </View>
     );
   },
 );
-
 AlbumThumbnail.displayName = "AlbumThumbnail";
 export default AlbumThumbnail;

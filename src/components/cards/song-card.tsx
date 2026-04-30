@@ -24,7 +24,6 @@ const SongCard = memo(
     song,
     index,
     isDark,
-    loadingCovers,
     isCurrentlyPlaying,
     isLoading,
     loadingSongIndex,
@@ -61,6 +60,7 @@ const SongCard = memo(
         onPress={() => handleSongPress(index)}
         disabled={loadingSongIndex !== null}
         activeOpacity={0.7}
+        delayLongPress={200}
         onLongPress={() => handleDetailsMusic(song.id)}
         className={`card-music ${isCurrentlyPlaying ? "bg-blue-500/10 dark:bg-blue-500/10" : ""}`}
         style={
@@ -109,19 +109,19 @@ const SongCard = memo(
         </View>
 
         {/* Info */}
-        <View className="flex-1 ml-3">
+        <View className="flex-1 ml-3 mr-4">
           <Text
-            className={`text-base font-semibold ${
+            className={`text-base w-full font-semibold ${
               isCurrentlyPlaying
                 ? "text-blue-500"
                 : "text-black dark:text-white"
             }`}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {song.title?.replace(/\.[^/.]+$/, "") || `Música ${index + 1}`}
           </Text>
           <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {song.mimeType ?? song.artist ?? "—"}
+            {song.artist ?? "—"} - {song.mimeType}
           </Text>
         </View>
 
