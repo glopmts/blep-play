@@ -16,12 +16,9 @@ const SkeletonLoadingAlbum = ({
   numColumns = 1,
 }: SkeletonLoadingAlbumProps) => {
   const shimmerAnimation = useRef(new Animated.Value(0)).current;
-  const { isDark, colors } = useTheme();
+  const { isDark } = useTheme();
 
-  const backgroundColor = isDark ? "#374151" : "#E5E7EB"; // cinza escuro para dark mode, cinza claro para light mode
-  const shimmerColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(255, 255, 255, 0.2)"; // brilho mais sutil para dark mode
+  const backgroundColor = isDark ? "#374151" : "#E5E7EB";
 
   useEffect(() => {
     Animated.loop(

@@ -1,4 +1,3 @@
-import { getOrPersistCover } from "@/database/cache/coverArtCache";
 import { addToRecents, getRecents } from "@/database/cache/music-history.cache";
 import { TrackDetails } from "@/types/interfaces";
 import {
@@ -16,6 +15,7 @@ import TrackPlayer, {
   useProgress,
   useTrackPlayerEvents,
 } from "react-native-track-player";
+import { resolveArtwork } from "../utils/song-metadata/resolveArtwork";
 
 export function usePlayer() {
   const playbackState = usePlaybackState();
@@ -144,45 +144,41 @@ export function usePlayer() {
   );
 
   // ── Carregar lista e tocar ───
-  const playSongs = useCallback(
-    async (songs: TrackDetails[], startIndex = 0) => {
-      if (isLoadingRef.current) return;
-      isLoadingRef.current = true;
+  const playSongs = async (songs: TrackDetails[], startIndex = 0) => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
 
-      try {
-        const tracks = songs.map((s) => songToTrack(s));
+    try {
+      const tracks = songs.map((s) => songToTrack(s));
 
-        const startSong = songs[startIndex];
-        const startArtwork = startSong.coverArt
-          ? await getOrPersistCover(startSong.id, startSong.coverArt)
-          : null;
+      // resolveArtwork tenta: state → disco → base64 (nessa ordem)
+      const startSong = songs[startIndex];
+      const artwork = await resolveArtwork(startSong.id, startSong.coverArt);
+      if (artwork) tracks[startIndex].artwork = artwork;
 
-        if (startArtwork) tracks[startIndex].artwork = startArtwork;
+      await TrackPlayer.reset();
+      await TrackPlayer.add(tracks);
+      await TrackPlayer.skip(startIndex);
+      await TrackPlayer.play();
 
-        await TrackPlayer.reset();
-        await TrackPlayer.add(tracks);
-        await TrackPlayer.skip(startIndex);
-        await TrackPlayer.play();
+      setQueue(tracks);
+      setCurrentIndex(startIndex);
+      setCurrentTrack(tracks[startIndex]);
 
-        setQueue(tracks);
-        setCurrentIndex(startIndex);
-        setCurrentTrack(tracks[startIndex]);
+      await TrackPlayer.updateNowPlayingMetadata({
+        title: tracks[startIndex].title,
+        artist: tracks[startIndex].artist,
+        album: tracks[startIndex].album,
+        artwork,
+      });
 
-        await TrackPlayer.updateNowPlayingMetadata({
-          title: tracks[startIndex].title,
-          artist: tracks[startIndex].artist,
-          album: tracks[startIndex].album,
-          artwork: startArtwork ?? undefined,
-        });
-        await getRecents();
-      } catch (error) {
-        console.error("[playSongs] erro:", error);
-      } finally {
-        isLoadingRef.current = false;
-      }
-    },
-    [],
-  );
+      await getRecents();
+    } catch (error) {
+      console.error("[playSongs] erro:", error);
+    } finally {
+      isLoadingRef.current = false;
+    }
+  };
 
   // Evento de troca de faixa — sempre busca file:// do cache
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async (event) => {
@@ -194,21 +190,20 @@ export function usePlayer() {
     const track = await TrackPlayer.getActiveTrack();
     if (!track) return;
 
-    let artwork = sanitizeArtwork(track.artwork as string);
+    // resolveArtwork: se artwork já é file:// retorna imediatamente (sem I/O)
+    // se não, busca em disco pelo id — nunca precisa do base64
+    const artwork = await resolveArtwork(
+      String(track.id),
+      sanitizeArtwork(track.artwork as string) ?? (track as any).coverArt,
+    );
 
-    if (!artwork) {
-      const songId = String(track.id);
-      const base64 = (track as any).coverArt as string | undefined;
-      artwork = (await getOrPersistCover(songId, base64)) ?? undefined;
-
-      if (idx != null && artwork) {
-        await TrackPlayer.updateMetadataForTrack(idx, { artwork });
-        await TrackPlayer.updateNowPlayingMetadata({
-          title: track.title,
-          artist: track.artist,
-          artwork,
-        });
-      }
+    if (idx != null && artwork && artwork !== track.artwork) {
+      await TrackPlayer.updateMetadataForTrack(idx, { artwork });
+      await TrackPlayer.updateNowPlayingMetadata({
+        title: track.title,
+        artist: track.artist,
+        artwork,
+      });
     }
 
     setCurrentTrack({ ...track, artwork });

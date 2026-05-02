@@ -84,7 +84,7 @@ const AlbumDetails = () => {
   const ListFooterComponent = useMemo(() => {
     if (searchQuery) return null;
 
-    if (loading) {
+    if (searchQuery || loading) {
       return (
         <View className="py-8 items-center">
           <ActivityIndicator size="small" color={colors.iconActive} />
@@ -234,7 +234,7 @@ const AlbumDetails = () => {
   const keyExtractor = useCallback((item: TrackDetails) => item.id, []);
 
   // Estados de carregamento
-  if (!album) {
+  if (!album || loading) {
     return <ActivityIndicatorCustom />;
   }
 
@@ -248,6 +248,21 @@ const AlbumDetails = () => {
         >
           <Text className="text-white">Voltar</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="infor-alert">
+        <Text
+          style={{
+            color: colors.danger_title,
+          }}
+          className="text text-xl"
+        >
+          Houve um error ao carregar album: {error.message}
+        </Text>
       </View>
     );
   }

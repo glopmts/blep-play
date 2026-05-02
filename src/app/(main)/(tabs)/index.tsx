@@ -1,8 +1,8 @@
 import AlbumScreen from "@/components/albums/album-screen";
-import AllMusicList from "@/components/all-music-list";
 import Header from "@/components/header";
 import { HeaderPage } from "@/components/hearder-page";
 import HistoryRecentMusic from "@/components/history-recent-music";
+import AllMusicList from "@/components/home-tabs/all-music-list";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { useTheme } from "@/context/ThemeContext";
 import { useState } from "react";
@@ -78,7 +78,7 @@ const Home = () => {
         </View>
       ) : activeTab === "folders" ? (
         <View className="flex-1">
-          <Text className="text">Nenhuma pasta local!</Text>
+          <Text>pastas</Text>
         </View>
       ) : (
         <AllMusicList />

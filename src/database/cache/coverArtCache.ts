@@ -114,6 +114,7 @@ export async function getOrPersistCover(
   }
 
   // Se não tem cache, processa
+
   const path = await persistCover(id, base64);
 
   if (!path) return null;

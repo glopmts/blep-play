@@ -5,30 +5,21 @@ import * as Application from "expo-application";
 import { router } from "expo-router";
 import {
   ChevronRight,
-  Database,
   Download,
+  FileMusicIcon,
   Settings,
 } from "lucide-react-native";
-import { ComponentType } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-
-type NaveOptionsProps = {
-  id: string | number;
-  label: string;
-  description?: string;
-  infor?: string;
-  icon?: ComponentType<{ size: number; color: string }>;
-  action?: () => void;
-};
 
 const NAVE_OPTIONS: NaveOptionsProps[] = [
   {
     id: 1,
-    label: "Gerencia dados em cache",
-    description: "Gerencia todos os dados armazenado no cache do dispositivo",
-    icon: Database,
+    label: "Biblioteca local",
+    description:
+      "Gerencia todos os dados armazenado no cache do dispositivo e pasta local audios.",
+    icon: FileMusicIcon,
     action: () => {
-      router.navigate("/(main)/(pages)/cache-page");
+      router.navigate("/(main)/(pages)/local-library");
     },
   },
   {

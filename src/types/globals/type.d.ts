@@ -23,6 +23,15 @@ declare global {
     label: string;
     icon?: React.ReactNode;
   };
+
+  type NaveOptionsProps = {
+    id: string | number;
+    label: string;
+    description?: string;
+    infor?: string;
+    icon?: ComponentType<{ size: number; color: string }>;
+    action?: () => void;
+  };
 }
 
 export {};

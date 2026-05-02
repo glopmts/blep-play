@@ -1,9 +1,9 @@
+import { useTheme } from "@/context/ThemeContext";
+import { useMusics } from "@/hooks/music-hooks/useAllMusics";
+import { usePlayer } from "@/hooks/usePlayer";
 import { memo, useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
-import { useTheme } from "../context/ThemeContext";
-import { useMusics } from "../hooks/music-hooks/useAllMusics";
-import { usePlayer } from "../hooks/usePlayer";
-import SongCard from "./cards/song-card";
+import SongCard from "../cards/song-card";
 
 const AllMusicList = () => {
   const { error, loading, musics, isRefresh, reload, filterByFolder } =

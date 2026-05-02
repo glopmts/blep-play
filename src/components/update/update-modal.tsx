@@ -401,7 +401,7 @@ export function UpdateModal({
             {canDismiss && (
               <Pressable
                 onPress={onDismiss}
-                className="py-3 items-center border rounded-3xl"
+                className="py-3 items-center border rounded-3xl border-zinc-700"
               >
                 <Text className="dark:text-zinc-200 text-sm">
                   {isComplete ? "Fechar" : "Agora não"}
