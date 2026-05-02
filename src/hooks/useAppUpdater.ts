@@ -62,6 +62,19 @@ const DEFAULT_DOWNLOAD: DownloadState = {
   speedFormatted: "0 B/s",
 };
 
+function isDevVersion(version: string): boolean {
+  const devPatterns = [
+    /-dev$/i, // v1.2.0-dev
+    /-alpha$/i, // v1.2.0-alpha
+    /-beta$/i, // v1.2.0-beta
+    /-rc\d*$/i, // v1.2.0-rc, v1.2.0-rc1
+    /-snapshot$/i, // v1.2.0-SNAPSHOT
+    /\.dev\d*$/i, // v1.2.0.dev, v1.2.0.dev1
+  ];
+
+  return devPatterns.some((pattern) => pattern.test(version));
+}
+
 export function useAppUpdater(
   autoCheck = true,
 ): AppUpdaterState & AppUpdaterActions {
@@ -78,7 +91,7 @@ export function useAppUpdater(
 
   useEffect(() => {
     nativeGetAppVersion().then((version) => {
-      if (!version) return; // dev build, ignora
+      if (!version) return;
       setCurrentVersion(version.versionName);
     });
   }, []);
@@ -130,6 +143,14 @@ export function useAppUpdater(
   //  Check for updates─
   const checkForUpdates = useCallback(
     async (force = false) => {
+      if (isDevVersion(currentVersion)) {
+        // console.log(
+        //   "Versão de desenvolvimento detectada, pulando verificação de updates",
+        // );
+        setStatus("up_to_date");
+        return;
+      }
+
       // Check connectivity first
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
@@ -178,6 +199,14 @@ export function useAppUpdater(
   //  Start download
   const startDownload = useCallback(async () => {
     if (!updateInfo || isDownloading.current) return;
+
+    if (isDevVersion(currentVersion)) {
+      setErrorMessage(
+        "Downloads não disponíveis em versões de desenvolvimento",
+      );
+      setStatus("error");
+      return;
+    }
 
     // Verify install permission before downloading
     const canInstall = await nativeCanInstallPackages();

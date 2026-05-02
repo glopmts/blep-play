@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -23,6 +23,7 @@ interface ButtonProps {
   onPress?: () => void;
   onLongPress?: () => void;
   label?: string;
+  children?: React.ReactNode;
   icon?: ReactNode;
   iconPosition?: "left" | "right";
   variant?: ButtonVariant;
@@ -39,6 +40,7 @@ export function Button({
   onLongPress,
   label,
   icon,
+  children,
   iconPosition = "right",
   variant = "primary",
   size = "md",
@@ -165,6 +167,8 @@ export function Button({
           )}
         </View>
       )}
+
+      {children && <View className="flex-1">{children}</View>}
     </TouchableOpacity>
   );
 }

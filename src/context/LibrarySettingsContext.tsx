@@ -1,29 +1,65 @@
 import {
-  ScanFolder,
   dbAddScanFolder,
   dbGetScanFolders,
   dbRemoveScanFolder,
   dbSetScanResult,
   dbToggleScanFolder,
+  ScanFolder,
   settingsGet,
   settingsSet,
 } from "@/database/library-settings";
 import { getTracksByFolders } from "@/modules/music-library.module";
 import { TrackDetails } from "@/types/interfaces";
 import * as FileSystem from "expo-file-system/legacy";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const KEY_AUTO_SCAN = "auto_scan";
 const KEY_SHOW_DUPES = "show_duplicates";
 const KEY_ENABLED = "library_enabled";
 
-// Pasta padrão — usada quando o usuário ainda não escolheu nenhuma
 const DEFAULT_FOLDER = {
   path: "/storage/emulated/0/Music",
   name: "Music",
 };
 
-export function useLibrarySettings() {
+interface LibrarySettingsContextValue {
+  ready: boolean; // ← chave: só true após carregar do DB
+  scanFolders: ScanFolder[];
+  activePaths: string[]; // pastas enabled — pronto para passar ao useMusics
+  enabled: boolean;
+  showDuplicates: boolean;
+  autoScan: string;
+  scanning: boolean;
+  scanProgress: { folder: string; done: number; total: number } | null;
+  scannedTracks: TrackDetails[];
+  error: string | null;
+  setEnabled: (v: boolean) => void;
+  setShowDuplicates: (v: boolean) => void;
+  setAutoScan: (v: string) => void;
+  pickFolder: () => Promise<void>;
+  addDefaultFolder: () => Promise<void>;
+  removeFolder: (path: string) => Promise<void>;
+  toggleFolder: (path: string, enabled: boolean) => Promise<void>;
+  runScan: () => Promise<void>;
+  cancelScan: () => void;
+}
+
+const LibrarySettingsContext =
+  createContext<LibrarySettingsContextValue | null>(null);
+
+export function LibrarySettingsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [ready, setReady] = useState(false);
   const [scanFolders, setScanFolders] = useState<ScanFolder[]>([]);
   const [scannedTracks, setScannedTracks] = useState<TrackDetails[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -42,13 +78,12 @@ export function useLibrarySettings() {
 
   useEffect(() => {
     mountedRef.current = true;
-    abortRef.current = false;
     return () => {
       mountedRef.current = false;
     };
   }, []);
 
-  // Carrega estado inicial
+  // Carrega tudo do DB — só marca ready quando terminar
   useEffect(() => {
     Promise.all([
       dbGetScanFolders(),
@@ -61,8 +96,12 @@ export function useLibrarySettings() {
       if (en != null) setEnabledState(en === "true");
       if (dupes != null) setShowDupsState(dupes === "true");
       if (auto != null) setAutoScanState(auto);
+      setReady(true); // ← só agora
     });
   }, []);
+
+  // Paths ativos derivados — memoizados por referência estável
+  const activePaths = scanFolders.filter((f) => f.enabled).map((f) => f.path);
 
   const setEnabled = useCallback((v: boolean) => {
     setEnabledState(v);
@@ -79,22 +118,13 @@ export function useLibrarySettings() {
     settingsSet(KEY_AUTO_SCAN, v);
   }, []);
 
-  // ── Abre o picker nativo do Android
-  // StorageAccessFramework retorna uma URI content:// tipo
-  // "content://com.android.externalstorage.documents/tree/primary%3AMusic"
-  // que convertemos para o path real /storage/emulated/0/Music
   const pickFolder = useCallback(async () => {
     try {
       const perm =
         await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
-
-      if (!perm.granted) return; // usuário cancelou
-
-      // Converte content URI → path legível
-      const contentUri = perm.directoryUri;
-      const path = contentUriToPath(contentUri);
+      if (!perm.granted) return;
+      const path = contentUriToPath(perm.directoryUri);
       const name = path.split("/").filter(Boolean).pop() ?? path;
-
       await dbAddScanFolder(path, name);
       const updated = await dbGetScanFolders();
       if (mountedRef.current) setScanFolders(updated);
@@ -104,7 +134,6 @@ export function useLibrarySettings() {
     }
   }, []);
 
-  // ── Adiciona a pasta padrão sem picker
   const addDefaultFolder = useCallback(async () => {
     const already = await dbGetScanFolders();
     if (already.some((f) => f.path === DEFAULT_FOLDER.path)) return;
@@ -131,33 +160,26 @@ export function useLibrarySettings() {
     );
   }, []);
 
-  // ── Scan
   const runScan = useCallback(async () => {
     const active = scanFolders.filter((f) => f.enabled);
     if (active.length === 0) {
       setError("Nenhuma pasta ativa. Adicione ao menos uma pasta.");
       return;
     }
-
     abortRef.current = false;
     setScanning(true);
     setError(null);
     setScannedTracks([]);
-
     const all: TrackDetails[] = [];
 
     for (let i = 0; i < active.length; i++) {
       if (abortRef.current || !mountedRef.current) break;
-
       const folder = active[i];
       setScanProgress({ folder: folder.name, done: i, total: active.length });
-
       try {
         const tracks: TrackDetails[] = await getTracksByFolders([folder.path]);
-
         all.push(...(tracks ?? []));
         await dbSetScanResult(folder.path, tracks?.length ?? 0);
-
         setScanFolders((prev) =>
           prev.map((f) =>
             f.path === folder.path
@@ -169,7 +191,6 @@ export function useLibrarySettings() {
               : f,
           ),
         );
-
         if (mountedRef.current) setScannedTracks([...all]);
       } catch (e: any) {
         console.warn(`[scan] ${folder.path}:`, e?.message);
@@ -186,46 +207,53 @@ export function useLibrarySettings() {
     abortRef.current = true;
   }, []);
 
-  return {
-    enabled,
-    setEnabled,
-    showDuplicates,
-    setShowDuplicates,
-    autoScan,
-    setAutoScan,
-    scanFolders,
-    pickFolder, // abre SAF picker nativo
-    addDefaultFolder, // adiciona /storage/emulated/0/Music direto
-    removeFolder,
-    toggleFolder,
-    scannedTracks,
-    scanning,
-    scanProgress,
-    runScan,
-    cancelScan,
-    error,
-  };
+  return (
+    <LibrarySettingsContext.Provider
+      value={{
+        ready,
+        scanFolders,
+        activePaths,
+        enabled,
+        showDuplicates,
+        autoScan,
+        scanning,
+        scanProgress,
+        scannedTracks,
+        error,
+        setEnabled,
+        setShowDuplicates,
+        setAutoScan,
+        pickFolder,
+        addDefaultFolder,
+        removeFolder,
+        toggleFolder,
+        runScan,
+        cancelScan,
+      }}
+    >
+      {children}
+    </LibrarySettingsContext.Provider>
+  );
 }
 
-// ── content:// → /storage/emulated/0/…
-// "content://com.android.externalstorage.documents/tree/primary%3AMusic"
-//   → /storage/emulated/0/Music
-// "content://…/tree/primary%3ADownload%2FSongs"
-//   → /storage/emulated/0/Download/Songs
+export function useLibrarySettingsContext() {
+  const ctx = useContext(LibrarySettingsContext);
+  if (!ctx)
+    throw new Error(
+      "useLibrarySettings must be used inside LibrarySettingsProvider",
+    );
+  return ctx;
+}
+
 function contentUriToPath(uri: string): string {
   try {
     const decoded = decodeURIComponent(uri);
-    // Extrai a parte depois de "primary:" ou "XXXX-XXXX:"
     const match = decoded.match(/\/tree\/([^/]+):(.*)$/);
     if (!match) return DEFAULT_FOLDER.path;
-
     const volume = match[1].toLowerCase();
-    const rel = match[2].replace(/\//g, "/"); // já é separado por /
-
-    if (volume === "primary") {
+    const rel = match[2];
+    if (volume === "primary")
       return `/storage/emulated/0/${rel}`.replace(/\/$/, "");
-    }
-    // SD card: /storage/<volume>/<rel>
     return `/storage/${match[1]}/${rel}`.replace(/\/$/, "");
   } catch {
     return DEFAULT_FOLDER.path;

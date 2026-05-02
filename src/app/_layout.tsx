@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
+import { LibrarySettingsProvider } from "../context/LibrarySettingsContext";
 import { PlayerSetup } from "../context/player-context";
 import { PlayerHeightProvider } from "../context/player-height-context";
 import { ThemeProvider } from "../context/ThemeContext";
@@ -156,11 +157,13 @@ export default function RootLayout() {
       <ThemeProvider>
         <KeyboardProvider>
           <BottomSheetProvider>
-            <PlayerHeightProvider>
-              <PlayerSetup>
-                <RootLayoutNav />
-              </PlayerSetup>
-            </PlayerHeightProvider>
+            <LibrarySettingsProvider>
+              <PlayerHeightProvider>
+                <PlayerSetup>
+                  <RootLayoutNav />
+                </PlayerSetup>
+              </PlayerHeightProvider>
+            </LibrarySettingsProvider>
           </BottomSheetProvider>
         </KeyboardProvider>
       </ThemeProvider>

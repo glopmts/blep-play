@@ -1,7 +1,7 @@
 import { BackButton } from "@/components/black-button";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
+import { useLibrarySettingsContext } from "@/context/LibrarySettingsContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useLibrarySettings } from "@/hooks/uselibrarysettings";
 import {
   ChevronRight,
   Copy,
@@ -28,7 +28,7 @@ const AUTO_SCAN_OPTIONS = ["Off", "Daily", "Weekly"] as const;
 
 export default function LocalLibrary() {
   const { colors } = useTheme();
-  const lib = useLibrarySettings();
+  const lib = useLibrarySettingsContext();
 
   const [autoScanOpen, setAutoScanOpen] = React.useState(false);
 
@@ -199,6 +199,51 @@ export default function LocalLibrary() {
               ))}
             </Card>
           )}
+
+          <View className="pb-4">
+            {!lib.scanning && lib.scannedTracks.length > 0 && (
+              <Text
+                style={{
+                  color: sub,
+                  fontSize: 12,
+                  textAlign: "center",
+                  marginTop: 8,
+                }}
+              >
+                {lib.scannedTracks.length} faixas encontradas
+              </Text>
+            )}
+
+            {/* ── Botão de Scan */}
+            {lib.scanFolders.some((f) => f.enabled) && (
+              <TouchableOpacity
+                onPress={lib.runScan}
+                disabled={lib.scanning}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginTop: 16,
+                  padding: 14,
+                  borderRadius: 12,
+                  backgroundColor: lib.scanning ? border + "44" : border,
+                  opacity: lib.scanning ? 0.7 : 1,
+                }}
+              >
+                <Scan size={18} color="#fff" />
+                <Text
+                  style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}
+                >
+                  {lib.scanning
+                    ? lib.scanProgress
+                      ? `Escaneando ${lib.scanProgress.done + 1}/${lib.scanProgress.total}: ${lib.scanProgress.folder}`
+                      : "Iniciando..."
+                    : "Escanear pastas"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* ── Botões de adicionar pasta*/}
           <AddFolderButton

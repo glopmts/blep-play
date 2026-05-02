@@ -120,8 +120,5 @@ export async function nativeGetAppVersion(): Promise<{
     versionCode = result.versionCode;
   }
 
-  // Versão dev → não retorna nada
-  if (versionName.includes("-dev")) return null;
-
   return { versionName, versionCode };
 }

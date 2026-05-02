@@ -4,6 +4,7 @@ import SongCard from "@/components/cards/song-card";
 import SearchBar from "@/components/searchBar";
 import { useTheme } from "@/context/ThemeContext";
 import { useAlbumDetailsLocal } from "@/hooks/albums-hooks/useAlbumDetailsLocal";
+import { useDownloadCoverLocal } from "@/hooks/download-cover-local";
 import { usePlayer } from "@/hooks/usePlayer";
 import { useSearchSong } from "@/hooks/useSearchSong";
 import { TrackDetails } from "@/types/interfaces";
@@ -11,7 +12,7 @@ import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Album } from "lucide-react-native";
+import { Album, Download } from "lucide-react-native";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -32,6 +33,7 @@ const AlbumDetails = () => {
   }>();
 
   const { album, error, loading } = useAlbumDetailsLocal(id);
+  const { isDownload, handleDownload } = useDownloadCoverLocal();
 
   const { playSongs, currentTrack } = usePlayer();
   const { isDark, colors } = useTheme();
@@ -269,7 +271,23 @@ const AlbumDetails = () => {
 
   return (
     <View className="content p-0">
-      <BackButton />
+      <BackButton
+        isBottomOption={true}
+        onRightActionPress={() =>
+          handleDownload({
+            albumName: album.album,
+            coverFile: album.artworkBase64 || "",
+          })
+        }
+      >
+        <View>
+          {isDownload ? (
+            <ActivityIndicator size={26} color={colors.iconActive} />
+          ) : (
+            <Download size={24} color={colors.icon} />
+          )}
+        </View>
+      </BackButton>
       <FlatList
         data={displayData}
         ref={flatListRef}

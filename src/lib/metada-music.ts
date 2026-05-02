@@ -23,4 +23,8 @@ export const METADATA_MUSIC = [
     label: "Faixa",
     value: "track",
   },
+  {
+    label: "Pasta",
+    value: "filePath",
+  },
 ];

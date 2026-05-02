@@ -19,8 +19,24 @@ export async function getAllTracksLocal() {
   return MusicLibrary.getAllTracks();
 }
 
-export async function getTracksByFolderPath(folderPath: string) {
-  return MusicLibrary.getTracksByFolder(folderPath);
+export async function getTracksByFolders(
+  folderPaths: string[],
+): Promise<TrackDetails[]> {
+  if (!folderPaths || folderPaths.length === 0) {
+    return MusicLibrary.getAllTracks();
+  }
+
+  const results = await Promise.all(
+    folderPaths.map((path) => MusicLibrary.getTracksByFolder(path)),
+  );
+
+  const seen = new Set<string>();
+  return results.flat().filter((track) => {
+    if (seen.has(track.id)) return false;
+    seen.add(track.id);
+
+    return true;
+  });
 }
 
 export async function getMusicFolders() {

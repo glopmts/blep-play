@@ -157,9 +157,7 @@ class MusicLibraryModule(reactContext: ReactApplicationContext) :
                                         null,
                                         "${MediaStore.Audio.Media.TITLE} ASC"
                                 )
-                                ?.use { cursor ->
-                                        fillTracksFromCursor(cursor, uri, result)
-                                }
+                                ?.use { cursor -> fillTracksFromCursor(cursor, uri, result) }
 
                         promise.resolve(result)
                 } catch (e: Exception) {
@@ -179,21 +177,33 @@ class MusicLibraryModule(reactContext: ReactApplicationContext) :
                         val projection = buildTrackProjection()
                         val normalized = folderPath.trimEnd('/')
 
+                        // Log para debug
+                        android.util.Log.d("MusicLibrary", "Buscando músicas na pasta: $normalized")
+
                         val result = Arguments.createArray()
 
-                        resolver.query(
+                        // Usando apenas o método compatível com todas as versões do Android
+                        val selection = "${MediaStore.Audio.Media.DATA} LIKE ?"
+                        val selectionArgs = arrayOf("$normalized/%")
+
+                        val cursor =
+                                resolver.query(
                                         uri,
                                         projection,
-                                        "${MediaStore.Audio.Media.DATA} LIKE ?",
-                                        arrayOf("$normalized/%"),
+                                        selection,
+                                        selectionArgs,
                                         "${MediaStore.Audio.Media.TITLE} ASC"
                                 )
-                                ?.use { cursor ->
-                                        fillTracksFromCursor(cursor, uri, result)
-                                }
 
+                        cursor?.use { fillTracksFromCursor(it, uri, result) }
+
+                        android.util.Log.d(
+                                "MusicLibrary",
+                                "Encontradas ${result.size()} músicas na pasta $normalized"
+                        )
                         promise.resolve(result)
                 } catch (e: Exception) {
+                        android.util.Log.e("MusicLibrary", "Erro em getTracksByFolder", e)
                         promise.reject("GET_TRACKS_BY_FOLDER_ERROR", e.message, e)
                 }
         }
@@ -222,17 +232,15 @@ class MusicLibraryModule(reactContext: ReactApplicationContext) :
                         }
 
                         val result = Arguments.createArray()
-                        folders.entries
-                                .sortedByDescending { it.value }
-                                .forEach { (path, count) ->
-                                        Arguments.createMap()
-                                                .apply {
-                                                        putString("path", path)
-                                                        putString("name", File(path).name)
-                                                        putInt("trackCount", count)
-                                                }
-                                                .also { result.pushMap(it) }
-                                }
+                        folders.entries.sortedByDescending { it.value }.forEach { (path, count) ->
+                                Arguments.createMap()
+                                        .apply {
+                                                putString("path", path)
+                                                putString("name", File(path).name)
+                                                putInt("trackCount", count)
+                                        }
+                                        .also { result.pushMap(it) }
+                        }
 
                         promise.resolve(result)
                 } catch (e: Exception) {
@@ -871,16 +879,14 @@ class MusicLibraryModule(reactContext: ReactApplicationContext) :
                 val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 val projection = arrayOf(MediaStore.Audio.Media.DATA)
                 val selection = "${MediaStore.Audio.Media.ALBUM_ID} = ?"
-                return resolver.query(uri, projection, selection, arrayOf(albumId), null)
-                        ?.use { cursor ->
-                                if (cursor.moveToFirst())
-                                        cursor.getString(
-                                                cursor.getColumnIndexOrThrow(
-                                                        MediaStore.Audio.Media.DATA
-                                                )
-                                        )
-                                else null
-                        }
+                return resolver.query(uri, projection, selection, arrayOf(albumId), null)?.use {
+                        cursor ->
+                        if (cursor.moveToFirst())
+                                cursor.getString(
+                                        cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                                )
+                        else null
+                }
         }
 
         private fun extractCover(filePath: String): String? {
@@ -930,49 +936,66 @@ class MusicLibraryModule(reactContext: ReactApplicationContext) :
                 baseUri: android.net.Uri,
                 result: WritableArray
         ) {
-                val idCol       = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                val titleCol    = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                val artistCol   = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                val albumCol    = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                val albumIdCol  = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
-                val trackCol    = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+                val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                val titleCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+                val artistCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                val albumCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                val albumIdCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                val trackCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val durationCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                val dataCol     = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-                val mimeCol     = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
-                val yearCol     = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
-                val bitrateCol  = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.BITRATE)
-                val sizeCol     = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+                val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
+                val yearCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
+                val bitrateCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.BITRATE)
+                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
                 val composerCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.COMPOSER)
-                val dateCol     = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
-                val genreCol    = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                                        cursor.getColumnIndex(MediaStore.Audio.Media.GENRE) else -1
-                val discCol     = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-                                        cursor.getColumnIndex(MediaStore.Audio.Media.DISC_NUMBER) else -1
+                val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
+                val genreCol =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                                cursor.getColumnIndex(MediaStore.Audio.Media.GENRE)
+                        else -1
+                val discCol =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                                cursor.getColumnIndex(MediaStore.Audio.Media.DISC_NUMBER)
+                        else -1
 
                 while (cursor.moveToNext()) {
                         val id = cursor.getLong(idCol)
                         val albumId = cursor.getLong(albumIdCol)
                         val rawTrack = cursor.getInt(trackCol)
 
-                        Arguments.createMap().apply {
-                                putString("id",          id.toString())
-                                putString("title",       cursor.getString(titleCol)  ?: "")
-                                putString("artist",      cursor.getString(artistCol) ?: "")
-                                putString("album",       cursor.getString(albumCol)  ?: "")
-                                putString("albumId",     albumId.toString())
-                                putInt   ("trackNumber", if (rawTrack >= 1000) rawTrack % 1000 else rawTrack)
-                                putDouble("duration",    cursor.getLong(durationCol).toDouble())
-                                putString("filePath",    cursor.getString(dataCol)   ?: "")
-                                putString("uri",         ContentUris.withAppendedId(baseUri, id).toString())
-                                putString("mimeType",    cursor.getString(mimeCol)   ?: "")
-                                putInt   ("year",        cursor.getInt(yearCol))
-                                putInt   ("bitrate",     cursor.getInt(bitrateCol))
-                                putDouble("fileSize",    cursor.getLong(sizeCol).toDouble())
-                                putString("composer",    cursor.getString(composerCol) ?: "")
-                                putDouble("dateAdded",   cursor.getLong(dateCol).toDouble())
-                                if (genreCol >= 0) putString("genre",      cursor.getString(genreCol) ?: "")
-                                if (discCol  >= 0) putInt   ("discNumber", cursor.getInt(discCol))
-                        }.also { result.pushMap(it) }
+                        Arguments.createMap()
+                                .apply {
+                                        putString("id", id.toString())
+                                        putString("title", cursor.getString(titleCol) ?: "")
+                                        putString("artist", cursor.getString(artistCol) ?: "")
+                                        putString("album", cursor.getString(albumCol) ?: "")
+                                        putString("albumId", albumId.toString())
+                                        putInt(
+                                                "trackNumber",
+                                                if (rawTrack >= 1000) rawTrack % 1000 else rawTrack
+                                        )
+                                        putDouble(
+                                                "duration",
+                                                cursor.getLong(durationCol).toDouble()
+                                        )
+                                        putString("filePath", cursor.getString(dataCol) ?: "")
+                                        putString(
+                                                "uri",
+                                                ContentUris.withAppendedId(baseUri, id).toString()
+                                        )
+                                        putString("mimeType", cursor.getString(mimeCol) ?: "")
+                                        putInt("year", cursor.getInt(yearCol))
+                                        putInt("bitrate", cursor.getInt(bitrateCol))
+                                        putDouble("fileSize", cursor.getLong(sizeCol).toDouble())
+                                        putString("composer", cursor.getString(composerCol) ?: "")
+                                        putDouble("dateAdded", cursor.getLong(dateCol).toDouble())
+                                        if (genreCol >= 0)
+                                                putString("genre", cursor.getString(genreCol) ?: "")
+                                        if (discCol >= 0)
+                                                putInt("discNumber", cursor.getInt(discCol))
+                                }
+                                .also { result.pushMap(it) }
                 }
         }
 }

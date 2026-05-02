@@ -14,29 +14,29 @@ export async function compressAndSaveCover(
   id: string,
   base64: string,
 ): Promise<string | null> {
+  const tempPath = `${COVERS_DIR}temp_${id}.jpg`;
+  const finalPath = `${COVERS_DIR}${id}.jpg`;
+
   try {
     await ensureCoversDir();
 
-    const tempPath = `${COVERS_DIR}temp_${id}.jpg`;
-    const finalPath = `${COVERS_DIR}${id}.jpg`;
+    const cleanBase64 = base64
+      .replace(/^data:image\/\w+;base64,/, "")
+      .replace(/\s/g, "");
 
-    // Salva base64 temporário
-    await FileSystem.writeAsStringAsync(tempPath, base64, {
+    if (!cleanBase64 || cleanBase64.length < 100) return null;
+
+    await FileSystem.writeAsStringAsync(tempPath, cleanBase64, {
       encoding: FileSystem.EncodingType.Base64,
     });
 
     try {
-      // Tenta comprimir
       const result = await manipulateAsync(
-        tempPath,
-        [{ resize: { width: 500 } }], // Redimensiona para 500px de largura
-        {
-          compress: 0.7,
-          format: SaveFormat.JPEG,
-        },
+        `file://${tempPath}`,
+        [{ resize: { width: 500 } }],
+        { compress: 0.7, format: SaveFormat.JPEG },
       );
 
-      // Move o arquivo comprimido para o destino final
       const compressedBase64 = await FileSystem.readAsStringAsync(result.uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -44,18 +44,19 @@ export async function compressAndSaveCover(
       await FileSystem.writeAsStringAsync(finalPath, compressedBase64, {
         encoding: FileSystem.EncodingType.Base64,
       });
-    } catch (compressError) {
-      // Se falhar compressão, usa o original
-      console.log("Compression failed, using original");
+    } catch {
+      // Compressão falhou — salva o original sem comprimir
       await FileSystem.copyAsync({ from: tempPath, to: finalPath });
     }
-
-    // Limpa temporário
-    await FileSystem.deleteAsync(tempPath, { idempotent: true });
 
     return finalPath;
   } catch (error) {
     console.error("Error saving cover:", error);
     return null;
+  } finally {
+    // Sempre limpa o temp, mesmo em caso de erro
+    await FileSystem.deleteAsync(tempPath, { idempotent: true }).catch(
+      () => {},
+    );
   }
 }

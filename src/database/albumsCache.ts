@@ -67,6 +67,30 @@ export async function dbSetString(key: string, value: string): Promise<void> {
   );
 }
 
+export async function resetAlbumsDb(): Promise<void> {
+  if (db) {
+    try {
+      await db.closeAsync();
+    } catch {}
+    db = null;
+  }
+  initPromise = null;
+}
+
+export async function dbClearAllAlbums(): Promise<void> {
+  try {
+    const d = await getAlbumsDb();
+    await d.execAsync(
+      "DELETE FROM albums_meta; DELETE FROM albums_numbers; DELETE FROM albums_list;",
+    );
+  } catch (e) {
+    console.warn("[dbClearAllAlbums] erro, resetando instância:", e);
+  } finally {
+    // Força nova conexão na próxima chamada
+    await resetAlbumsDb();
+  }
+}
+
 export async function dbRemoveStringAlbums(key: string): Promise<void> {
   const db = await getAlbumsDb();
   await db.runAsync("DELETE FROM albums_meta WHERE key = ?", [key]);
@@ -101,9 +125,4 @@ export async function dbContains(key: string): Promise<boolean> {
     [key],
   );
   return (row?.count ?? 0) > 0;
-}
-
-export async function dbClearAllAlbums(): Promise<void> {
-  const db = await getAlbumsDb();
-  await db.execAsync("DELETE FROM albums_meta; DELETE FROM albums_numbers;");
 }

@@ -243,6 +243,16 @@ export class MusicCache {
     );
   }
 
+  async getFolderKey(): Promise<string | null> {
+    await this.initialize();
+    return this._getMetadataSync("active_folder_key");
+  }
+
+  async setFolderKey(key: string): Promise<void> {
+    await this.initialize();
+    this._setMetadataSync("active_folder_key", key);
+  }
+
   // ── Capa de álbum ─
   async cacheCoverArt(trackId: string, imageUrl: string): Promise<string> {
     await this.initialize();

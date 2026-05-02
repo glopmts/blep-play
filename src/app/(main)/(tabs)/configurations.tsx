@@ -5,6 +5,7 @@ import * as Application from "expo-application";
 import { router } from "expo-router";
 import {
   ChevronRight,
+  Database,
   Download,
   FileMusicIcon,
   Settings,
@@ -33,6 +34,15 @@ const NAVE_OPTIONS: NaveOptionsProps[] = [
   },
   {
     id: 3,
+    label: "Gerenciar dados em cache",
+    description: "Gerencie todos os dados armazenado em caches.",
+    icon: Database,
+    action: () => {
+      router.navigate("/(main)/(pages)/cache-maneger");
+    },
+  },
+  {
+    id: 4,
     label: "Verifica atualização App",
     description: "Clique aqui para verificar se há novas atualizações",
     infor: `v${Application.nativeApplicationVersion}`,

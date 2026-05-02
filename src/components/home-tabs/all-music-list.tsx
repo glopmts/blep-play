@@ -1,3 +1,4 @@
+import { useLibrarySettingsContext } from "@/context/LibrarySettingsContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useMusics } from "@/hooks/music-hooks/useAllMusics";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -6,8 +7,12 @@ import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import SongCard from "../cards/song-card";
 
 const AllMusicList = () => {
-  const { error, loading, musics, isRefresh, reload, filterByFolder } =
-    useMusics();
+  const { activePaths, ready } = useLibrarySettingsContext();
+
+  const { musics, loading, error, isRefresh, reload } = useMusics(
+    ready ? activePaths : null,
+  );
+
   const { colors, isDark } = useTheme();
   const { currentTrack, playSongs } = usePlayer();
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
@@ -52,6 +57,7 @@ const AllMusicList = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item, index }) => {
               const isCurrentlyPlaying = currentTrack?.id === item.id;
+
               return (
                 <View className="px-4" key={item.id}>
                   <SongCard

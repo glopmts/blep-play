@@ -45,19 +45,37 @@ export async function getCoverUri(id: string): Promise<string | null> {
   // 1. Memória
   if (memCache.has(id)) {
     const val = memCache.get(id)!;
-    memCache.delete(id);
-    memCache.set(id, val);
-    return val;
+    if (val) {
+      // Valida se o arquivo ainda existe
+      const info = await FileSystem.getInfoAsync(val.replace("file://", ""));
+      if (info.exists) {
+        memCache.delete(id);
+        memCache.set(id, val);
+        return val;
+      }
+      // Arquivo sumiu — limpa memória e banco
+      memCache.delete(id);
+      await dbRemoveCacheCover(id);
+    } else {
+      return null;
+    }
   }
 
-  // 2. SQLite/AsyncStorage
+  // 2. AsyncStorage
   const dbVal = await dbGetString(id);
   if (dbVal !== undefined) {
-    memCache.set(id, dbVal);
-    return dbVal;
+    const cleanPath = dbVal.replace("file://", "");
+    const info = await FileSystem.getInfoAsync(cleanPath);
+    if (info.exists) {
+      memCache.set(id, dbVal);
+      return dbVal;
+    }
+    // Arquivo sumiu — invalida entrada e retorna null para forçar re-persist
+    await dbRemoveCacheCover(id);
+    return null;
   }
 
-  // 3. Disco
+  // 3. Disco (fallback direto)
   const path = `${FileSystem.cacheDirectory}covers/${id}.jpg`;
   const info = await FileSystem.getInfoAsync(path);
   if (info.exists) {
@@ -77,8 +95,11 @@ export async function persistCover(
 
   const promise = (async (): Promise<string | null> => {
     try {
-      // Remove prefixo data URI se existir
-      const cleanBase64 = base64.replace(/^data:image\/\w+;base64,/, "");
+      const cleanBase64 = base64
+        .replace(/^data:image\/\w+;base64,/, "")
+        .replace(/\s/g, "");
+
+      if (!cleanBase64 || cleanBase64.length < 100) return null;
 
       const path = await compressAndSaveCover(id, cleanBase64);
       if (path) {
@@ -114,7 +135,6 @@ export async function getOrPersistCover(
   }
 
   // Se não tem cache, processa
-
   const path = await persistCover(id, base64);
 
   if (!path) return null;
