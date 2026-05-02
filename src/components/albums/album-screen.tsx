@@ -1,12 +1,12 @@
 import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useAlbums } from "@/hooks/albums-hooks/useAlbums";
-import { useTheme } from "@/hooks/useTheme";
 import { AlbumInterface } from "@/types/interfaces";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
 import { Music } from "lucide-react-native";
-import React, { useCallback, useRef, useState } from "react";
+import React, { memo, useCallback, useRef, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
 import AlbumCard from "./LocalAlbumCard";
@@ -17,7 +17,7 @@ interface ALlbumScreen {
   initialAlbumsToShow?: number;
 }
 
-export const AlbumScreen = ({
+const AlbumScreen = ({
   horizontal = true,
   initialAlbumsToShow = 8, // Mostrar apenas 8 álbuns inicialmente
 }: ALlbumScreen) => {
@@ -123,3 +123,5 @@ export const AlbumScreen = ({
     </View>
   );
 };
+
+export default memo(AlbumScreen);

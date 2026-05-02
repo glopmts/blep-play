@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { ReactNode } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/ThemeContext";
 
 type LayoutVariant = "view" | "safeArea";
 

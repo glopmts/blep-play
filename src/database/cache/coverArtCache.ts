@@ -108,12 +108,14 @@ export async function getOrPersistCover(
 
   // Verifica cache primeiro
   const cached = await getCoverUri(id);
+
   if (cached) {
     return cached.startsWith("file://") ? cached : `file://${cached}`;
   }
 
   // Se não tem cache, processa
   const path = await persistCover(id, base64);
+
   if (!path) return null;
 
   return path.startsWith("file://") ? path : `file://${path}`;

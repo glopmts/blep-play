@@ -154,6 +154,7 @@ export const musicStorageSync = {
       ),
     );
   },
+
   toggleFavorite: (track: StoredTrack): boolean => {
     const list = readList(KEYS.FAVORITES);
     const exists = list.some((t) => t.id === track.id);

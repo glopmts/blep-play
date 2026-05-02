@@ -9,7 +9,7 @@ import {
   removeFromFavorites,
   removeFromRecents,
   toggleFavorite,
-} from "../services/music-history.service";
+} from "../database/cache/music-history.cache";
 
 export function useMusicHistory() {
   const [recents, setRecents] = useState<StoredTrack[]>([]);

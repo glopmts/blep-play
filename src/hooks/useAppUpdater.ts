@@ -76,11 +76,11 @@ export function useAppUpdater(
   // Prevent concurrent downloads
   const isDownloading = useRef(false);
 
-  //  Load current version
   useEffect(() => {
-    nativeGetAppVersion().then(({ versionName }) =>
-      setCurrentVersion(versionName),
-    );
+    nativeGetAppVersion().then((version) => {
+      if (!version) return; // dev build, ignora
+      setCurrentVersion(version.versionName);
+    });
   }, []);
 
   //  Event subscriptions─

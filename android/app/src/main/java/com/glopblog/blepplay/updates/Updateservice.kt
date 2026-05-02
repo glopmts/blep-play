@@ -142,18 +142,22 @@ class UpdateService : Service() {
                     }
 
                     // Emit to React Native max every 300ms
-                    if (now - lastEmitTime > 300) {
-                        lastEmitTime = now
-                        val elapsed = (now - lastTime + 1) / 1000.0
-                        val speed = if (elapsed > 0) ((totalDownloaded - lastBytes) / elapsed).toLong() else 0L
-                        UpdateEventEmitter.emitDownloadProgress(
-                            reactContext,
-                            progress,
-                            totalDownloaded,
-                            totalBytes,
-                            speed
-                        )
-                    }
+                   if (now - lastEmitTime > 300) {
+    lastEmitTime = now
+    val elapsed = (now - lastTime).coerceAtLeast(1) / 1000.0
+    val speed = ((totalDownloaded - lastBytes) / elapsed).toLong()
+    lastBytes = totalDownloaded
+    lastTime = now
+
+    val progress = if (totalBytes > 0) ((totalDownloaded * 100) / totalBytes).toInt() else 0
+
+    if (now - lastNotificationTime > 500) {
+        lastNotificationTime = now
+        updateNotification("${formatBytes(totalDownloaded)} / ${formatBytes(totalBytes)} • ${formatSpeed(speed)}", progress)
+    }
+
+    UpdateEventEmitter.emitDownloadProgress(reactContext, progress, totalDownloaded, totalBytes, speed)
+}
                 }
 
                 outputStream.flush()

@@ -15,6 +15,18 @@ export async function getAlbumCover(filePath: string): Promise<string | null> {
   return MusicLibrary.getAlbumCover(filePath);
 }
 
+export async function getAllTracksLocal() {
+  return MusicLibrary.getAllTracks(); // ✅ agora existe
+}
+
+export async function getTracksByFolderPath(folderPath: string) {
+  return MusicLibrary.getTracksByFolder(folderPath); // ✅ agora existe
+}
+
+export async function getMusicFolders() {
+  return MusicLibrary.getMusicFolders(); // ✅ novo
+}
+
 export async function getTrackById(
   trackId: string,
 ): Promise<TrackDetails | null> {

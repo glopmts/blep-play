@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 // ─── Types
 
@@ -144,7 +145,7 @@ function ChangelogSection({ body }: { body: string }) {
           return (
             <Text
               key={i}
-              className="text-white font-semibold text-sm mb-1 mt-2"
+              className="dark:text-white font-semibold text-sm mb-1 mt-2"
             >
               {text}
             </Text>
@@ -156,7 +157,7 @@ function ChangelogSection({ body }: { body: string }) {
             {isBullet && (
               <Text className="text-emerald-400 mr-2 text-sm leading-5">•</Text>
             )}
-            <Text className="text-zinc-300 text-sm leading-5 flex-1">
+            <Text className="dark:text-zinc-300 text-sm leading-5 flex-1">
               {text}
             </Text>
           </View>
@@ -182,6 +183,7 @@ export function UpdateModal({
 }: UpdateModalProps) {
   const slideAnim = useRef(new Animated.Value(300)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     if (visible) {
@@ -248,7 +250,7 @@ export function UpdateModal({
     >
       <Animated.View
         style={{ opacity: fadeAnim }}
-        className="flex-1 bg-black/70 justify-end"
+        className="flex-1 bg-black/70  justify-end"
       >
         {/* Backdrop tap to dismiss */}
         {canDismiss && (
@@ -256,8 +258,11 @@ export function UpdateModal({
         )}
 
         <Animated.View
-          style={{ transform: [{ translateY: slideAnim }] }}
-          className="bg-zinc-900 rounded-t-3xl px-5 pt-5 pb-8 border-t border-zinc-800"
+          style={{
+            backgroundColor: colors.surface,
+            transform: [{ translateY: slideAnim }],
+          }}
+          className="rounded-t-3xl px-5 pt-5 pb-8 border-t"
         >
           {/* Handle bar */}
           <View className="w-10 h-1 bg-zinc-700 rounded-full self-center mb-5" />
@@ -265,7 +270,7 @@ export function UpdateModal({
           {/* Header */}
           <View className="flex-row items-center justify-between mb-4">
             <View>
-              <Text className="text-white text-xl font-bold">
+              <Text className="dark:text-white text-xl font-bold">
                 {isComplete ? "✅ Atualizado!" : "Nova versão disponível"}
               </Text>
               {updateInfo && (
@@ -355,7 +360,7 @@ export function UpdateModal({
                 <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2">
                   O que há de novo
                 </Text>
-                <View className="bg-zinc-800/40 rounded-2xl px-4 py-3">
+                <View className="dark:bg-zinc-800/40 bg-zinc-200 rounded-2xl px-4 py-3">
                   <ChangelogSection body={updateInfo.releaseNotes} />
                 </View>
                 {updateInfo.publishedAt && (
@@ -394,8 +399,11 @@ export function UpdateModal({
 
             {/* Dismiss / Later */}
             {canDismiss && (
-              <Pressable onPress={onDismiss} className="py-3 items-center">
-                <Text className="text-zinc-500 text-sm">
+              <Pressable
+                onPress={onDismiss}
+                className="py-3 items-center border rounded-3xl"
+              >
+                <Text className="dark:text-zinc-200 text-sm">
                   {isComplete ? "Fechar" : "Agora não"}
                 </Text>
               </Pressable>

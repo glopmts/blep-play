@@ -23,18 +23,6 @@ function readUint32BE(bytes: Uint8Array, offset: number): number {
 }
 
 /**
- * Converte content:// URI para file:// copiando para cache temporário.
- * file:// URIs passam direto.
- */
-async function resolveReadableUri(uri: string): Promise<string> {
-  if (!uri.startsWith("content://")) return uri;
-
-  const tmpPath = `${FileSystem.cacheDirectory}tmp_audio_read_${Date.now()}.audio`;
-  await FileSystem.copyAsync({ from: uri, to: tmpPath });
-  return tmpPath;
-}
-
-/**
  * Converte Uint8Array → base64 usando chunks para evitar stack overflow
  * em imagens grandes (~2MB+).
  */

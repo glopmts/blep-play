@@ -1,11 +1,11 @@
 import * as Linking from "expo-linking";
-import * as QuickActions from "expo-quick-actions";
 import { useQuickAction } from "expo-quick-actions/hooks";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
-import { NativeModules, Platform } from "react-native";
+import { NativeModules } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { PlayerSetup } from "../context/player-context";
@@ -20,7 +20,30 @@ const { PerformanceOptimization, CacheManager } = NativeModules;
 function RootLayoutNav() {
   const action = useQuickAction();
 
-  console.log("action", action);
+  useEffect(() => {
+    if (!action) return;
+
+    // Navegar para playlist
+    if (action.id === "playlists") {
+      router.push("/(main)/(tabs)/playlists" as any);
+      return;
+    }
+
+    // Tocar música recente
+    if (
+      action.id.startsWith("recent_") &&
+      action.params?.type === "recent_track"
+    ) {
+      router.push({
+        pathname: "/player",
+        params: {
+          uri: encodeURIComponent(action.params.trackUrl as string),
+          fileName: encodeURIComponent(action.params.trackTitle as string),
+        },
+      });
+    }
+  }, [action]);
+
   ///processUrl audios links
   const processUrl = useCallback(async (url: string) => {
     // Ignora deep links internos do Expo
@@ -78,21 +101,38 @@ function RootLayoutNav() {
     });
   }, []);
 
-  useEffect(() => {
-    QuickActions.setItems([
-      {
-        title: "Playlists",
-        icon: Platform.select({
-          ios: "symbol:heart.fill",
-          android: "asset:heart",
-        }),
-        id: "playlists",
-        params: {
-          href: "/playlists",
-        },
-      },
-    ]);
-  }, []);
+  // useEffect(() => {
+  //   const recents = musicStorageSync.getRecents().slice(0, 2);
+
+  //   const recentItems = recents.map((track, index) => ({
+  //     title: track.title,
+  //     subtitle: track.artist ?? "Artista desconhecido",
+  //     icon: Platform.select({
+  //       ios: "symbol:music.note",
+  //       android: track.artwork || "list_music_icon",
+  //     }),
+  //     id: `recent_${index}`,
+  //     params: {
+  //       type: "recent_track",
+  //       trackUrl: track.url,
+  //       trackTitle: track.title,
+  //       trackArtist: track.artist ?? "",
+  //     },
+  //   }));
+
+  //   QuickActions.setItems([
+  //     {
+  //       title: "Playlists",
+  //       icon: Platform.select({
+  //         ios: "symbol:music.note.list",
+  //         android: "list_music_icon",
+  //       }),
+  //       id: "playlists",
+  //       params: { href: "/(main)/(tabs)/playlists" },
+  //     },
+  //     ...recentItems,
+  //   ]);
+  // }, []);
 
   return (
     <>
@@ -100,10 +140,10 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "slide_from_bottom", // player sobe/desce naturalmente
+          animation: "slide_from_bottom",
           animationDuration: 250,
           gestureEnabled: true,
-          gestureDirection: "vertical", // gesto de swipe pra baixo fecha o player
+          gestureDirection: "vertical",
         }}
       />
     </>
@@ -114,13 +154,15 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
       <ThemeProvider>
-        <BottomSheetProvider>
-          <PlayerHeightProvider>
-            <PlayerSetup>
-              <RootLayoutNav />
-            </PlayerSetup>
-          </PlayerHeightProvider>
-        </BottomSheetProvider>
+        <KeyboardProvider>
+          <BottomSheetProvider>
+            <PlayerHeightProvider>
+              <PlayerSetup>
+                <RootLayoutNav />
+              </PlayerSetup>
+            </PlayerHeightProvider>
+          </BottomSheetProvider>
+        </KeyboardProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

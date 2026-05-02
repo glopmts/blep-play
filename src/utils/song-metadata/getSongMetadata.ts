@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
-import { formatLyrics } from "./formatLyrics";
+import { formatLyrics } from "../formatLyrics";
 
 export interface SongMetadata {
   title?: string;
@@ -317,8 +317,8 @@ export async function getSongMetadata(fileUri: string): Promise<SongMetadata> {
     const fileSize = (fileInfo as any).size ?? 0;
     if (fileSize === 0) return {};
 
-    // Leitura 1: apenas 10 bytes para detectar formato e tamanho do ID3
     const header = await readFileBytes(fileUri, 10);
+    // Leitura 1: apenas 10 bytes para detectar formato e tamanho do ID3
 
     let bytesToRead: number;
 

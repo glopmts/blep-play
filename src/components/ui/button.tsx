@@ -1,4 +1,3 @@
-import { useTheme } from "@/hooks/useTheme";
 import { ReactNode } from "react";
 import {
   ActivityIndicator,
@@ -7,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 type ButtonVariant =
   | "primary"

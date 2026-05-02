@@ -2,7 +2,7 @@
   "expo": {
     "name": "BlepPlay",
     "slug": "blep-play",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
@@ -144,12 +144,26 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification_icon.png",
-          "color": "#ffffff",
+          "color": "#A6FF4D",
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false
         }
       ],
-      "expo-quick-actions",
+      [
+        "expo-quick-actions",
+        {
+          "androidIcons": {
+            "list_music_icon": {
+              "foregroundImage": "./assets/icon/list_music.png",
+              "backgroundColor": "#A6FF4D"
+            },
+            "music_icon": {
+              "foregroundImage": "./assets/icon/musical_note.png",
+              "backgroundColor": "#A6FF4D"
+            }
+          }
+        }
+      ],
       [
         "expo-sqlite",
         {

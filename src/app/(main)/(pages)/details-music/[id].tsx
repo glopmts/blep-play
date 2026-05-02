@@ -4,10 +4,11 @@ import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { showPlatformMessage } from "@/components/toast-message-plataform";
 import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { usePlayerHeight } from "@/context/player-height-context";
+import { useTheme } from "@/context/ThemeContext";
 import { useMusicDetails } from "@/hooks/useMusicDetails";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { useTheme } from "@/hooks/useTheme";
+import { useTrackCover } from "@/hooks/useTrackCover";
 import { METADATA_MUSIC } from "@/lib/metada-music";
 import { TrackDetails } from "@/types/interfaces";
 import { formatDuration } from "@/utils/formaTS/formatTimeSong";
@@ -41,7 +42,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTrackCover } from "../../../../hooks/useTrackCover";
 
 const DetailsMusic = () => {
   const { isDark, colors } = useTheme();
@@ -50,7 +50,7 @@ const DetailsMusic = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { playlists, handleAddSongToPlaylist, handleRemoveSongFromPlaylist } =
     usePlaylists();
-  const { error, loading, musicDetails } = useMusicDetails(
+  const { error, loading, musicDetails, loadingLyrics } = useMusicDetails(
     id ? String(id) : "",
   );
 
@@ -376,19 +376,21 @@ const DetailsMusic = () => {
                   onPress={() =>
                     handleCopyLyrics(musicDetails.lyrics as string)
                   }
-                  disabled={isCopying}
+                  disabled={isCopying || loadingLyrics}
                   className="p-1.5"
                 >
                   {isCopying ? (
                     <CopyCheck size={18} color="rgba(59,130,246,0.5)" />
                   ) : (
-                    <Copy size={18} color={isDark ? "#fff" : "#18181b"} />
+                    <Copy size={18} color={colors.icon} />
                   )}
                 </TouchableOpacity>
               )}
             </View>
 
-            {musicDetails.lyrics ? (
+            {loadingLyrics ? (
+              <ActivityIndicator size={28} color={colors.iconActive} />
+            ) : musicDetails.lyrics ? (
               <>
                 <Text
                   className="lyrics-text"

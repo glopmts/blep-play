@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function useAlbums() {
   const [albums, setAlbums] = useState<AlbumInterface[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permission, requestPermission] = usePermissions();

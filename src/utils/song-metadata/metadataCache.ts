@@ -1,6 +1,6 @@
 import { CachedSongMetadata } from "@/types/song-interfaces";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SongMetadata } from "../getSongMetadata";
+import { SongMetadata } from "./getSongMetadata";
 
 const METADATA_CACHE_KEY = "song_metadata_cache_v1";
 

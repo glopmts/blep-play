@@ -10,9 +10,9 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "../context/ThemeContext";
+import { StoredTrack } from "../database/cache/music-history.cache";
 import { useMusicHistory } from "../hooks/useMusicHistory";
 import { usePlayer } from "../hooks/usePlayer";
-import { StoredTrack } from "../services/music-history.service";
 import { storedTracksToSongs } from "../services/storedTrackToSong.service";
 import { Colors } from "../types/colors";
 import { formatDuration } from "../utils/formaTS/formatTimeSong";
@@ -223,6 +223,10 @@ const HistoryRecentMusic = () => {
           showsHorizontalScrollIndicator={false}
           onRefresh={() => reload()}
           contentContainerClassName="gap-4"
+          contentContainerStyle={{
+            paddingBottom: 80,
+            paddingTop: 8,
+          }}
         />
       )}
     </View>

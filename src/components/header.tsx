@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/ThemeContext";
 
 const Header = () => {
   const { isDark, colors } = useTheme();
@@ -68,7 +68,7 @@ const Header = () => {
           </Text>
           <Text
             className="text-base"
-            style={{ color: colors?.textSecondary || "#666" }}
+            style={{ color: colors?.text_gray || "#666" }}
           >
             {content.subtitle}
           </Text>

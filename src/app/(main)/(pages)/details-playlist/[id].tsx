@@ -3,7 +3,9 @@ import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { showPlatformMessage } from "@/components/toast-message-plataform";
+import { Button } from "@/components/ui/button";
 import { useBottomSheet } from "@/context/bottom-sheet-context";
+import { useTheme } from "@/context/ThemeContext";
 import {
   deletePlaylistImage,
   savePlaylistImage,
@@ -11,7 +13,6 @@ import {
 import { SelectPlaylistImagePicker } from "@/hooks/use-selectImagePickerPlaylist";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlaylists } from "@/hooks/usePlaylists";
-import { useTheme } from "@/hooks/useTheme";
 import { updatePlaylist } from "@/services/playlists.service";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { ImageBackground } from "expo-image";
@@ -27,7 +28,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button } from "../../../../components/ui/button";
 
 const PlayListDetails = () => {
   const { isDark, colors } = useTheme();
@@ -48,7 +48,6 @@ const PlayListDetails = () => {
       if (!playlist?.songs || loadingSongIndex !== null) return;
       setLoadingSongIndex(index);
       try {
-        const song = playlist.songs[index];
         await playSongs(playlist.songs, index);
       } finally {
         setLoadingSongIndex(null);

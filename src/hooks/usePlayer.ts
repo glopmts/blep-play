@@ -1,11 +1,11 @@
 import { getOrPersistCover } from "@/database/cache/coverArtCache";
-import { addToRecents } from "@/services/music-history.service";
+import { addToRecents, getRecents } from "@/database/cache/music-history.cache";
 import { TrackDetails } from "@/types/interfaces";
-import { getSongMetadata } from "@/utils/getSongMetadata";
 import {
   sanitizeArtwork,
   songToTrack,
 } from "@/utils/song-metadata/converte-songWithArt";
+import { getSongMetadata } from "@/utils/song-metadata/getSongMetadata";
 import { useCallback, useEffect, useRef, useState } from "react";
 import TrackPlayer, {
   Event,
@@ -27,6 +27,7 @@ export function usePlayer() {
   const [repeatMode, setRepeatMode] = useState<RepeatMode>(RepeatMode.Off);
   const [isShuffle, setIsShuffle] = useState(false);
   const isLoadingRef = useRef(false);
+  const isTogglingRef = useRef(false);
 
   const isPlaying = playbackState.state === State.Playing;
   const isBuffering =
@@ -173,6 +174,7 @@ export function usePlayer() {
           album: tracks[startIndex].album,
           artwork: startArtwork ?? undefined,
         });
+        await getRecents();
       } catch (error) {
         console.error("[playSongs] erro:", error);
       } finally {
@@ -225,10 +227,22 @@ export function usePlayer() {
 
   // ── Controles──
   const togglePlayPause = useCallback(async () => {
-    if (isPlaying) await TrackPlayer.pause();
-    else await TrackPlayer.play();
-  }, [isPlaying]);
+    if (isTogglingRef.current) return;
+    isTogglingRef.current = true;
 
+    try {
+      const state = await TrackPlayer.getPlaybackState();
+      const playing = state.state === State.Playing;
+
+      if (playing) {
+        await TrackPlayer.pause();
+      } else {
+        await TrackPlayer.play();
+      }
+    } finally {
+      isTogglingRef.current = false;
+    }
+  }, []);
   const togglePlayStop = useCallback(async () => {
     if (isPlaying) await TrackPlayer.play();
     else await TrackPlayer.stop();

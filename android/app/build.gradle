@@ -94,8 +94,11 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.1.0"
-
+        versionName "1.2.0"
+ndk {
+            // Exclui ABIs lentas; reduz APK e elimina x86 (emulador)
+            abiFilters "arm64-v8a", "x86_64"
+        }
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
     signingConfigs {
@@ -122,6 +125,7 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
+            debuggable true
             signingConfig signingConfigs.release
 
         def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'

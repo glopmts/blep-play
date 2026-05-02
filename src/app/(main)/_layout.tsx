@@ -4,7 +4,7 @@ import { Stack } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 
 const LayoutMain = () => {
-  const { isDark, colors } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <>

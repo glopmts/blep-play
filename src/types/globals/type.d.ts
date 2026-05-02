@@ -17,6 +17,12 @@ declare global {
     coverArt?: string;
     songs: MediaLibrary.Asset[];
   }
+
+  type NaveItem = {
+    id: string;
+    label: string;
+    icon?: React.ReactNode;
+  };
 }
 
 export {};

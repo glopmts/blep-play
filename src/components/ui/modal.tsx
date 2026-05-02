@@ -2,6 +2,7 @@ import { XIcon } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
+  Keyboard,
   Pressable,
   Text,
   TouchableWithoutFeedback,
@@ -24,6 +25,11 @@ const Modal: React.FC<ModalProps> = ({
   animationDuration = 280,
 }) => {
   const [mounted, setMounted] = useState(visible);
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    onClose();
+  };
 
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(40)).current;
@@ -87,7 +93,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <View className="absolute inset-0 z-50">
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={handleClose}>
         <Animated.View
           className="absolute inset-0"
           style={{
@@ -124,7 +130,7 @@ const Modal: React.FC<ModalProps> = ({
                 <View />
               )}
               <Pressable
-                onPress={onClose}
+                onPress={handleClose}
                 className="w-8 h-8 rounded-full items-center justify-center dark:bg-zinc-800 bg-zinc-100 active:opacity-60"
                 hitSlop={8}
               >

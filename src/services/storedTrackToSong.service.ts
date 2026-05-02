@@ -1,4 +1,4 @@
-import { StoredTrack } from "../services/music-history.service";
+import { StoredTrack } from "../database/cache/music-history.cache";
 import { TrackDetails } from "../types/interfaces";
 
 export function storedTrackToSong(track: StoredTrack): TrackDetails {

@@ -30,8 +30,6 @@ function getNumColumns(width: number): number {
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const NUM_COLUMNS = getNumColumns(SCREEN_WIDTH);
 
-const CARD_SIZE = Math.floor(SCREEN_WIDTH / NUM_COLUMNS) + 56;
-
 type RenderItemProps = {
   item: AlbumInterface;
   isCurrentlyPlaying?: boolean;
@@ -227,89 +225,95 @@ const Albums = () => {
     return currentTrack?.album || null;
   }, [currentTrack?.album]);
 
-  return (
-    <LayoutWithHeader header={false} statusBarOpen={false}>
-      <Header />
-      {loading ? (
-        <View className="flex-1">
+  if (loading) {
+    return (
+      <LayoutWithHeader header={false} statusBarOpen={false}>
+        <Header />
+
+        <View className="">
           <SkeletonLoadingAlbum
             numberOfItems={itemsPerPage}
             numColumns={NUM_COLUMNS}
           />
         </View>
-      ) : (
-        <View className="flex-1">
-          <View className="pb-5">
-            <SearchBar
-              colors={colors}
-              onClear={clearSearch}
-              isSearching={isSearching}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              placeholder="Buscar album, artista..."
-            />
-          </View>
-          <View className="flex-1">
-            <FlatList
-              ref={flashListRef}
-              data={displayData}
-              renderItem={({ item }) => {
-                const isCurrentlyPlaying = currentAlbumName === item.album;
+      </LayoutWithHeader>
+    );
+  }
 
-                return (
-                  <AlbumItem
-                    item={item}
-                    isCurrentlyPlaying={isCurrentlyPlaying}
-                    onPress={handleAlbumPress}
-                    onLongPress={handleOpenBottomSheet}
-                  />
-                );
-              }}
-              keyExtractor={(item) => item.id}
-              numColumns={NUM_COLUMNS}
-              overScrollMode="never"
-              refreshing={refreshing}
-              onRefresh={() => {
-                // Resetar paginação ao refresh
-                setCurrentPage(1);
-                setHasMoreData(true);
-                const initialAlbums = albums.slice(0, itemsPerPage);
-                setDisplayedAlbums(initialAlbums);
-                refresh();
-                maintainScrollPosition();
-              }}
-              showsVerticalScrollIndicator={false}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                paddingBottom: 80,
-                paddingTop: 8,
-              }}
-              removeClippedSubviews={true} // Remove views fora da tela
-              initialNumToRender={NUM_COLUMNS * 2} // Quantos itens renderizar inicialmente
-              maxToRenderPerBatch={NUM_COLUMNS * 3} // Máximo por lote
-              updateCellsBatchingPeriod={50} // Tempo entre atualizações
-              windowSize={5} // Tamanho da janela de renderização
-              disableVirtualization={false} // Mantém virtualização
-              decelerationRate="normal" // Velocidade de desaceleração
-              scrollEventThrottle={16} // Frequência de eventos de scroll (60fps)
-              onScroll={handleScroll} // Monitorar scroll
-              onEndReached={handleEndReached}
-              onEndReachedThreshold={0.3} // Carrega quando faltar 30% para o fim
-              ListFooterComponent={
-                !searchQuery.trim()
-                  ? () => (
-                      <ListFooterLoader
-                        isLoading={isLoadingMore}
-                        colors={colors}
-                      />
-                    )
-                  : undefined
-              }
-              extraData={[searchQuery, refreshing]}
-            />
-          </View>
+  return (
+    <LayoutWithHeader header={false} statusBarOpen={false}>
+      <Header />
+      <View className="flex-1">
+        <View className="pb-5">
+          <SearchBar
+            colors={colors}
+            onClear={clearSearch}
+            isSearching={isSearching}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            placeholder="Buscar album, artista..."
+          />
         </View>
-      )}
+        <View className="flex-1">
+          <FlatList
+            ref={flashListRef}
+            data={displayData}
+            renderItem={({ item }) => {
+              const isCurrentlyPlaying = currentAlbumName === item.album;
+
+              return (
+                <AlbumItem
+                  item={item}
+                  isCurrentlyPlaying={isCurrentlyPlaying}
+                  onPress={handleAlbumPress}
+                  onLongPress={handleOpenBottomSheet}
+                />
+              );
+            }}
+            keyExtractor={(item) => item.id}
+            numColumns={NUM_COLUMNS}
+            overScrollMode="never"
+            refreshing={refreshing}
+            onRefresh={() => {
+              // Resetar paginação ao refresh
+              setCurrentPage(1);
+              setHasMoreData(true);
+              const initialAlbums = albums.slice(0, itemsPerPage);
+              setDisplayedAlbums(initialAlbums);
+              refresh();
+              maintainScrollPosition();
+            }}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingBottom: 80,
+              paddingTop: 8,
+            }}
+            removeClippedSubviews={true} // Remove views fora da tela
+            initialNumToRender={NUM_COLUMNS * 2} // Quantos itens renderizar inicialmente
+            maxToRenderPerBatch={NUM_COLUMNS * 3} // Máximo por lote
+            updateCellsBatchingPeriod={50} // Tempo entre atualizações
+            windowSize={5} // Tamanho da janela de renderização
+            disableVirtualization={false} // Mantém virtualização
+            decelerationRate="normal" // Velocidade de desaceleração
+            scrollEventThrottle={16} // Frequência de eventos de scroll (60fps)
+            onScroll={handleScroll} // Monitorar scroll
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.3} // Carrega quando faltar 30% para o fim
+            ListFooterComponent={
+              !searchQuery.trim()
+                ? () => (
+                    <ListFooterLoader
+                      isLoading={isLoadingMore}
+                      colors={colors}
+                    />
+                  )
+                : undefined
+            }
+            extraData={[searchQuery, refreshing]}
+          />
+        </View>
+      </View>
     </LayoutWithHeader>
   );
 };

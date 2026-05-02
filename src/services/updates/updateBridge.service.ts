@@ -102,18 +102,26 @@ export async function nativeRequestInstallPermission(): Promise<string> {
 export async function nativeGetAppVersion(): Promise<{
   versionName: string;
   versionCode: number;
-}> {
+} | null> {
+  let versionName = "0.0.0";
+  let versionCode = 1;
+
   if (!NativeUpdateModule) {
-    // Fallback: read from expo-constants if available
     try {
       const Constants = require("expo-constants").default;
-      return {
-        versionName: Constants.expoConfig?.version ?? "0.0.0",
-        versionCode: Constants.expoConfig?.android?.versionCode ?? 1,
-      };
+      versionName = Constants.expoConfig?.version ?? "0.0.0";
+      versionCode = Constants.expoConfig?.android?.versionCode ?? 1;
     } catch {
-      return { versionName: "0.0.0", versionCode: 1 };
+      return null;
     }
+  } else {
+    const result = await NativeUpdateModule.getAppVersion();
+    versionName = result.versionName;
+    versionCode = result.versionCode;
   }
-  return NativeUpdateModule.getAppVersion();
+
+  // Versão dev → não retorna nada
+  if (versionName.includes("-dev")) return null;
+
+  return { versionName, versionCode };
 }

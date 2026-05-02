@@ -1,7 +1,9 @@
 <resources>
-  <color name="splashscreen_background">#fff</color>
   <color name="iconBackground">#1A1C22</color>
   <color name="colorPrimary">#023c69</color>
   <color name="activityBackground">#1A1C22</color>
-  <color name="notification_icon_color">#ffffff</color>
+  <color name="music_icon_background_color">#A6FF4D</color>
+  <color name="list_music_icon_background_color">#A6FF4D</color>
+  <color name="notification_icon_color">#A6FF4D</color>
+  <color name="splashscreen_background">#fff</color>
 </resources>

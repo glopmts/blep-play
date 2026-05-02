@@ -42,6 +42,6 @@ export function songToTrack(song: TrackDetails): Track {
     album: song.album ?? "",
     artwork: sanitizeArtwork(song.coverArt ?? undefined),
     duration: song.duration / 1000,
-    coverArt: song.coverArt ?? undefined, // ✅ Campo extra para acesso posterior
+    coverArt: song.coverArt ?? undefined,
   } as Track;
 }

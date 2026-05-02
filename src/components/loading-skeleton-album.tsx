@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Animated, Dimensions, FlatList, View } from "react-native";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/ThemeContext";
 
 const { width } = Dimensions.get("window");
 

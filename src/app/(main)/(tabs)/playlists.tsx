@@ -28,12 +28,6 @@ import {
   View,
 } from "react-native";
 
-type NaveItem = {
-  id: string;
-  label: string;
-  icon?: React.ReactNode;
-};
-
 const Playlists = () => {
   const { colors, isDark } = useTheme();
   const {
@@ -201,7 +195,7 @@ const Playlists = () => {
     ];
 
     return (
-      <View className="flex-row  bg-neutral-900 rounded-full border border-zinc-800 p-1">
+      <View className="flex-row bg-neutral-900 rounded-full border border-zinc-800 p-1">
         {tabs.map((tab) => (
           <TouchableOpacity
             key={tab.id}

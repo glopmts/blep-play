@@ -7,6 +7,7 @@ import { getOrPersistCover } from "@/database/cache/coverArtCache";
 import { getAlbumById } from "@/modules/music-library.module";
 import { AlbumInterface, TrackDetails } from "@/types/interfaces";
 import { useEffect, useRef, useState } from "react";
+import { musicCache } from "../../database/music-cache";
 
 export function useAlbumDetailsLocal(albumId: string) {
   const [album, setAlbum] = useState<AlbumInterface | null>(null);
@@ -42,6 +43,9 @@ export function useAlbumDetailsLocal(albumId: string) {
         setLoading(false);
 
         // Se o cache está velho, atualiza em background
+
+        await persistTracks(hydrated.songs ?? []);
+
         const fresh = await isCachedAlbumFresh(albumId);
         if (!fresh) refreshInBackground();
 
@@ -74,6 +78,11 @@ export function useAlbumDetailsLocal(albumId: string) {
     setAlbum(hydrated);
     setFromCache(false);
     setCachedAlbum(hydrated).catch(console.error);
+
+    await Promise.all([
+      setCachedAlbum(hydrated).catch(console.error),
+      persistTracks(hydrated.songs ?? []),
+    ]);
   }
 
   // ── Atualização silenciosa em background
@@ -122,6 +131,11 @@ export function useAlbumDetailsLocal(albumId: string) {
     }
 
     return album;
+  }
+
+  async function persistTracks(songs: TrackDetails[]) {
+    if (!songs.length) return;
+    await musicCache.cacheMultipleTracks(songs);
   }
 
   return { album, loading, fromCache, error };

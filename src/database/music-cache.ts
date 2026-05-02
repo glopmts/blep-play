@@ -179,6 +179,25 @@ export class MusicCache {
     );
   }
 
+  // ── Lyrics ──
+  async updateLyrics(id: string, lyrics: string): Promise<void> {
+    await this.initialize();
+    this.db!.runSync(
+      `UPDATE cached_tracks SET lyrics = ? WHERE id = ?`,
+      lyrics,
+      id,
+    );
+  }
+
+  async getLyrics(id: string): Promise<string | null> {
+    await this.initialize();
+    const row = this.db!.getFirstSync<{ lyrics: string | null }>(
+      `SELECT lyrics FROM cached_tracks WHERE id = ?`,
+      id,
+    );
+    return row?.lyrics ?? null;
+  }
+
   // ── Ler
   async getCachedTrack(id: string): Promise<CachedTrack | null> {
     await this.initialize();

@@ -1,10 +1,10 @@
 import { tabs } from "@/constants/data";
-import { useTheme } from "@/hooks/useTheme";
 import * as MediaLibrary from "expo-media-library";
 import * as Notifications from "expo-notifications";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Alert, View } from "react-native";
+import { useTheme } from "../../../context/ThemeContext";
 
 /// Pedir acesso as notificações aparelho
 
@@ -17,22 +17,6 @@ Notifications.setNotificationHandler({
     priority: Notifications.AndroidNotificationPriority.HIGH,
   }),
 });
-
-const requestNotificationPermission = async () => {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-
-  if (existingStatus === "granted") return true;
-
-  const { status } = await Notifications.requestPermissionsAsync({
-    android: {
-      allowAlert: true,
-      allowBadge: true,
-      allowSound: true,
-    },
-  });
-
-  return status === "granted";
-};
 
 function TabIcon({
   Icon,
@@ -84,14 +68,6 @@ export default function MainLayout() {
       const albumsAllowed = await getAlbums();
       if (albumsAllowed) {
       }
-
-      const notificationsAllowed = await requestNotificationPermission();
-      if (!notificationsAllowed) {
-        Alert.alert(
-          "Permissão para notificações",
-          "Permita notificações para receber alertas importantes.",
-        );
-      }
     };
 
     requestAll();
@@ -131,7 +107,7 @@ export default function MainLayout() {
         tabBarItemStyle: {
           paddingTop: 4,
         },
-        animation: "fade",
+        animation: "none",
       }}
     >
       {tabs.map((tab) => (

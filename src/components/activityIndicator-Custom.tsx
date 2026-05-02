@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { FC } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/ThemeContext";
 import { Colors } from "../types/colors";
 
 type IndicadoProps = {
@@ -21,7 +21,7 @@ const ActivityIndicatorCustom: FC<IndicadoProps> = ({
     <View
       className="flex-1 items-center justify-center gap-10"
       style={{
-        backgroundColor: colors.background_surface,
+        backgroundColor: colors.surface,
       }}
     >
       {isImage && (

@@ -27,6 +27,7 @@ export interface TrackDetails {
   filePath: string;
   uri: string;
   mimeType: string;
+  genre?: string | null;
   year: number;
   bitrate: number;
   fileSize: number;
