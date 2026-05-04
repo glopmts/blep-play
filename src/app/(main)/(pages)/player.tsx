@@ -7,7 +7,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { Music } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -41,31 +41,44 @@ export default function PlayerScreen() {
     loadExternalTrack,
   } = usePlayer();
   const [isReady, setIsReady] = useState(!!currentTrack);
+  const hasLoadedRef = useRef(false);
 
-  const { uri, fileName } = useLocalSearchParams<{
+  const { uri, fileName, artist, album, artworkUri } = useLocalSearchParams<{
     uri?: string;
     fileName?: string;
+    artist?: string;
+    album?: string;
+    artworkUri?: string;
   }>();
+
+  const hint: ExternalTrackHint = {
+    title: fileName ? decodeURIComponent(fileName) : undefined,
+    artist: artist ? decodeURIComponent(artist) : undefined,
+    album: album ? decodeURIComponent(album) : undefined,
+    artworkUri: artworkUri ? decodeURIComponent(artworkUri) : undefined,
+  };
 
   useEffect(() => {
     if (currentTrack) setIsReady(true);
   }, [currentTrack]);
 
   useEffect(() => {
-    if (!uri) {
+    if (!uri || hasLoadedRef.current) {
       setIsReady(true);
       return;
     }
+
     const handleDeepLink = async () => {
+      hasLoadedRef.current = true;
       const decodedUri = decodeURIComponent(uri);
       const activeTrack = await TrackPlayer.getActiveTrack();
       if (activeTrack?.url === decodedUri) {
         setIsReady(true);
         return;
       }
-      await loadExternalTrack(uri, fileName ?? undefined);
-      // isReady será setado pelo useEffect do currentTrack
+      await loadExternalTrack(uri, fileName ?? undefined, hint);
     };
+
     handleDeepLink().catch(console.error);
   }, [uri]);
 
@@ -118,6 +131,15 @@ export default function PlayerScreen() {
     ? "rgba(24, 24, 27, 0.97)"
     : "rgba(255, 255, 255, 0.92)";
 
+  const handleBack = useCallback(() => {
+    // Se veio de link externo (replace), canGoBack() = false ou volta p/ lugar errado
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(main)/(tabs)");
+    }
+  }, []);
+
   return (
     <View
       className="content p-0"
@@ -154,11 +176,7 @@ export default function PlayerScreen() {
         }}
       >
         <TouchableOpacity
-          onPress={() =>
-            router.canGoBack()
-              ? router.back()
-              : router.replace("/(main)/(tabs)")
-          }
+          onPress={handleBack}
           style={{
             backgroundColor: "rgba(255,255,255,0.12)",
             width: 40,

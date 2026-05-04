@@ -13,9 +13,14 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint
 import expo.modules.ApplicationLifecycleDispatcher
 import expo.modules.ExpoReactHostFactory
 import com.blepplay.update.UpdatePackage
+import com.glopblog.blepplay.updates.BackgroundUpdatePackage
+import com.glopblog.blepplay.updates.AppLifecycleTracker
 import java.util.concurrent.Executors
 import com.glopblog.blepplay.MediaDeletePackage
 import expo.modules.core.interfaces.Package
+import androidx.work.WorkManager
+import com.glopblog.blepplay.AudioMetadataPackage
+
 
 class MainApplication : Application(), ReactApplication {
 
@@ -27,6 +32,8 @@ class MainApplication : Application(), ReactApplication {
           add(UpdatePackage())
           add(MediaDeletePackage())
           add(MusicLibraryPackage()) 
+          add(BackgroundUpdatePackage()) 
+          add(AudioMetadataPackage()) 
         }
     )
   }
@@ -36,7 +43,7 @@ class MainApplication : Application(), ReactApplication {
 
     // ── 1. Prioridade do processo — evita throttle durante scan de mídia
     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_FOREGROUND)
-
+registerActivityLifecycleCallbacks(AppLifecycleTracker)
     // ── 2. Release level (mantido do seu código original)
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())

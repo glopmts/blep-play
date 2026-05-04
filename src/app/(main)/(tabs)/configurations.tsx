@@ -1,5 +1,7 @@
 import Header from "@/components/header";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
+import { useAppUpdater } from "@/components/update/app-update-context";
+import { UpdateModal } from "@/components/update/update-modal";
 import { useTheme } from "@/context/ThemeContext";
 import * as Application from "expo-application";
 import { router } from "expo-router";
@@ -10,51 +12,68 @@ import {
   FileMusicIcon,
   Settings,
 } from "lucide-react-native";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
-
-const NAVE_OPTIONS: NaveOptionsProps[] = [
-  {
-    id: 1,
-    label: "Biblioteca local",
-    description:
-      "Gerencia todos os dados armazenado no cache do dispositivo e pasta local audios.",
-    icon: FileMusicIcon,
-    action: () => {
-      router.navigate("/(main)/(pages)/local-library");
-    },
-  },
-  {
-    id: 2,
-    label: "Configuração de privacidade",
-    description: "Gerencia suas configurações de privacidade e dados pessoais",
-    icon: Settings,
-    action: () => {
-      Alert.alert("Privacidade", "Configurações de privacidade");
-    },
-  },
-  {
-    id: 3,
-    label: "Gerenciar dados em cache",
-    description: "Gerencie todos os dados armazenado em caches.",
-    icon: Database,
-    action: () => {
-      router.navigate("/(main)/(pages)/cache-maneger");
-    },
-  },
-  {
-    id: 4,
-    label: "Verifica atualização App",
-    description: "Clique aqui para verificar se há novas atualizações",
-    infor: `v${Application.nativeApplicationVersion}`,
-    icon: Download,
-    action: () => {
-      Alert.alert("Atualização", "Verificando por atualizações...");
-    },
-  },
-];
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const Configurations = () => {
   const { colors, isDark, toggleColorScheme } = useTheme();
+  const {
+    checkForUpdates,
+    status,
+    updateInfo,
+    currentVersion,
+    downloadState,
+    errorMessage,
+    isUpdateModalVisible,
+    startDownload,
+    cancelDownload,
+    dismissModal,
+  } = useAppUpdater();
+
+  const handleCheckForUpdates = async () => {
+    await checkForUpdates();
+  };
+
+  const NAVE_OPTIONS: NaveOptionsProps[] = [
+    {
+      id: 1,
+      label: "Biblioteca local",
+      description:
+        "Gerencia todos os dados armazenado no cache do dispositivo e pasta local audios.",
+      icon: FileMusicIcon,
+      action: () => {
+        router.navigate("/(main)/(pages)/local-library");
+      },
+    },
+    {
+      id: 2,
+      label: "Configuração de privacidade",
+      description:
+        "Gerencia suas configurações de privacidade e dados pessoais, notificações etc..",
+      icon: Settings,
+      action: () => {
+        router.navigate("/(main)/(pages)/privacy-setting");
+      },
+    },
+    {
+      id: 3,
+      label: "Gerenciar dados em cache",
+      description: "Gerencie todos os dados armazenado em caches.",
+      icon: Database,
+      action: () => {
+        router.navigate("/(main)/(pages)/cache-maneger");
+      },
+    },
+    {
+      id: 4,
+      label: "Verifica atualização App",
+      description: "Clique aqui para verificar se há novas atualizações",
+      infor: `v${Application.nativeApplicationVersion}`,
+      icon: Download,
+      action: () => {
+        handleCheckForUpdates();
+      },
+    },
+  ];
 
   return (
     <LayoutWithHeader header={false} statusBarOpen={false}>
@@ -226,6 +245,20 @@ const Configurations = () => {
           </Text>
         </View>
       </ScrollView>
+
+      {/* Modal udpate app */}
+      <UpdateModal
+        visible={isUpdateModalVisible}
+        status={status}
+        updateInfo={updateInfo}
+        currentVersion={currentVersion}
+        downloadState={downloadState}
+        errorMessage={errorMessage}
+        onStartDownload={startDownload}
+        onCancelDownload={cancelDownload}
+        onDismiss={dismissModal}
+        onRetry={() => checkForUpdates(true)} // Recupera de erro
+      />
     </LayoutWithHeader>
   );
 };

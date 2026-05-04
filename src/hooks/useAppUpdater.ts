@@ -1,3 +1,8 @@
+import {
+  startBackgroundUpdateCheck,
+  stopBackgroundUpdateCheck,
+  updateStoredVersion,
+} from "@/services/updates/backgroundupdate.service";
 import NetInfo from "@react-native-community/netinfo";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -5,7 +10,7 @@ import {
   getUpdateInfo,
   isNewerVersion,
   UpdateInfo,
-} from "../services/githubApi.service";
+} from "../services/updates/githubApi.service";
 import {
   nativeCancelDownload,
   nativeCanInstallPackages,
@@ -15,8 +20,6 @@ import {
   onUpdateEvent,
   ProgressPayload,
 } from "../services/updates/updateBridge.service";
-
-// ─ Types
 
 export type UpdateStatus =
   | "idle"
@@ -30,7 +33,7 @@ export type UpdateStatus =
   | "offline";
 
 export interface DownloadState {
-  progress: number; // 0-100
+  progress: number; // 0–100
   downloadedFormatted: string;
   totalFormatted: string;
   speedFormatted: string;
@@ -53,7 +56,8 @@ export interface AppUpdaterActions {
   requestInstallPermission: () => Promise<void>;
 }
 
-// ─ Hook
+const GITHUB_REPO_OWNER = "glopmts";
+const GITHUB_REPO_NAME = "blep-play";
 
 const DEFAULT_DOWNLOAD: DownloadState = {
   progress: 0,
@@ -63,16 +67,8 @@ const DEFAULT_DOWNLOAD: DownloadState = {
 };
 
 function isDevVersion(version: string): boolean {
-  const devPatterns = [
-    /-dev$/i, // v1.2.0-dev
-    /-alpha$/i, // v1.2.0-alpha
-    /-beta$/i, // v1.2.0-beta
-    /-rc\d*$/i, // v1.2.0-rc, v1.2.0-rc1
-    /-snapshot$/i, // v1.2.0-SNAPSHOT
-    /\.dev\d*$/i, // v1.2.0.dev, v1.2.0.dev1
-  ];
-
-  return devPatterns.some((pattern) => pattern.test(version));
+  const devPatterns = [/-alpha$/i, /-beta$/i, /-rc\d*$/i, /-snapshot$/i];
+  return devPatterns.some((p) => p.test(version));
 }
 
 export function useAppUpdater(
@@ -86,9 +82,9 @@ export function useAppUpdater(
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isUpdateModalVisible, setModalVisible] = useState(false);
 
-  // Prevent concurrent downloads
   const isDownloading = useRef(false);
 
+  // ─ Lê versão nativa ao montar
   useEffect(() => {
     nativeGetAppVersion().then((version) => {
       if (!version) return;
@@ -96,7 +92,7 @@ export function useAppUpdater(
     });
   }, []);
 
-  //  Event subscriptions─
+  // ─ Registra eventos do download nativo
   useEffect(() => {
     const subProgress = onUpdateEvent(
       "progressoDownload",
@@ -124,6 +120,8 @@ export function useAppUpdater(
     const subInstall = onUpdateEvent("statusInstalacao", ({ status: s }) => {
       if (s === "launched" || s === "complete") {
         setStatus("complete");
+        // Atualiza versão no módulo nativo após instalação bem-sucedida
+        updateStoredVersion(currentVersion).catch(() => {});
       } else if (s === "permission_required") {
         setStatus("error");
         setErrorMessage(
@@ -138,20 +136,35 @@ export function useAppUpdater(
       subError.remove();
       subInstall.remove();
     };
-  }, []);
+  }, [currentVersion]);
 
-  //  Check for updates─
+  // ─ Inicia verificação em background quando a versão está disponível
+  useEffect(() => {
+    if (!currentVersion || currentVersion === "0.0.0") return;
+    if (isDevVersion(currentVersion)) return;
+
+    startBackgroundUpdateCheck({
+      repoOwner: GITHUB_REPO_OWNER,
+      repoName: GITHUB_REPO_NAME,
+      currentVersion,
+    }).catch(() => {
+      // silencioso: background check é best-effort
+    });
+
+    // Cancela ao desmontar (ex: logout)
+    return () => {
+      stopBackgroundUpdateCheck().catch(() => {});
+    };
+  }, [currentVersion]);
+
+  // ─ Verificação foreground (em tela)
   const checkForUpdates = useCallback(
     async (force = false) => {
       if (isDevVersion(currentVersion)) {
-        // console.log(
-        //   "Versão de desenvolvimento detectada, pulando verificação de updates",
-        // );
         setStatus("up_to_date");
         return;
       }
 
-      // Check connectivity first
       const netState = await NetInfo.fetch();
       if (!netState.isConnected) {
         setStatus("offline");
@@ -171,7 +184,6 @@ export function useAppUpdater(
         }
 
         const hasUpdate = isNewerVersion(currentVersion, info.latestVersion);
-
         if (hasUpdate) {
           setUpdateInfo(info);
           setStatus("available");
@@ -187,16 +199,15 @@ export function useAppUpdater(
     [currentVersion],
   );
 
-  // Auto-check on mount
+  // ─ Auto-check ao montar (foreground)
   useEffect(() => {
     if (autoCheck) {
-      // Small delay to not block initial render
       const timer = setTimeout(() => checkForUpdates(), 2000);
       return () => clearTimeout(timer);
     }
   }, [autoCheck, checkForUpdates]);
 
-  //  Start download
+  // ─ Inicia download do APK
   const startDownload = useCallback(async () => {
     if (!updateInfo || isDownloading.current) return;
 
@@ -208,11 +219,9 @@ export function useAppUpdater(
       return;
     }
 
-    // Verify install permission before downloading
     const canInstall = await nativeCanInstallPackages();
     if (!canInstall) {
       await nativeRequestInstallPermission();
-      // User will need to tap Download again after granting permission
       setErrorMessage(
         "Ative 'Fontes desconhecidas' nas configurações e tente novamente.",
       );
@@ -236,9 +245,9 @@ export function useAppUpdater(
       setStatus("error");
       setErrorMessage(err?.message ?? "Falha ao iniciar download");
     }
-  }, [updateInfo]);
+  }, [updateInfo, currentVersion]);
 
-  //  Cancel download─
+  // ─ Cancela download
   const cancelDownload = useCallback(async () => {
     await nativeCancelDownload();
     isDownloading.current = false;
@@ -246,27 +255,25 @@ export function useAppUpdater(
     setDownloadState(DEFAULT_DOWNLOAD);
   }, []);
 
-  //  Dismiss modal─
+  // ─ Fecha modal
   const dismissModal = useCallback(() => {
-    if (status === "downloading") return; // can't dismiss while downloading
+    if (status === "downloading") return;
     setModalVisible(false);
     setStatus("idle");
   }, [status]);
 
-  //  Request permission
+  // ─ Solicita permissão de instalação
   const requestInstallPermission = useCallback(async () => {
     await nativeRequestInstallPermission();
   }, []);
 
   return {
-    // state
     status,
     updateInfo,
     currentVersion,
     downloadState,
     errorMessage,
     isUpdateModalVisible,
-    // actions
     checkForUpdates,
     startDownload,
     cancelDownload,

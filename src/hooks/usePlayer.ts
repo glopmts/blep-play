@@ -69,7 +69,7 @@ export function usePlayer() {
   // ── Carregar faixa externa (deep link / notificação) ──
 
   const loadExternalTrack = useCallback(
-    async (uri: string, fileName?: string) => {
+    async (uri: string, fileName?: string, hint?: ExternalTrackHint) => {
       if (isLoadingRef.current) return;
 
       const activeTrack = await TrackPlayer.getActiveTrack();
@@ -77,13 +77,14 @@ export function usePlayer() {
 
       isLoadingRef.current = true;
       try {
-        // Limpa o nome do arquivo para usar como título provisório
-        const provisionalTitle = fileName
-          ? decodeURIComponent(fileName).replace(/\.[^/.]+$/, "")
-          : decodeURIComponent(uri.split("/").pop() ?? "Áudio").replace(
-              /\.[^/.]+$/,
-              "",
-            );
+        const provisionalTitle =
+          hint?.title ??
+          (fileName
+            ? decodeURIComponent(fileName).replace(/\.[^/.]+$/, "")
+            : decodeURIComponent(uri.split("/").pop() ?? "Áudio").replace(
+                /\.[^/.]+$/,
+                "",
+              ));
 
         const decodedUri = decodeURIComponent(uri);
 
@@ -92,8 +93,12 @@ export function usePlayer() {
           id: `external_${Date.now()}`,
           url: decodedUri,
           title: provisionalTitle,
-          artist: "Carregando...",
-          artwork: undefined,
+          // Usa hint se disponível — elimina o flash "Carregando..."
+          artist: hint?.artist ?? "Carregando...",
+          album: hint?.album ?? undefined,
+          artwork: hint?.artworkUri
+            ? sanitizeArtwork(hint.artworkUri)
+            : undefined,
         });
         await TrackPlayer.play();
 
@@ -102,25 +107,29 @@ export function usePlayer() {
         setCurrentIndex(0);
         setQueue(track ? [track] : []);
 
-        // Busca metadados reais em background sem travar o play
+        // Background: sobrescreve com metadados completos (pode ter mais detalhes)
         getSongMetadata(decodedUri).then(async (meta) => {
+          // Se o nativo já resolveu tudo, getSongMetadata pode não ter mais nada a acrescentar
+          const hasRicherData = meta.title || meta.artist || meta.coverArt;
+
+          if (!hasRicherData) return;
+
           const idx = await TrackPlayer.getActiveTrackIndex();
           if (idx == null) return;
 
-          // artwork precisa ser file:// ou http:// — content:// não funciona na notificação
-          const artwork = sanitizeArtwork(meta.coverArt);
+          const artwork = sanitizeArtwork(meta.coverArt) ?? hint?.artworkUri;
 
           await TrackPlayer.updateMetadataForTrack(idx, {
             title: meta.title ?? provisionalTitle,
-            artist: meta.artist ?? "Arquivo externo",
-            album: meta.album,
+            artist: meta.artist ?? hint?.artist ?? "Arquivo externo",
+            album: meta.album ?? hint?.album,
             artwork,
           });
 
           await TrackPlayer.updateNowPlayingMetadata({
             title: meta.title ?? provisionalTitle,
-            artist: meta.artist ?? "Arquivo externo",
-            artwork: artwork,
+            artist: meta.artist ?? hint?.artist ?? "Arquivo externo",
+            artwork,
           });
 
           setCurrentTrack((prev) =>
@@ -128,7 +137,7 @@ export function usePlayer() {
               ? {
                   ...prev,
                   title: meta.title ?? provisionalTitle,
-                  artist: meta.artist ?? "Arquivo externo",
+                  artist: meta.artist ?? hint?.artist ?? "Arquivo externo",
                   artwork,
                 }
               : prev,

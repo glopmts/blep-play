@@ -291,7 +291,7 @@ const Albums = () => {
             }}
             removeClippedSubviews={true} // Remove views fora da tela
             initialNumToRender={NUM_COLUMNS * 2} // Quantos itens renderizar inicialmente
-            maxToRenderPerBatch={NUM_COLUMNS * 3} // Máximo por lote
+            maxToRenderPerBatch={NUM_COLUMNS * 2} // Máximo por lote
             updateCellsBatchingPeriod={50} // Tempo entre atualizações
             windowSize={5} // Tamanho da janela de renderização
             disableVirtualization={false} // Mantém virtualização

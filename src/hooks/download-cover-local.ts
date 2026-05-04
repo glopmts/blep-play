@@ -1,6 +1,7 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as MediaLibrary from "expo-media-library";
 import { useState } from "react";
+import { Platform } from "react-native";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 
 type PropsDownloadCover = {
@@ -19,8 +20,25 @@ export function useDownloadCoverLocal() {
     setDownload(true);
 
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") return;
+      // Android 10+ (API 29+): não precisa de permissão para salvar na própria galeria
+      const needsPermission =
+        Platform.OS === "ios" ||
+        (Platform.OS === "android" && (Platform.Version as number) < 29);
+
+      if (needsPermission) {
+        // Verifica primeiro — só pede se ainda não foi concedida
+        const { status: existing } = await MediaLibrary.getPermissionsAsync();
+
+        if (existing !== "granted") {
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status !== "granted") {
+            showPlatformMessage(
+              "Permissão negada. Ative nas configurações do app.",
+            );
+            return;
+          }
+        }
+      }
 
       const fileName = albumName
         ? `cover_${albumName.replace(/[^a-zA-Z0-9]/g, "_")}_${Date.now()}.jpg`
@@ -30,28 +48,26 @@ export function useDownloadCoverLocal() {
         coverFile.startsWith("file://") || coverFile.startsWith("/");
 
       let assetUri: string;
+      let tempPath: string | null = null;
 
       if (isFilePath) {
-        // Já é um arquivo — usa direto
         assetUri = coverFile.startsWith("file://")
           ? coverFile
           : `file://${coverFile}`;
       } else {
-        // É base64 — escreve em temp primeiro
         const cleanBase64 = coverFile
           .replace(/^data:image\/\w+;base64,/, "")
           .replace(/\s/g, "");
 
         if (!cleanBase64 || cleanBase64.length < 100) return;
 
-        const tempPath = `${FileSystem.cacheDirectory}${fileName}`;
+        tempPath = `${FileSystem.cacheDirectory}${fileName}`;
         await FileSystem.writeAsStringAsync(tempPath, cleanBase64, {
           encoding: FileSystem.EncodingType.Base64,
         });
         assetUri = tempPath;
       }
 
-      // Salva na galeria
       const asset = await MediaLibrary.createAssetAsync(assetUri);
 
       try {
@@ -61,14 +77,14 @@ export function useDownloadCoverLocal() {
         } else {
           await MediaLibrary.createAlbumAsync("Covers", asset, false);
         }
-        showPlatformMessage("Capa salva na galeria!");
       } catch {
-        showPlatformMessage("Capa salva na galeria!");
+        // Falha ao organizar em álbum não é crítica — asset já foi salvo
       }
 
-      // Limpa temp só se foi criado (caso base64)
-      if (!isFilePath) {
-        const tempPath = `${FileSystem.cacheDirectory}${fileName}`;
+      showPlatformMessage("Capa salva na galeria!");
+
+      // Limpa temp somente se foi criado via base64
+      if (tempPath) {
         await FileSystem.deleteAsync(tempPath, { idempotent: true });
       }
     } catch (e: any) {
@@ -79,8 +95,5 @@ export function useDownloadCoverLocal() {
     }
   };
 
-  return {
-    isDownload,
-    handleDownload,
-  };
+  return { isDownload, handleDownload };
 }

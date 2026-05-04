@@ -1,5 +1,5 @@
 import { DownloadState, UpdateStatus } from "@/hooks/useAppUpdater";
-import { UpdateInfo } from "@/services/githubApi.service";
+import { UpdateInfo } from "@/services/updates/githubApi.service";
 import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,

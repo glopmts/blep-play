@@ -1,9 +1,21 @@
 import * as FileSystem from "expo-file-system/legacy";
+import {
+  getEnrichedMetadata,
+  parseDuration,
+} from "../modules/process-url.module";
 
-export async function handleIncomingFile(url: string): Promise<{
+export interface IncomingFileResult {
   uri: string;
   fileName: string;
-}> {
+  artist?: string | null;
+  album?: string | null;
+  artworkUri?: string | null;
+  duration?: number;
+}
+
+export async function handleIncomingFile(
+  url: string,
+): Promise<IncomingFileResult> {
   if (url.startsWith("content://")) {
     const fileName = extractFileNameFromContentUri(url);
     const cacheDir = FileSystem.cacheDirectory ?? "file:///data/user/0/cache/";
@@ -12,15 +24,35 @@ export async function handleIncomingFile(url: string): Promise<{
 
     const info = await FileSystem.getInfoAsync(destUri);
     if (!info.exists) {
-      await copyContentUri(url, destUri); // ← usa a função robusta
+      await copyContentUri(url, destUri);
     }
 
-    return { uri: destUri, fileName };
+    // Lê metadados da URI original (content://) — mais rica que o arquivo copiado
+    const meta = await getEnrichedMetadata(url, fileName);
+
+    return {
+      uri: destUri,
+      fileName: meta.title ?? fileName,
+      artist: meta.artist,
+      album: meta.album,
+      artworkUri: meta.artworkUri,
+      duration: parseDuration(meta.duration),
+    };
   }
 
   if (url.startsWith("file://")) {
     const fileName = url.split("/").pop() ?? "audio";
-    return { uri: url, fileName };
+
+    const meta = await getEnrichedMetadata(url, fileName);
+
+    return {
+      uri: url,
+      fileName: meta.title ?? fileName,
+      artist: meta.artist,
+      album: meta.album,
+      artworkUri: meta.artworkUri,
+      duration: parseDuration(meta.duration),
+    };
   }
 
   if (url.startsWith("http://") || url.startsWith("https://")) {
@@ -33,7 +65,18 @@ export async function handleIncomingFile(url: string): Promise<{
     if (downloadResult.status !== 200) {
       throw new Error(`Download falhou com status ${downloadResult.status}`);
     }
-    return { uri: downloadResult.uri, fileName };
+
+    // Para HTTP, lê do arquivo já baixado (URL remota não tem ContentResolver)
+    const meta = await getEnrichedMetadata(downloadResult.uri, fileName);
+
+    return {
+      uri: downloadResult.uri,
+      fileName: meta.title ?? fileName,
+      artist: meta.artist,
+      album: meta.album,
+      artworkUri: meta.artworkUri,
+      duration: parseDuration(meta.duration),
+    };
   }
 
   throw new Error("URI não suportada: " + url);

@@ -45,30 +45,38 @@ export async function getCachedAlbumsList(): Promise<AlbumInterface[] | null> {
 export async function setCachedAlbumsList(
   albums: AlbumInterface[],
 ): Promise<void> {
+  if (!albums.length) return;
+
   try {
     const db = await getAlbumsDb();
     const now = Date.now();
 
-    // Upsert em batch dentro de uma transação
-    await db.withTransactionAsync(async () => {
-      await db.runAsync("DELETE FROM albums_list");
-      for (const a of albums) {
-        await db.runAsync(
-          `INSERT INTO albums_list
-             (id, album, artist, numberOfSongs, year, artworkBase64, cached_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
+    // Prepara o statement fora da transação
+    const stmt = await db.prepareAsync(
+      `INSERT INTO albums_list
+         (id, album, artist, numberOfSongs, year, artworkBase64, cached_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
+
+    try {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync("DELETE FROM albums_list");
+
+        for (const a of albums) {
+          await stmt.executeAsync([
             a.id,
             a.album,
             a.artist,
             a.numberOfSongs,
             a.year,
-            a.artworkBase64,
+            a.artworkBase64 ?? null,
             now,
-          ],
-        );
-      }
-    });
+          ]);
+        }
+      });
+    } finally {
+      await stmt.finalizeAsync();
+    }
   } catch (e) {
     console.error("[albumsListCache] setCachedAlbumsList:", e);
   }

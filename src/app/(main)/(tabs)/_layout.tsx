@@ -1,22 +1,10 @@
 import { tabs } from "@/constants/data";
+import { useTheme } from "@/context/ThemeContext";
+import { registerForPushNotificationsAsync } from "@/services/notification.service";
 import * as MediaLibrary from "expo-media-library";
-import * as Notifications from "expo-notifications";
 import { Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Alert, View } from "react-native";
-import { useTheme } from "../../../context/ThemeContext";
-
-/// Pedir acesso as notificações aparelho
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    priority: Notifications.AndroidNotificationPriority.HIGH,
-  }),
-});
 
 function TabIcon({
   Icon,
@@ -70,6 +58,7 @@ export default function MainLayout() {
       }
     };
 
+    registerForPushNotificationsAsync();
     requestAll();
   }, []);
 

@@ -84,21 +84,32 @@ const AlbumDetails = () => {
   }, [searchQuery, searchResults, album?.songs]);
 
   const ListFooterComponent = useMemo(() => {
+    // Só mostra footer se NÃO estiver em modo de busca
     if (searchQuery) return null;
 
-    if (searchQuery || loading) {
+    if (loading) {
       return (
         <View className="py-8 items-center">
           <ActivityIndicator size="small" color={colors.iconActive} />
           <Text className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-            Carregando mais músicas...
+            Carregando músicas...
+          </Text>
+        </View>
+      );
+    }
+
+    if (!album?.songs?.length) {
+      return (
+        <View className="py-8 items-center">
+          <Text className="text-gray-500 dark:text-gray-400 text-sm">
+            Nenhuma música encontrada
           </Text>
         </View>
       );
     }
 
     return null;
-  }, [isDark, album?.songs?.length, searchQuery]);
+  }, [searchQuery, loading, album?.songs?.length, colors.iconActive]);
 
   const ListHeaderComponent = useMemo(() => {
     if (!album) return null;

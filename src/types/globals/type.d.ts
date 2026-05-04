@@ -32,6 +32,13 @@ declare global {
     icon?: ComponentType<{ size: number; color: string }>;
     action?: () => void;
   };
+
+  interface ExternalTrackHint {
+    title?: string;
+    artist?: string;
+    album?: string;
+    artworkUri?: string;
+  }
 }
 
 export {};

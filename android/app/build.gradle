@@ -94,7 +94,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.2.0"
+        versionName "1.2.8"
 ndk {
             // Exclui ABIs lentas; reduz APK e elimina x86 (emulador)
             abiFilters "arm64-v8a", "x86_64"
@@ -175,7 +175,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
+    implementation "androidx.work:work-runtime-ktx:2.9.0"
       
     // Performance optimizations
     implementation 'com.github.bumptech.glide:glide:4.15.1'

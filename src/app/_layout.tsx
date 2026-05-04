@@ -1,3 +1,4 @@
+import { AppUpdaterProvider } from "@/components/update/app-update-context";
 import * as Linking from "expo-linking";
 import { useQuickAction } from "expo-quick-actions/hooks";
 import { router, Stack } from "expo-router";
@@ -47,7 +48,6 @@ function RootLayoutNav() {
 
   ///processUrl audios links
   const processUrl = useCallback(async (url: string) => {
-    // Ignora deep links internos do Expo
     if (url.startsWith("exp+") || url.startsWith("exp://")) return;
 
     const isMediaFile =
@@ -55,18 +55,23 @@ function RootLayoutNav() {
       url.startsWith("file://") ||
       /\.(mp3|m4a|flac|wav|ogg|aac|opus)(\?|$)/i.test(url);
 
-    // Se não for mídia, deixa o router resolver normalmente
     if (!isMediaFile) return;
 
     const { router } = require("expo-router");
 
     try {
-      const { uri, fileName } = await handleIncomingFile(url);
-      router.push({
+      const { uri, fileName, artist, album, artworkUri } =
+        await handleIncomingFile(url);
+
+      // replace em vez de push — não empilha no histórico
+      router.replace({
         pathname: "/player",
         params: {
           uri: encodeURIComponent(uri),
           fileName: encodeURIComponent(fileName),
+          artist: encodeURIComponent(artist ?? ""),
+          album: encodeURIComponent(album ?? ""),
+          artworkUri: encodeURIComponent(artworkUri ?? ""),
         },
       });
     } catch (error) {
@@ -157,13 +162,15 @@ export default function RootLayout() {
       <ThemeProvider>
         <KeyboardProvider>
           <BottomSheetProvider>
-            <LibrarySettingsProvider>
-              <PlayerHeightProvider>
-                <PlayerSetup>
-                  <RootLayoutNav />
-                </PlayerSetup>
-              </PlayerHeightProvider>
-            </LibrarySettingsProvider>
+            <AppUpdaterProvider autoCheck={true}>
+              <LibrarySettingsProvider>
+                <PlayerHeightProvider>
+                  <PlayerSetup>
+                    <RootLayoutNav />
+                  </PlayerSetup>
+                </PlayerHeightProvider>
+              </LibrarySettingsProvider>
+            </AppUpdaterProvider>
           </BottomSheetProvider>
         </KeyboardProvider>
       </ThemeProvider>

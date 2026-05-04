@@ -2,7 +2,7 @@
   "expo": {
     "name": "BlepPlay",
     "slug": "blep-play",
-    "version": "1.2.0",
+    "version": "1.2.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
@@ -168,12 +168,12 @@
         "expo-sqlite",
         {
           "android": {
-            // Override the shared configuration for Android
             "enableFTS": false,
             "useSQLCipher": false
           }
         }
-      ]
+      ],
+      ["expo-pip", {}]
     ],
     "experiments": {
       "typedRoutes": true,

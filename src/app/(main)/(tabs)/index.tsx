@@ -17,7 +17,6 @@ const TabSelector = ({
 }) => {
   const tabs = [
     { id: "home", label: "Pagina Inicial" },
-    { id: "folders", label: "Pasta Local" },
     { id: "musics", label: "Lista musicas" },
   ];
 
@@ -75,10 +74,6 @@ const Home = () => {
           <View className="mb-4 p-4 flex-1">
             <HistoryRecentMusic />
           </View>
-        </View>
-      ) : activeTab === "folders" ? (
-        <View className="flex-1">
-          <Text>pastas</Text>
         </View>
       ) : (
         <AllMusicList />
