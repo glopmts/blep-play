@@ -3,10 +3,13 @@ import BottomSheet, {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import { useCallback, useEffect, useRef } from "react";
-import { useColorScheme } from "react-native";
+import { View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
+import { useArtworkColor } from "../../hooks/useArtworkColor";
 
 type Props = {
   content: React.ReactNode;
+  trackArtwork?: string | null;
   snapPoints: (string | number)[];
   isOpen: boolean;
   onClose: () => void;
@@ -15,16 +18,19 @@ type Props = {
 export function GlobalBottomSheet({
   content,
   snapPoints,
+  trackArtwork,
   isOpen,
   onClose,
 }: Props) {
   const ref = useRef<BottomSheet>(null);
-  const isDark = useColorScheme() === "dark";
+  const { colors, isDark } = useTheme();
+
+  const artworkColors = useArtworkColor(trackArtwork as string | null);
 
   useEffect(() => {
-    if (isOpen) ref.current?.expand();
+    if (isOpen) ref.current?.snapToIndex(0);
     else ref.current?.close();
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   // Backdrop com fade + clique para fechar
   const renderBackdrop = useCallback(
@@ -40,6 +46,15 @@ export function GlobalBottomSheet({
     [],
   );
 
+  const bg = (() => {
+    if (artworkColors.background) {
+      return isDark
+        ? `${artworkColors.background}F5`
+        : `${artworkColors.background}EE`;
+    }
+    return colors.background_sheet;
+  })();
+
   return (
     <BottomSheet
       ref={ref}
@@ -51,13 +66,15 @@ export function GlobalBottomSheet({
         if (index === -1) onClose();
       }}
       backgroundStyle={{
-        backgroundColor: isDark ? "#27272a" : "#ffffff",
+        backgroundColor: bg,
       }}
       handleIndicatorStyle={{
-        backgroundColor: isDark ? "#52525b" : "#d4d4d8",
+        backgroundColor: colors.indicator_sheet,
       }}
     >
-      <BottomSheetView style={{ flex: 1 }}>{content}</BottomSheetView>
+      <BottomSheetView>
+        <View className="flex-1">{content}</View>
+      </BottomSheetView>
     </BottomSheet>
   );
 }

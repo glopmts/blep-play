@@ -7,13 +7,15 @@ import { AlbumInterface } from "@/types/interfaces";
 import { usePermissions } from "expo-media-library";
 import { useEffect, useRef, useState } from "react";
 
+// useAlbums.ts
 export function useAlbums() {
   const [albums, setAlbums] = useState<AlbumInterface[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // começa true
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permission, requestPermission] = usePermissions();
   const abortRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
 
   useEffect(() => {
     if (!permission?.granted) {
@@ -32,18 +34,16 @@ export function useAlbums() {
     setError(null);
 
     try {
-      // 1. Cache primeiro — exibe instantâneo
       const cached = await getCachedAlbumsList();
       if (cached && cached.length > 0 && !abortRef.current) {
         setAlbums(cached);
+        hasLoadedOnce.current = true;
         setLoading(false);
-        // Atualiza em background sem travar a UI
         syncInBackground();
         return;
       }
-
-      // 2. Sem cache — busca do nativo (primeira vez)
       await fetchFromNative();
+      hasLoadedOnce.current = true;
     } catch (e: any) {
       if (!abortRef.current) setError(e.message);
     } finally {
@@ -55,30 +55,31 @@ export function useAlbums() {
     const fresh = await getAlbums();
     if (abortRef.current) return;
     setAlbums(fresh);
-    // Persiste sem bloquear
     setCachedAlbumsList(fresh).catch(console.error);
   }
 
-  // Roda sem spinner — atualiza silenciosamente
   async function syncInBackground() {
     try {
       const fresh = await getAlbums();
       if (abortRef.current) return;
 
-      // Só atualiza estado se algo mudou (evita re-render desnecessário)
       setAlbums((prev) => {
-        if (prev.length !== fresh.length || prev[0]?.id !== fresh[0]?.id) {
+        // Comparação mais robusta
+        const changed =
+          prev.length !== fresh.length ||
+          fresh.some((f, i) => f.id !== prev[i]?.id);
+
+        if (changed) {
           setCachedAlbumsList(fresh).catch(console.error);
           return fresh;
         }
         return prev;
       });
     } catch {
-      // falha silenciosa — cache já está na tela
+      // falha silenciosa
     }
   }
 
-  // Pull-to-refresh manual
   async function refresh() {
     setRefreshing(true);
     try {

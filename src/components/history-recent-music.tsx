@@ -104,13 +104,11 @@ const RecentCard = ({
       <View className="flex-row gap-2 items-center">
         {isCurrentlyPlaying ? (
           <Ionicons name="musical-notes" size={16} color="#3b82f6" />
-        ) : (
-          song.duration && (
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              {formatDuration(song.duration)}
-            </Text>
-          )
-        )}
+        ) : song.duration ? (
+          <Text className="text-xs text-gray-500 dark:text-gray-400">
+            {formatDuration(song.duration)}
+          </Text>
+        ) : null}
         <EllipsisVertical size={24} color={isDark ? "#a1a1aa" : "#000000"} />
       </View>
     </View>
@@ -159,19 +157,21 @@ const HistoryRecentMusic = () => {
               borderRadius: colors.rounded.rounded_2xl,
             }}
           >
-            <Text>
+            <View>
               <History size={24} color={colors.icon} />
-            </Text>
+            </View>
           </View>
           <Text className="text">Músicas Recente</Text>
           <Text className="text-xs text-zinc-400">({recents.length})</Text>
         </View>
-        <TouchableOpacity
-          onPress={clearRecents}
-          className="btn-delete p-3 bg-red-500/60"
-        >
-          <Trash2 size={20} color="#fff" />
-        </TouchableOpacity>
+        {recents.length > 1 && (
+          <TouchableOpacity
+            onPress={clearRecents}
+            className="btn-delete p-3 bg-red-500/60"
+          >
+            <Trash2 size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
       {recents.length === 0 ? (
         <View className="mt-8 items-center justify-center">
@@ -182,9 +182,7 @@ const HistoryRecentMusic = () => {
               backgroundColor: colors.cardMuted,
             }}
           >
-            <Text>
-              <History size={40} color={colors.icon} />
-            </Text>
+            <History size={40} color={colors.icon} />
           </View>
           <Text className="text text-lg text-zinc-400 mt-3">
             Nenhuma música recente.

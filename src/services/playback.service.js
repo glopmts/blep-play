@@ -9,7 +9,13 @@ module.exports = async function () {
   TrackPlayer.addEventListener(Event.RemotePrevious, () =>
     TrackPlayer.skipToPrevious(),
   );
-  TrackPlayer.addEventListener(Event.RemoteStop, () => TrackPlayer.destroy());
+
+  // 🔑 destroy() impede restauração — stop()+reset() mantém o player vivo
+  TrackPlayer.addEventListener(Event.RemoteStop, async () => {
+    await TrackPlayer.stop();
+    await TrackPlayer.reset();
+  });
+
   TrackPlayer.addEventListener(Event.RemoteSeek, async ({ position }) => {
     await TrackPlayer.seekTo(position);
   });

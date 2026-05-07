@@ -15,20 +15,14 @@ type Props = {
   refreshAlbums?: () => void;
 };
 
-const BottomSheetAlbumDetails = ({
-  album,
-  onDeleted,
-  onClose,
-  refreshAlbums,
-}: Props) => {
+const BottomSheetAlbumDetails = ({ album, onClose, refreshAlbums }: Props) => {
   const { colors, isDark } = useTheme();
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = () => {
     confirmAndDeleteAlbum(
       album,
-      (deletedCount) => {
-        onDeleted?.(album.id);
+      () => {
         onClose?.();
         refreshAlbums?.();
         showPlatformMessage("Album deletado com sucesso!");
@@ -69,7 +63,9 @@ const BottomSheetAlbumDetails = ({
                   backgroundColor: isDark ? "#27272a" : "#e4e4e7",
                 }}
               >
-                <Music size={28} color={isDark ? "#d4d4d8" : "#27272a"} />
+                <Text>
+                  <Music size={28} color={isDark ? "#d4d4d8" : "#27272a"} />
+                </Text>
               </View>
             )}
           </View>
@@ -91,19 +87,26 @@ const BottomSheetAlbumDetails = ({
                 {album.artist}
               </Text>
             )}
-            <View className="flex-row items-center mt-1 gap-2">
-              <Text className="text-sm" style={{ color: colors.textMuted }}>
-                {album.numberOfSongs}{" "}
-                {album.numberOfSongs === 1 ? "música" : "músicas"}
-              </Text>
-              {album.year && (
-                <>
-                  <Text style={{ color: colors.textMuted }}>•</Text>
+            <View className="flex-col items-baseline mt-1 gap-2">
+              <View className="flex-row gap-1">
+                <Text className="text-sm" style={{ color: colors.textMuted }}>
+                  {album.numberOfSongs}
+                </Text>
+                <Text className="text-sm" style={{ color: colors.textMuted }}>
+                  {album.numberOfSongs === 1 ? "música" : "músicas"}
+                </Text>
+              </View>
+              <View>
+                {album.year ? (
                   <Text className="text-sm" style={{ color: colors.textMuted }}>
-                    {album.year}
+                    • {album.year}
                   </Text>
-                </>
-              )}
+                ) : (
+                  <Text className="text-sm" style={{ color: colors.textMuted }}>
+                    sem data..
+                  </Text>
+                )}
+              </View>
             </View>
           </View>
 

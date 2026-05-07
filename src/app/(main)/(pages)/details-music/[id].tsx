@@ -5,7 +5,7 @@ import { showPlatformMessage } from "@/components/toast-message-plataform";
 import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { usePlayerHeight } from "@/context/player-height-context";
 import { useTheme } from "@/context/ThemeContext";
-import { useMusicDetails } from "@/hooks/useMusicDetails";
+import { useMusicDetails } from "@/hooks/music-hooks/useMusicDetails";
 import { usePlayer } from "@/hooks/usePlayer";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { useTrackCover } from "@/hooks/useTrackCover";

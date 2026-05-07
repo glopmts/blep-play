@@ -93,7 +93,6 @@ export function usePlayer() {
           id: `external_${Date.now()}`,
           url: decodedUri,
           title: provisionalTitle,
-          // Usa hint se disponível — elimina o flash "Carregando..."
           artist: hint?.artist ?? "Carregando...",
           album: hint?.album ?? undefined,
           artwork: hint?.artworkUri

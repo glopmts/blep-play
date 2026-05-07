@@ -21,6 +21,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     input: isDark ? "#27272a" : "#f4f4f5",
     cardMuted: isDark ? "#3f3f46" : "#f4f4f5",
     text_gray: isDark ? "#9ca3af" : "#6b7280",
+    background_sheet: isDark ? "#27272a" : "#ffffff",
+    indicator_sheet: isDark ? "#52525b" : "#d4d4d8",
     text: isDark ? "#F2F2F2" : "#18181b",
     textMuted: isDark ? "#9A9AA0" : "rgba(0,0,0,0.5)",
     border: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",

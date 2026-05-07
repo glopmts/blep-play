@@ -20,6 +20,7 @@ class MediaDeleteModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     override fun getName() = "MediaDeleteModule"
+    private val activeLaunchers = mutableMapOf<String, androidx.activity.result.ActivityResultLauncher<IntentSenderRequest>>()
 
     @ReactMethod
     fun deleteMediaFiles(uris: ReadableArray, promise: Promise) {
@@ -38,35 +39,36 @@ class MediaDeleteModule(private val reactContext: ReactApplicationContext) :
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // Android 11+ — usa createDeleteRequest (diálogo nativo correto)
-                val pendingIntent = MediaStore.createDeleteRequest(
-                    reactContext.contentResolver,
-                    mediaUris,
-                )
+            val pendingIntent = MediaStore.createDeleteRequest(
+                reactContext.contentResolver,
+                mediaUris,
+            )
 
-                // ← correção: acessa currentActivity via reactContext
-                val activity = reactContext.currentActivity
-                if (activity !is FragmentActivity) {
-                    promise.reject("ERR_NO_ACTIVITY", "Activity não é FragmentActivity")
-                    return
+            val activity = reactContext.currentActivity
+            if (activity !is FragmentActivity) {
+                promise.reject("ERR_NO_ACTIVITY", "Activity não é FragmentActivity")
+                return
+            }
+
+            val key = "media_delete_${System.currentTimeMillis()}"
+
+            val launcher = activity.activityResultRegistry.register(
+                key,
+                ActivityResultContracts.StartIntentSenderForResult(),
+            ) { result: ActivityResult ->
+                activeLaunchers.remove(key) // limpa após uso
+                if (result.resultCode == Activity.RESULT_OK) {
+                    promise.resolve(true)
+                } else {
+                    promise.reject("ERR_CANCELLED", "Usuário cancelou a deleção")
                 }
+            }
 
-                val key = "media_delete_${System.currentTimeMillis()}"
-                val launcher = activity.activityResultRegistry.register(
-                    key,
-                    ActivityResultContracts.StartIntentSenderForResult(),
-                ) { result: ActivityResult ->
-                    if (result.resultCode == Activity.RESULT_OK) {
-                        promise.resolve(true)
-                    } else {
-                        promise.reject("ERR_CANCELLED", "Usuário cancelou a deleção")
-                    }
-                }
-
-                launcher.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
-                )
-            } else {
+            activeLaunchers[key] = launcher // mantém referência forte
+            launcher.launch(
+                IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+            )
+        } else {
                 // Android 9/10 — deleção direta via ContentResolver
                 var deletedCount = 0
                 for (uri in mediaUris) {

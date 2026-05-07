@@ -1,14 +1,15 @@
 import SongCard from "@/components/cards/song-card";
 import { Ionicons } from "@expo/vector-icons";
 import { FlatList, Text, View } from "react-native";
+import { Colors } from "../types/colors";
 import ActivityIndicatorCustom from "./activityIndicator-Custom";
 
 interface SearchResultsProps {
   results: any[];
   onSongPress: (index: number) => void;
   loadingSongIndex: number | null;
-  isDark: boolean;
   loadingCovers: boolean;
+  colors: Colors;
   currentTrackId?: string;
   isSearching: boolean;
   searchQuery: string;
@@ -18,9 +19,9 @@ const SearchResults = ({
   results,
   onSongPress,
   loadingSongIndex,
-  isDark,
   loadingCovers,
   currentTrackId,
+  colors,
   isSearching,
   searchQuery,
 }: SearchResultsProps) => {
@@ -31,19 +32,11 @@ const SearchResults = ({
   if (searchQuery.length > 0 && results.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-10">
-        <Ionicons
-          name="search-outline"
-          size={60}
-          color={isDark ? "#52525b" : "#a1a1aa"}
-        />
-        <Text
-          className={`text-lg font-semibold mt-4 ${isDark ? "text-white" : "text-black"}`}
-        >
+        <Ionicons name="search-outline" size={60} color={colors.input} />
+        <Text className={`text-lg font-semibold mt-4 text`}>
           Nenhum resultado encontrado
         </Text>
-        <Text
-          className={`text-sm mt-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
-        >
+        <Text className={`text-sm mt-2 text-gary`}>
           Tente buscar por título, artista ou álbum
         </Text>
       </View>
@@ -59,7 +52,6 @@ const SearchResults = ({
           <SongCard
             song={item.song}
             index={index}
-            isDark={isDark}
             isLoading={loadingSongIndex === index}
             loadingSongIndex={loadingSongIndex}
             isCurrentlyPlaying={currentTrackId === item.song.id}

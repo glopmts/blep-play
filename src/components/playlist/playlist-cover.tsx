@@ -1,5 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
-import { useCover } from "@/hooks/use-track-metadata";
+import { useCover } from "@/hooks/music-hooks/use-track-metadata";
 import { Image } from "expo-image";
 import { ListMusicIcon } from "lucide-react-native";
 import { View } from "react-native";

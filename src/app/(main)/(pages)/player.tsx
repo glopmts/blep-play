@@ -1,9 +1,12 @@
+import LyricPlayerSong from "@/components/lyric-player";
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
 import { usePlayer } from "@/hooks/usePlayer";
 import { formatTime } from "@/utils/formaTS/formatTimeSong";
+import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
 import { Slider } from "@miblanchard/react-native-slider";
-import { Image } from "expo-image";
+import { ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { Music } from "lucide-react-native";
@@ -17,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import TrackPlayer, { RepeatMode } from "react-native-track-player";
+import TrackPlayer, { RepeatMode, Track } from "react-native-track-player";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const ARTWORK_SIZE = SCREEN_WIDTH - 64;
@@ -42,6 +45,7 @@ export default function PlayerScreen() {
   } = usePlayer();
   const [isReady, setIsReady] = useState(!!currentTrack);
   const hasLoadedRef = useRef(false);
+  const { openSheet, closeSheet } = useBottomSheet();
 
   const { uri, fileName, artist, album, artworkUri } = useLocalSearchParams<{
     uri?: string;
@@ -118,6 +122,17 @@ export default function PlayerScreen() {
     );
   }
 
+  const handleLyric = useCallback(
+    (track: Track) => {
+      openSheet({
+        trackArtwork: track.artwork,
+        snapPoints: ["80%"],
+        content: <LyricPlayerSong track={track} />,
+      });
+    },
+    [openSheet, closeSheet],
+  );
+
   const repeatIcon =
     repeatMode === RepeatMode.Track ? "repeat-outline" : "repeat";
   const repeatColor =
@@ -142,21 +157,11 @@ export default function PlayerScreen() {
 
   return (
     <View
-      className="content p-0"
-      style={{ flex: 1, paddingBottom: currentTrack?.url ? 100 : 0 }}
+      className="flex-1 relative"
+      style={{
+        backgroundColor: colors.text_gray,
+      }}
     >
-      {/* Background artwork blur */}
-      {currentTrack.artwork ? (
-        <Image
-          source={{ uri: currentTrack.artwork as string }}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          blurRadius={40}
-        />
-      ) : (
-        <View style={StyleSheet.absoluteFill} className="bg-zinc-300" />
-      )}
-
       <LinearGradient
         colors={[
           bgColorRgba,
@@ -165,74 +170,79 @@ export default function PlayerScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Header */}
-      <View
-        style={{
-          paddingTop: Platform.OS === "ios" ? 56 : 40,
-          paddingHorizontal: 24,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <TouchableOpacity
-          onPress={handleBack}
-          style={{
-            backgroundColor: "rgba(255,255,255,0.12)",
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name="chevron-down" size={22} color={colors.icon} />
-        </TouchableOpacity>
-
-        <View className="items-center">
-          <Text className="dark:text-white/60 text-xs uppercase tracking-widest font-medium">
-            Tocando agora
-          </Text>
-        </View>
-
-        {/* placeholder para simetria */}
-        <View style={{ width: 40 }} />
-      </View>
-
       {/* Artwork */}
-      <View
-        className="items-center"
-        style={{ marginTop: 32, paddingHorizontal: 32 }}
-      >
-        <View
-          style={{
-            width: ARTWORK_SIZE,
-            height: ARTWORK_SIZE,
-            borderRadius: 20,
-            overflow: "hidden",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 24 },
-            shadowOpacity: 0.7,
-            shadowRadius: 32,
-            elevation: 20,
-          }}
+      <View>
+        <TouchableOpacity
+          onLongPress={() => handleLyric(currentTrack)}
+          delayLongPress={200}
+          className="hero-container"
+          style={{ height: IMAGE_SIZE_BACKGROUND * 1.1 }}
         >
           {currentTrack.artwork ? (
-            <Image
-              source={{ uri: currentTrack.artwork as string }}
-              style={{ width: "100%", height: "100%" }}
+            <ImageBackground
+              source={{ uri: currentTrack.artwork }}
+              style={{
+                flex: 1,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                overflow: "hidden",
+              }}
               contentFit="cover"
-              transition={300}
-            />
+            >
+              <LinearGradient
+                colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.67)"]}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Header */}
+              <View
+                style={{
+                  paddingTop: Platform.OS === "ios" ? 56 : 60,
+                  paddingHorizontal: 24,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleBack}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    alignItems: "center",
+                    backgroundColor: colors.text_gray,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Ionicons
+                    name="chevron-down"
+                    size={26}
+                    color={colors.background}
+                  />
+                </TouchableOpacity>
+
+                <View className="items-center">
+                  <Text className="text-white text-base text-center uppercase tracking-widest font-medium">
+                    Tocando agora
+                  </Text>
+                  <Text className="text-zinc-300 text-base text-center uppercase tracking-widest font-medium">
+                    {currentTrack.title || ""}
+                  </Text>
+                </View>
+
+                {/* placeholder para simetria */}
+                <View style={{ width: 40 }} />
+              </View>
+            </ImageBackground>
           ) : (
             <View
               className="w-full h-full dark:bg-zinc-800 bg-zinc-300 items-center justify-center"
               style={{ borderRadius: 20 }}
             >
-              <Music size={80} color={isDark ? "#52525b" : "#a1a1aa"} />
+              <Music size={80} color={colors.icon} />
             </View>
           )}
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Info */}
@@ -244,7 +254,7 @@ export default function PlayerScreen() {
         >
           {currentTrack.title}
         </Text>
-        <Text className="text-white/55 text-base mt-1" numberOfLines={1}>
+        <Text className="text text-base mt-1" numberOfLines={1}>
           {currentTrack.artist}
         </Text>
       </View>
@@ -285,7 +295,7 @@ export default function PlayerScreen() {
           <Ionicons
             name="shuffle"
             size={24}
-            color={isShuffle ? colors.primary : "rgba(255,255,255,0.4)"}
+            color={isShuffle ? colors.primary : colors.primary}
           />
         </TouchableOpacity>
 
@@ -294,11 +304,7 @@ export default function PlayerScreen() {
           onPress={skipToPrevious}
           className="w-12 h-12 items-center justify-center"
         >
-          <Ionicons
-            name="play-skip-back"
-            size={30}
-            color={isDark ? "#fff" : "#000"}
-          />
+          <Ionicons name="play-skip-back" size={30} color={colors.icon} />
         </TouchableOpacity>
 
         {/* Play/Pause */}
@@ -319,12 +325,12 @@ export default function PlayerScreen() {
           }}
         >
           {isBuffering ? (
-            <ActivityIndicator size="large" color={isDark ? "#fffc" : "#000"} />
+            <ActivityIndicator size="large" color={colors.background} />
           ) : (
             <Ionicons
               name={isPlaying ? "pause" : "play"}
               size={30}
-              color={isDark ? "#fffc" : "#000"}
+              color={colors.background}
               style={{ marginLeft: isPlaying ? 0 : 3 }}
             />
           )}
@@ -335,11 +341,7 @@ export default function PlayerScreen() {
           onPress={skipToNext}
           className="w-12 h-12 items-center justify-center"
         >
-          <Ionicons
-            name="play-skip-forward"
-            size={30}
-            color={isDark ? "#fff" : "#000"}
-          />
+          <Ionicons name="play-skip-forward" size={30} color={colors.icon} />
         </TouchableOpacity>
 
         {/* Repeat */}

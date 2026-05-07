@@ -5,13 +5,13 @@ import { router } from "expo-router";
 import { Music } from "lucide-react-native";
 import { memo } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../context/ThemeContext";
 import { useTrackCover } from "../../hooks/useTrackCover";
 import { formatDuration } from "../../utils/formaTS/formatTimeSong";
 
 type SongCardProps = {
   song: TrackDetails;
   index: number;
-  isDark: boolean;
   loadingCovers?: boolean;
   isLoading: boolean;
   loadingSongIndex: number | null;
@@ -23,12 +23,13 @@ const SongCard = memo(
   ({
     song,
     index,
-    isDark,
     isCurrentlyPlaying,
     isLoading,
     loadingSongIndex,
     handleSongPress,
   }: SongCardProps) => {
+    const { colors } = useTheme();
+
     const { cover, loading: coverLoading } = useTrackCover(
       song.filePath,
       song.id,
@@ -83,10 +84,7 @@ const SongCard = memo(
                 alignItems: "center",
               }}
             >
-              <ActivityIndicator
-                size="small"
-                color={isDark ? "#fff" : "#3b82f6"}
-              />
+              <ActivityIndicator size="small" color={colors.iconActive} />
             </View>
           ) : song.filePath ? (
             <Image
@@ -100,10 +98,10 @@ const SongCard = memo(
                 flex: 1,
                 justifyContent: "center",
                 alignItems: "center",
-                backgroundColor: isDark ? "#27272a" : "#e4e4e7",
+                backgroundColor: colors.cardMuted,
               }}
             >
-              <Music size={24} color={isDark ? "#d4d4d8" : "#27272a"} />
+              <Music size={24} color={colors.icon} />
             </View>
           )}
         </View>

@@ -3,13 +3,13 @@ import { Stack } from "expo-router";
 import { useTheme } from "../../context/ThemeContext";
 
 const LayoutMain = () => {
-  const { isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <>
       <Stack
         screenOptions={{
-          headerTintColor: isDark ? "#fff" : "#000",
+          headerTintColor: colors.surface,
           headerTitleStyle: {
             fontWeight: "bold",
           },

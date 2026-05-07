@@ -39,13 +39,6 @@ export const LayoutWithHeader = ({
 
   const Container = variant === "safeArea" ? SafeAreaView : View;
 
-  const getStatusBarStyle = () => {
-    if (statusBarStyle === "auto") {
-      return isDark ? "light-content" : "dark-content";
-    }
-    return statusBarStyle === "light" ? "light-content" : "dark-content";
-  };
-
   return (
     <>
       <Container

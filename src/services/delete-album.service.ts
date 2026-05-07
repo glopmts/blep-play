@@ -1,9 +1,9 @@
 import { dbRemoveCacheCover } from "@/database/cache/coverArtCache";
-import { MediaDeleteModule } from "@/modules/Mediadelete.module";
 import { AlbumInterface } from "@/types/interfaces";
 import * as MediaLibrary from "expo-media-library";
 import { Alert, Platform } from "react-native";
 import { invalidateAlbumsList } from "../database/cache/albuns-local-cache";
+import { MediaDeleteModule } from "../modules/mediadelete-album.module";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -130,25 +130,21 @@ export async function deleteAlbumFromDevice(
     const assetIds = resolvedAssets.map((a) => a.id);
     let deleted = false;
 
-    // 3 & 4. Delete por plataforma
     if (Platform.OS === "android") {
-      // expo-media-library.deleteAssetsAsync tem bug no Android 11+:
-      // usa createWriteRequest em vez de createDeleteRequest.
-      // O módulo nativo resolve isso chamando MediaStore.createDeleteRequest.
-      const uris = await MediaDeleteModule.resolveAudioUris(assetIds);
+      // Usa as URIs diretamente se disponíveis, senão resolve pelo ID
+      const uris = resolvedAssets.every((a) => a.uri?.startsWith("content://"))
+        ? resolvedAssets.map((a) => a.uri)
+        : await MediaDeleteModule.resolveAudioUris(assetIds);
 
       if (uris.length === 0) {
         return {
           success: false,
           reason: "error",
-          error: "Não foi possível resolver URIs dos assets.",
+          error: "Não foi possível resolver URIs.",
         };
       }
 
       deleted = await MediaDeleteModule.deleteMediaFiles(uris);
-    } else {
-      // iOS: deleteAssetsAsync funciona corretamente
-      deleted = await MediaLibrary.deleteAssetsAsync(assetIds);
     }
 
     if (!deleted) {

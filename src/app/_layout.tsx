@@ -4,9 +4,11 @@ import { useQuickAction } from "expo-quick-actions/hooks";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect } from "react";
+import { I18nextProvider } from "react-i18next";
 import { NativeModules } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import i18n from "../../i18next/i18next";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { LibrarySettingsProvider } from "../context/LibrarySettingsContext";
@@ -146,7 +148,7 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: "slide_from_bottom",
+          animation: "simple_push",
           animationDuration: 250,
           gestureEnabled: true,
           gestureDirection: "vertical",
@@ -160,19 +162,21 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
       <ThemeProvider>
-        <KeyboardProvider>
-          <BottomSheetProvider>
-            <AppUpdaterProvider autoCheck={true}>
-              <LibrarySettingsProvider>
-                <PlayerHeightProvider>
-                  <PlayerSetup>
-                    <RootLayoutNav />
-                  </PlayerSetup>
-                </PlayerHeightProvider>
-              </LibrarySettingsProvider>
-            </AppUpdaterProvider>
-          </BottomSheetProvider>
-        </KeyboardProvider>
+        <I18nextProvider i18n={i18n} defaultNS={"translation"}>
+          <KeyboardProvider>
+            <BottomSheetProvider>
+              <AppUpdaterProvider autoCheck={true}>
+                <LibrarySettingsProvider>
+                  <PlayerHeightProvider>
+                    <PlayerSetup>
+                      <RootLayoutNav />
+                    </PlayerSetup>
+                  </PlayerHeightProvider>
+                </LibrarySettingsProvider>
+              </AppUpdaterProvider>
+            </BottomSheetProvider>
+          </KeyboardProvider>
+        </I18nextProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

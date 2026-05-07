@@ -51,19 +51,15 @@ export async function setCachedAlbumsList(
     const db = await getAlbumsDb();
     const now = Date.now();
 
-    // Prepara o statement fora da transação
-    const stmt = await db.prepareAsync(
-      `INSERT INTO albums_list
-         (id, album, artist, numberOfSongs, year, artworkBase64, cached_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    );
+    await db.withTransactionAsync(async () => {
+      await db.runAsync("DELETE FROM albums_list");
 
-    try {
-      await db.withTransactionAsync(async () => {
-        await db.runAsync("DELETE FROM albums_list");
-
-        for (const a of albums) {
-          await stmt.executeAsync([
+      for (const a of albums) {
+        await db.runAsync(
+          `INSERT INTO albums_list
+             (id, album, artist, numberOfSongs, year, artworkBase64, cached_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
             a.id,
             a.album,
             a.artist,
@@ -71,12 +67,10 @@ export async function setCachedAlbumsList(
             a.year,
             a.artworkBase64 ?? null,
             now,
-          ]);
-        }
-      });
-    } finally {
-      await stmt.finalizeAsync();
-    }
+          ],
+        );
+      }
+    });
   } catch (e) {
     console.error("[albumsListCache] setCachedAlbumsList:", e);
   }

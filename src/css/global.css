@@ -23,6 +23,10 @@
     @apply text-black dark:text-white font-semibold text-base;
   }
 
+  .text-gray {
+    @apply dark:text-gray-400 text-gray-500 text-base;
+  }
+
   .card-music {
     @apply flex-row items-center p-3 mb-2 rounded-lg border-b border-zinc-200/40;
   }

@@ -67,7 +67,13 @@ const DEFAULT_DOWNLOAD: DownloadState = {
 };
 
 function isDevVersion(version: string): boolean {
-  const devPatterns = [/-alpha$/i, /-beta$/i, /-rc\d*$/i, /-snapshot$/i];
+  const devPatterns = [
+    /-alpha$/i,
+    /-beta$/i,
+    /-rc\d*$/i,
+    /-dev\d*$/i,
+    /-snapshot$/i,
+  ];
   return devPatterns.some((p) => p.test(version));
 }
 

@@ -1,5 +1,7 @@
 export interface Colors {
   background: string;
+  background_sheet: string;
+  indicator_sheet: string;
   surface: string;
   card: string;
   cardMuted: string;

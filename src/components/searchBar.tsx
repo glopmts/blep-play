@@ -30,7 +30,7 @@ const SearchBar = memo(
     const inputRef = useRef<TextInput>(null);
 
     return (
-      <View className="px-4 mb-3">
+      <View className="px-4">
         <View
           style={{
             flexDirection: "row",

@@ -276,7 +276,6 @@ const PlayListDetails = () => {
                   <SongCard
                     song={item}
                     index={index}
-                    isDark={isDark}
                     isLoading={loadingSongIndex === index}
                     loadingSongIndex={loadingSongIndex}
                     isCurrentlyPlaying={isCurrentlyPlaying}

@@ -24,6 +24,7 @@ import Animated, {
 import { scheduleOnRN } from "react-native-worklets";
 import { usePlayerHeight } from "../context/player-height-context";
 import { useTheme } from "../context/ThemeContext";
+import { useArtworkColor } from "../hooks/useArtworkColor";
 
 const PLAYER_PAGES = ["player", "details-music", "details-album"];
 
@@ -57,6 +58,8 @@ const PlayerMusicRecurrent = () => {
   const dragX = useSharedValue(0);
   const pulseScale = useSharedValue(1);
   const progressWidth = useSharedValue(0);
+
+  const artworkColors = useArtworkColor(currentTrack?.artwork as string | null);
 
   // ─── Atualiza progress bar
   useEffect(() => {
@@ -103,6 +106,11 @@ const PlayerMusicRecurrent = () => {
     }
   }, [!!currentTrack]);
 
+  useEffect(() => {
+    if (artworkColors.background) {
+    }
+  }, [artworkColors.background]);
+
   // ─── Pulsação do ícone de música
   useEffect(() => {
     if (isPlaying) {
@@ -135,7 +143,15 @@ const PlayerMusicRecurrent = () => {
   if (!currentTrack || pathname.includes("player")) return null;
 
   // ─── Cores por tema
-  const bg = isDark ? "rgba(18, 18, 22, 0.96)" : "rgba(252, 252, 253, 0.96)";
+  const bg = (() => {
+    if (artworkColors.background) {
+      // Usa a cor extraída com opacidade alta pra manter legibilidade
+      return isDark
+        ? `${artworkColors.background}F5` // ~96% opacidade em hex
+        : `${artworkColors.background}EE`;
+    }
+    return isDark ? "rgba(18, 18, 22, 0.96)" : "rgba(252, 252, 253, 0.96)";
+  })();
   const borderColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
   const titleColor = isDark ? "#F4F4F5" : "#18181B";
   const subtitleColor = isDark ? "#71717A" : "#A1A1AA";
