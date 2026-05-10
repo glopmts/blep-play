@@ -1,5 +1,6 @@
 import * as Haptics from "expo-haptics";
 import React, { createContext, useCallback, useContext, useState } from "react";
+import { View } from "react-native";
 import { GlobalBottomSheet } from "../components/bottom-sheet/GlobalBottomSheet";
 
 type SheetPayload = {
@@ -57,7 +58,7 @@ export const BottomSheetProvider = ({
 
   return (
     <BottomSheetContext.Provider value={{ openSheet, closeSheet, isOpen }}>
-      {children}
+      <View className="flex-1">{children}</View>
       <GlobalBottomSheet
         // Invoca a função a cada render — sempre conteúdo fresco
         content={contentFn?.fn() ?? null}

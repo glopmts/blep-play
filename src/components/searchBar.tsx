@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { memo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Platform,
   Text,
@@ -25,9 +26,10 @@ const SearchBar = memo(
     isSearching,
     onClear,
     colors,
-    placeholder = "Buscar músicas...",
+    placeholder = "Search songs...",
   }: SearchBarProps) => {
     const inputRef = useRef<TextInput>(null);
+    const { t } = useTranslation();
 
     return (
       <View className="px-4">
@@ -86,7 +88,7 @@ const SearchBar = memo(
                 color: colors.text_gray,
               }}
             >
-              Buscando...
+              {t("search.feedback.loading")}
             </Text>
           </View>
         )}

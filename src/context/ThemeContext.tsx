@@ -2,17 +2,30 @@ import { useColorScheme } from "nativewind";
 import React, { createContext, ReactNode, useContext } from "react";
 import { Colors } from "../types/colors";
 
+type ColorSchemeValue = "light" | "dark" | "system";
+
 interface ThemeContextType {
   isDark: boolean;
   colors: Colors;
+  colorScheme: "light" | "dark" | undefined;
+  setColorScheme: (scheme: ColorSchemeValue) => void;
+
   toggleColorScheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const {
+    colorScheme,
+    toggleColorScheme,
+    setColorScheme: nativewindSet,
+  } = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  const setColorScheme = (scheme: ColorSchemeValue) => {
+    nativewindSet(scheme === "system" ? "system" : scheme);
+  };
 
   const colors: Colors = {
     background: isDark ? "#0A0A0C" : "#ffffff",
@@ -30,6 +43,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     icon: isDark ? "#a1a1aa" : "#71717a",
     iconActive: isDark ? "#A6FF4D" : "#18181b",
     primary: "#A6FF4D",
+    bluer: "#3b82f6",
     primary_strong: "#8CFF3F",
     secondary: isDark ? "#8b5cf6" : "#7c3aed",
     success: isDark ? "#10b981" : "#059669",
@@ -47,7 +61,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, colors, toggleColorScheme }}>
+    <ThemeContext.Provider
+      value={{ isDark, colors, toggleColorScheme, colorScheme, setColorScheme }}
+    >
       {children}
     </ThemeContext.Provider>
   );

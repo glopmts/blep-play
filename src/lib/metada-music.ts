@@ -1,30 +1,30 @@
 export const METADATA_MUSIC = [
   {
-    label: "Título",
+    labelKey: "music.metadata.title",
     value: "title",
   },
   {
-    label: "Artista",
+    labelKey: "music.metadata.artist",
     value: "artist",
   },
   {
-    label: "Álbum",
+    labelKey: "music.metadata.album",
     value: "album",
   },
   {
-    label: "Gênero",
+    labelKey: "music.metadata.genre",
     value: "genre",
   },
   {
-    label: "Ano",
+    labelKey: "music.metadata.year",
     value: "year",
   },
   {
-    label: "Faixa",
+    labelKey: "music.metadata.track",
     value: "track",
   },
   {
-    label: "Pasta",
+    labelKey: "music.metadata.filePath",
     value: "filePath",
   },
 ];

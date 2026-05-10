@@ -3,6 +3,7 @@ import NetInfo from "@react-native-community/netinfo";
 import * as Clipboard from "expo-clipboard";
 import { Copy, CopyCheck } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Animated,
@@ -58,6 +59,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
   const [error, setError] = useState<string | null>(null);
   const { colors, isDark } = useTheme();
   const [isCopying, setIsCopying] = useState(false);
+  const { t } = useTranslation();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
@@ -302,7 +304,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
                 fontWeight: "500",
               }}
             >
-              Buscando letra…
+              {t("lyrics.feedback.loading")}
             </Text>
           </View>
         )}
@@ -328,7 +330,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
                 marginBottom: 4,
               }}
             >
-              ⚠️ Erro ao carregar
+              ⚠️ {t("text.feedback.errorload")}
             </Text>
             <Text style={{ fontSize: 13, color: "#F87171", lineHeight: 20 }}>
               {error}
@@ -347,7 +349,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
               <Text
                 style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF" }}
               >
-                Tentar novamente
+                {t("text.feedback.refresh")}
               </Text>
             </TouchableOpacity>
           </Animated.View>
@@ -373,7 +375,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
                 textAlign: "center",
               }}
             >
-              Letra não disponível
+              {t("lyrics.unavailablelyrics")}
             </Text>
             <Text
               style={{
@@ -384,7 +386,7 @@ const LyricPlayerSong = ({ track }: InterfaceLyric) => {
                 maxWidth: 220,
               }}
             >
-              Não encontramos a letra para esta música no momento.
+              {t("lyrics.unavailable")}
             </Text>
           </Animated.View>
         )}

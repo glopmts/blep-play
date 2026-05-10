@@ -6,6 +6,7 @@ export interface Colors {
   card: string;
   cardMuted: string;
   text: string;
+  bluer: string;
   textMuted: string;
   border: string;
   indicator: string;

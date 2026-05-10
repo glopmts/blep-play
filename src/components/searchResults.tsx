@@ -1,5 +1,6 @@
 import SongCard from "@/components/cards/song-card";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { FlatList, Text, View } from "react-native";
 import { Colors } from "../types/colors";
 import ActivityIndicatorCustom from "./activityIndicator-Custom";
@@ -25,8 +26,10 @@ const SearchResults = ({
   isSearching,
   searchQuery,
 }: SearchResultsProps) => {
+  const { t } = useTranslation();
+
   if (isSearching) {
-    return <ActivityIndicatorCustom text="Buscando..." />;
+    return <ActivityIndicatorCustom text={t("search.feedback.loading")} />;
   }
 
   if (searchQuery.length > 0 && results.length === 0) {
@@ -34,10 +37,10 @@ const SearchResults = ({
       <View className="flex-1 items-center justify-center py-10">
         <Ionicons name="search-outline" size={60} color={colors.input} />
         <Text className={`text-lg font-semibold mt-4 text`}>
-          Nenhum resultado encontrado
+          {t("search.feedback.noresult")}
         </Text>
         <Text className={`text-sm mt-2 text-gary`}>
-          Tente buscar por título, artista ou álbum
+          {t("search.feedback.tips")}
         </Text>
       </View>
     );

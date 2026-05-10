@@ -1,6 +1,10 @@
+import ActivityIndicatorCustom from "@/components/activityIndicator-Custom";
+import EmptyState from "@/components/empty-state";
 import LyricPlayerSong from "@/components/lyric-player";
+import { Button } from "@/components/ui/button";
 import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
+import { usePipMusic } from "@/hooks/usePipMusic";
 import { usePlayer } from "@/hooks/usePlayer";
 import { formatTime } from "@/utils/formaTS/formatTimeSong";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
@@ -9,11 +13,11 @@ import { Slider } from "@miblanchard/react-native-slider";
 import { ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Music } from "lucide-react-native";
+import { Music, PictureInPicture } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
-  Dimensions,
   Platform,
   StyleSheet,
   Text,
@@ -21,9 +25,6 @@ import {
   View,
 } from "react-native";
 import TrackPlayer, { RepeatMode, Track } from "react-native-track-player";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const ARTWORK_SIZE = SCREEN_WIDTH - 64;
 
 export default function PlayerScreen() {
   const { isDark, colors } = useTheme();
@@ -46,6 +47,9 @@ export default function PlayerScreen() {
   const [isReady, setIsReady] = useState(!!currentTrack);
   const hasLoadedRef = useRef(false);
   const { openSheet, closeSheet } = useBottomSheet();
+  const [delay, setDelay] = useState(true);
+  const { handlePip } = usePipMusic();
+  const { t } = useTranslation();
 
   const { uri, fileName, artist, album, artworkUri } = useLocalSearchParams<{
     uri?: string;
@@ -86,39 +90,31 @@ export default function PlayerScreen() {
     handleDeepLink().catch(console.error);
   }, [uri]);
 
-  if (!currentTrack || !isReady) {
+  /// Delay player loader
+  useEffect(() => {
+    if ((hasLoadedRef.current = true)) {
+      setTimeout(() => {
+        setDelay(false);
+      }, 200);
+    }
+  }, []);
+
+  if (!currentTrack || !isReady || delay) {
     return (
       <View
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         style={{
           backgroundColor: colors.background,
         }}
       >
-        <Text className="text">Nenhuma música selecionada</Text>
-        <TouchableOpacity
-          onPress={() =>
-            router.canGoBack()
-              ? router.back()
-              : router.replace("/(main)/(tabs)")
-          }
-          className="mt-4 px-6 py-3 bg-zinc-700 rounded-xl"
-        >
-          <Text className="text text-lg">Voltar</Text>
-        </TouchableOpacity>
+        <ActivityIndicatorCustom isImage={true} />
       </View>
     );
   }
 
   if (!currentTrack || !isReady) {
     return (
-      <View
-        className="flex-1 items-center justify-center"
-        style={{
-          backgroundColor: colors.background,
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <EmptyState title={t("music.notFound")} onAction={() => router.back()} />
     );
   }
 
@@ -223,7 +219,7 @@ export default function PlayerScreen() {
 
                 <View className="items-center">
                   <Text className="text-white text-base text-center uppercase tracking-widest font-medium">
-                    Tocando agora
+                    {t("player.feedback.current")}
                   </Text>
                   <Text className="text-zinc-300 text-base text-center uppercase tracking-widest font-medium">
                     {currentTrack.title || ""}
@@ -246,17 +242,26 @@ export default function PlayerScreen() {
       </View>
 
       {/* Info */}
-      <View className="px-8 mt-8">
-        <Text
-          className="text text-2xl font-bold"
-          numberOfLines={1}
-          style={{ letterSpacing: -0.5 }}
-        >
-          {currentTrack.title}
-        </Text>
-        <Text className="text text-base mt-1" numberOfLines={1}>
-          {currentTrack.artist}
-        </Text>
+      <View className="flex-row justify-between items-center">
+        <View className="px-8 mt-8">
+          <Text
+            className="text text-2xl font-bold"
+            numberOfLines={1}
+            style={{ letterSpacing: -0.5 }}
+          >
+            {currentTrack.title}
+          </Text>
+          <Text className="text text-base mt-1" numberOfLines={1}>
+            {currentTrack.artist}
+          </Text>
+        </View>
+        <View className="px-8">
+          <Button
+            onPress={handlePip}
+            variant="outline"
+            icon={<PictureInPicture size={20} color={colors.icon} />}
+          ></Button>
+        </View>
       </View>
 
       {/* Progress */}

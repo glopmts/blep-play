@@ -1,3 +1,4 @@
+import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system/legacy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
@@ -23,6 +24,8 @@ export function usePlaylists(id?: string | null) {
   const [isLoading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [playlist, setPlaylist] = useState<Playlists | null>(null);
+  const [title, setTitle] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
 
   const operationInProgress = useRef(false);
 
@@ -373,15 +376,40 @@ export function usePlaylists(id?: string | null) {
     fetchData();
   }, [id]);
 
+  const handleOpenCreateModal = () => {
+    setTitle("");
+    setModalVisible((prev) => !prev);
+  };
+
+  const handleCreatePlaylists = () => {
+    if (!title.trim()) {
+      return Alert.alert("Campo obrigatório", "Dê um nome à sua playlist.");
+    }
+    handleCreatePlaylist({
+      id: Crypto.randomUUID(),
+      title: title.trim(),
+      songs: [],
+    });
+    setModalVisible(false);
+    setTitle("");
+  };
+
   return {
     // Estado
     playlists,
     isLoading,
     refreshing,
     playlist,
+    title,
+    modalVisible,
+
     // Ações
+    setTitle,
+    setModalVisible,
     loadAll,
+    handleOpenCreateModal,
     handleRefresh,
+    handleCreatePlaylists,
     handleCreatePlaylist,
     handleDeletePlaylist,
     handleClearPlaylists,

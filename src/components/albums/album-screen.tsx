@@ -9,7 +9,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 import BottomSheetAlbumDetails from "../bottom-sheet/BottomSheetAlbumDetails";
 import SkeletonLoadingAlbum from "../loading-skeleton-album";
-import AlbumCard from "./LocalAlbumCard";
+import AlbumCard from "./local-album-card";
 
 interface ALlbumScreen {
   horizontal?: boolean;

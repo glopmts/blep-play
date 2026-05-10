@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { Camera, ListMusicIcon, Trash2Icon } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -39,6 +40,7 @@ const PlayListDetails = () => {
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
   const [isUpdatingImage, setIsUpdatingImage] = useState(false);
   const { openSheet, closeSheet } = useBottomSheet();
+  const { t } = useTranslation();
 
   const { pickImage } = SelectPlaylistImagePicker();
 
@@ -70,7 +72,7 @@ const PlayListDetails = () => {
 
       const localImagePath = await savePlaylistImage(id, result.uri);
       if (!localImagePath) {
-        Alert.alert("Erro", "Não foi possível salvar a imagem");
+        Alert.alert(t("common.error"), t("cover.feedback.error"));
         return;
       }
 
@@ -79,14 +81,14 @@ const PlayListDetails = () => {
       });
 
       if (updated) {
-        showPlatformMessage("Capa da playlist atualizada!");
+        showPlatformMessage(t("cover.feedback.coverplaylist"));
         await handleRefresh();
       } else {
-        showPlatformMessage("Não foi possível atualizar a playlist");
+        showPlatformMessage(t("cover.feedback.errorcoverplaylist"));
       }
     } catch (error) {
       console.error("[handleSelectImageThumb] Erro:", error);
-      Alert.alert("Erro", "Ocorreu um erro ao atualizar a imagem");
+      Alert.alert(t("common.error"), t("cover.actions.erroupdate"));
     } finally {
       setIsUpdatingImage(false);
     }
@@ -102,7 +104,7 @@ const PlayListDetails = () => {
   const handleRemoveImage = useCallback(async () => {
     if (!playlist?.coverArt) return;
 
-    Alert.alert("Remover capa", "Deseja remover a capa atual da playlist?", [
+    Alert.alert(t("cover.actions.remove"), t("cover.actions.removecover"), [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Remover",
@@ -115,7 +117,7 @@ const PlayListDetails = () => {
             const updated = await updatePlaylist(id, { coverArt: null });
 
             if (updated) {
-              Alert.alert("Sucesso", "Capa removida!");
+              Alert.alert(t("common.sucess"), t("cover.actions.ok"));
               handleRefresh();
             }
           } catch (error) {
@@ -164,11 +166,13 @@ const PlayListDetails = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1">
         <ActivityIndicatorCustom />
       </View>
     );
   }
+
+  const cover = playlist?.coverArt ?? "";
 
   return (
     <LayoutWithHeader
@@ -189,9 +193,9 @@ const PlayListDetails = () => {
 
         {playlist?.id ? (
           <View style={{ width: "100%", height: IMAGE_SIZE_BACKGROUND }}>
-            {playlist?.customCoverArt && playlist?.coverArt ? (
+            {cover ? (
               <ImageBackground
-                source={{ uri: playlist.coverArt || playlist.customCoverArt }}
+                source={{ uri: cover }}
                 style={{
                   flex: 1,
                   borderBottomEndRadius: 20,
@@ -253,7 +257,7 @@ const PlayListDetails = () => {
                         color={isDark ? "#ffffff" : "#27272a"}
                       />
                       <Text className="text-center text-gray-500 dark:text-gray-400 mt-2">
-                        Toque para adicionar capa
+                        {t("cover.actions.add")}
                       </Text>
                     </>
                   )}
@@ -263,7 +267,7 @@ const PlayListDetails = () => {
           </View>
         ) : (
           <View className="flex-1 items-center justify-center">
-            <Text className="text">Playlist não encontrada!</Text>
+            <Text className="text">{t("playlist.empty")}</Text>
           </View>
         )}
 
@@ -288,7 +292,7 @@ const PlayListDetails = () => {
           ) : (
             <View className="flex-1 items-center justify-center mt-6">
               <Text className="text-center text-gray-500 dark:text-gray-400">
-                Nenhuma música encontrada nesta playlist
+                {t("playlist.emptyMusics")}
               </Text>
             </View>
           )}

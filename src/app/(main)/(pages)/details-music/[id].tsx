@@ -32,6 +32,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Platform,
@@ -48,7 +49,7 @@ const DetailsMusic = () => {
 
   const { playerHeight } = usePlayerHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { playlists, handleAddSongToPlaylist, handleRemoveSongFromPlaylist } =
+  const { playlists, handleRemoveSongFromPlaylist, handleAddSongToPlaylist } =
     usePlaylists();
   const { error, loading, musicDetails, loadingLyrics } = useMusicDetails(
     id ? String(id) : "",
@@ -64,6 +65,7 @@ const DetailsMusic = () => {
     musicDetails?.filePath || "",
     musicDetails?.id,
   );
+  const { t } = useTranslation();
 
   const pathname = usePathname();
   const isOnPage = ["player", "details-music", "details-album"].some((p) =>
@@ -138,8 +140,10 @@ const DetailsMusic = () => {
               );
             })
           ) : (
-            <View className="items-center justify-center">
-              <Text className="text text-zinc-300">Nenhuma Playlist</Text>
+            <View className="items-center flex-1 justify-center">
+              <Text className="text text-center text-zinc-300">
+                {t("playlist.empty")}
+              </Text>
             </View>
           )}
         </View>
@@ -153,12 +157,13 @@ const DetailsMusic = () => {
       colors,
     ],
   );
+
   //  ^ selectedSong removido das deps — recebe via parâmetro agora
 
   const handleOpenBottomSheet = useCallback(
     (item: TrackDetails) => {
       openSheet({
-        snapPoints: ["60%"],
+        snapPoints: ["30%", "50%"],
         content: () => getBottomSheetContent(item), // ← currying com item atual
       });
     },
@@ -170,10 +175,11 @@ const DetailsMusic = () => {
     setIsCopying(true);
     try {
       await Clipboard.setStringAsync(lyrics);
-      showPlatformMessage("Letra copiada para a área de transferência!");
+      showPlatformMessage(t("lyrics.feedback.copied"));
       setTimeout(() => setIsCopying(false), 5000);
     } catch (error) {
       console.error("Erro ao copiar letra:", error);
+      showPlatformMessage(t("lyrics.feedback.copyError"));
       setIsCopying(false);
     }
   }, []);
@@ -211,12 +217,12 @@ const DetailsMusic = () => {
         <View className="dark:bg-zinc-800 bg-zinc-200 p-6 rounded-2xl">
           <Music size={48} color={isDark ? "#71717a" : "#a1a1aa"} />
         </View>
-        <Text className="text-1">Música não encontrada</Text>
+        <Text className="text-1">{t("music.notFound")}</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           className="mt-2 px-6 py-3 bg-blue-500 rounded-xl"
         >
-          <Text className="text-white font-semibold">Voltar</Text>
+          <Text className="text-white font-semibold">{t("common.back")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -258,7 +264,7 @@ const DetailsMusic = () => {
                 colors={["rgba(0,0,0,0.15)", "rgba(0,0,0,0.92)"]}
                 style={StyleSheet.absoluteFill}
               />
-              <HeroContent musicDetails={musicDetails} />
+              <HeroContent musicDetails={musicDetails} t={t} />
             </ImageBackground>
           ) : (
             <View className="flex-1 dark:bg-zinc-800 bg-zinc-200 items-center justify-center">
@@ -271,7 +277,7 @@ const DetailsMusic = () => {
               <View className="dark:bg-zinc-700 bg-zinc-300 p-8 rounded-3xl mb-6">
                 <Album size={56} color={isDark ? "#52525b" : "#a1a1aa"} />
               </View>
-              <HeroContent musicDetails={musicDetails} noImage />
+              <HeroContent musicDetails={musicDetails} noImage t={t} />
             </View>
           )}
           <BackButton
@@ -303,7 +309,9 @@ const DetailsMusic = () => {
                     <Play size={16} color="#fff" />
                   )}
                   <Text className="btn-play-text">
-                    {isPlaying ? "Pausar" : "Tocar música"}
+                    {isPlaying
+                      ? `${t("player.feedback.current")}`
+                      : `${t("player.feedback.playe")}`}
                   </Text>
                 </>
               )}
@@ -314,7 +322,7 @@ const DetailsMusic = () => {
               activeOpacity={0.85}
             >
               <Trash2 size={16} color="#f87171" />
-              <Text className="btn-delete-text">Excluir</Text>
+              <Text className="btn-delete-text">{t("common.delete")}</Text>
             </TouchableOpacity>
           </View>
 
@@ -325,7 +333,7 @@ const DetailsMusic = () => {
                 <View className="detail-card-icon-wrap">
                   <Info size={14} color="#3b82f6" />
                 </View>
-                <Text className="detail-card-title">Detalhes</Text>
+                <Text className="detail-card-title">{t("common.details")}</Text>
               </View>
             </View>
 
@@ -343,7 +351,7 @@ const DetailsMusic = () => {
                       : "",
                   ].join(" ")}
                 >
-                  <Text className="meta-label">{item.label}</Text>
+                  <Text className="meta-label">{t(item.labelKey)}</Text>
                   <Text className="meta-value" numberOfLines={1}>
                     {String(value)}
                   </Text>
@@ -353,7 +361,7 @@ const DetailsMusic = () => {
 
             {/* Linha extra: arquivo + duração */}
             <View className="meta-row">
-              <Text className="meta-label">Arquivo</Text>
+              <Text className="meta-label">{t("common.file")}</Text>
               <Text className="meta-value">
                 {musicDetails.title?.split(".").pop()?.toUpperCase()} •{" "}
                 {formatDuration(musicDetails.duration)}
@@ -368,7 +376,7 @@ const DetailsMusic = () => {
                 <View className="detail-card-icon-wrap">
                   <TextInitialIcon size={14} color="#3b82f6" />
                 </View>
-                <Text className="detail-card-title">Letra</Text>
+                <Text className="detail-card-title">{t("lyrics.title")}</Text>
               </View>
 
               {musicDetails.lyrics && (
@@ -400,14 +408,14 @@ const DetailsMusic = () => {
                 </Text>
                 <TouchableOpacity onPress={toggleSeeMore}>
                   <Text className="lyrics-see-more">
-                    {seeMore ? "Ver menos" : "Ver mais"}
+                    {seeMore
+                      ? `${t("text.feedback.seeless")}`
+                      : `${t("text.feedback.seemore")}`}
                   </Text>
                 </TouchableOpacity>
               </>
             ) : (
-              <Text className="lyrics-empty">
-                Letra não disponível para esta música.
-              </Text>
+              <Text className="lyrics-empty">{t("lyrics.unavailable")}</Text>
             )}
           </View>
         </View>
@@ -420,16 +428,18 @@ const DetailsMusic = () => {
 function HeroContent({
   musicDetails,
   noImage = false,
+  t,
 }: {
   musicDetails: any;
   noImage?: boolean;
+  t: any;
 }) {
   return (
     <View className={`hero-info ${noImage ? "relative bottom-0 mt-4" : ""}`}>
       {!noImage && (
         <View className="hero-badge">
           <View className="hero-dot" />
-          <Text className="hero-badge-text">Música</Text>
+          <Text className="hero-badge-text">{t("music.title")}</Text>
         </View>
       )}
       <Text className="hero-title" numberOfLines={2}>

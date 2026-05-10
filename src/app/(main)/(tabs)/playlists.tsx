@@ -8,7 +8,6 @@ import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { Playlists as Playlist } from "@/types/interfaces";
-import * as Crypto from "expo-crypto";
 import { router } from "expo-router";
 import {
   ArrowRight,
@@ -20,7 +19,6 @@ import {
 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import {
-  Alert,
   FlatList,
   Pressable,
   Text,
@@ -33,36 +31,20 @@ const Playlists = () => {
   const {
     playlists,
     isLoading,
-    handleCreaterPlaylist,
-    handleClearPlaylists,
+    modalVisible,
+    title,
+    setTitle,
+    setModalVisible,
+    handleCreatePlaylists,
+    handleOpenCreateModal,
     handleDeletePlaylist,
     handleRefresh,
     refreshing,
   } = usePlaylists();
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [title, setTitle] = useState("");
   const [activeTab, setActiveTab] =
     useState<NaveItem["id"]>("minhas-playlists");
   const { openSheet, closeSheet } = useBottomSheet();
-
-  const handleOpenCreateModal = () => {
-    setTitle("");
-    setModalVisible((prev) => !prev);
-  };
-
-  const handleCreatePlaylist = () => {
-    if (!title.trim()) {
-      return Alert.alert("Campo obrigatório", "Dê um nome à sua playlist.");
-    }
-    handleCreaterPlaylist({
-      id: Crypto.randomUUID(),
-      title: title.trim(),
-      songs: [],
-    });
-    setModalVisible(false);
-    setTitle("");
-  };
 
   const handlePlaylistDetails = (id: string) => {
     router.navigate({
@@ -176,7 +158,7 @@ const Playlists = () => {
           onClose={() => setModalVisible(false)}
           title={title}
           setTitle={setTitle}
-          onConfirm={handleCreatePlaylist}
+          onConfirm={handleCreatePlaylists}
         />
       </>
     );
@@ -316,7 +298,7 @@ const Playlists = () => {
         onClose={() => setModalVisible(false)}
         title={title}
         setTitle={setTitle}
-        onConfirm={handleCreatePlaylist}
+        onConfirm={handleCreatePlaylists}
       />
     </LayoutWithHeader>
   );

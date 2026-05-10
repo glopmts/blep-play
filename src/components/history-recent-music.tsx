@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { EllipsisVertical, History, Music, Trash2 } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -120,6 +121,7 @@ const HistoryRecentMusic = () => {
   const { currentTrack, playSongs, togglePlayPause } = usePlayer();
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
   const { isDark, colors } = useTheme();
+  const { t } = useTranslation();
 
   const handleSongPress = useCallback(
     async (index: number, songId: string) => {
@@ -161,7 +163,7 @@ const HistoryRecentMusic = () => {
               <History size={24} color={colors.icon} />
             </View>
           </View>
-          <Text className="text">Músicas Recente</Text>
+          <Text className="text">{t("music.recent")}</Text>
           <Text className="text-xs text-zinc-400">({recents.length})</Text>
         </View>
         {recents.length > 1 && (
@@ -185,7 +187,7 @@ const HistoryRecentMusic = () => {
             <History size={40} color={colors.icon} />
           </View>
           <Text className="text text-lg text-zinc-400 mt-3">
-            Nenhuma música recente.
+            {t("music.norecent")}
           </Text>
           <TouchableOpacity
             className="btn mt-4 border dark:border-zinc-600"
@@ -194,7 +196,7 @@ const HistoryRecentMusic = () => {
             {loading ? (
               <ActivityIndicator size={20} color={colors.iconActive} />
             ) : (
-              <Text className="text-white text-xl">Recarregar pagina</Text>
+              <Text className="text-white text-xl">{t("text.refesh")}</Text>
             )}
           </TouchableOpacity>
         </View>

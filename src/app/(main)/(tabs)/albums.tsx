@@ -1,4 +1,4 @@
-import AlbumCard from "@/components/albums/LocalAlbumCard";
+import AlbumCard from "@/components/albums/local-album-card";
 import BottomSheetAlbumDetails from "@/components/bottom-sheet/BottomSheetAlbumDetails";
 import Header from "@/components/header";
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";

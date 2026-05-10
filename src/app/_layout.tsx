@@ -8,7 +8,7 @@ import { I18nextProvider } from "react-i18next";
 import { NativeModules } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import i18n from "../../i18next/i18next";
+import i18n from "../../i18next/i18n.ts";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { LibrarySettingsProvider } from "../context/LibrarySettingsContext";

@@ -10,6 +10,7 @@ import {
   Database,
   Download,
   FileMusicIcon,
+  PaintbrushIcon,
   Settings,
 } from "lucide-react-native";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -56,6 +57,16 @@ const Configurations = () => {
     },
     {
       id: 3,
+      label: "Preferencias App",
+      description:
+        "Gerencia suas preferecias dentro app, linguagem, thema etc..",
+      icon: PaintbrushIcon,
+      action: () => {
+        router.navigate("/(main)/(pages)/app-config-preferenc");
+      },
+    },
+    {
+      id: 4,
       label: "Gerenciar dados em cache",
       description: "Gerencie todos os dados armazenado em caches.",
       icon: Database,
@@ -64,7 +75,7 @@ const Configurations = () => {
       },
     },
     {
-      id: 4,
+      id: 5,
       label: "Verifica atualização App",
       description: "Clique aqui para verificar se há novas atualizações",
       infor: `v${Application.nativeApplicationVersion}`,
@@ -84,38 +95,6 @@ const Configurations = () => {
         contentContainerStyle={{ paddingBottom: 30 }}
       >
         <View className="px-4 pt-4">
-          {/* Switch de tema */}
-          <View
-            className="flex-row items-center justify-between p-4 rounded-2xl mb-6"
-            style={{ backgroundColor: colors.card }}
-          >
-            <View className="flex-1">
-              <Text
-                className="text-base font-semibold mb-1"
-                style={{ color: colors.text }}
-              >
-                Tema escuro
-              </Text>
-              <Text className="text-sm" style={{ color: colors.textMuted }}>
-                Alterar entre tema claro e escuro
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={toggleColorScheme}
-              className="w-12 h-6 rounded-full justify-center px-1"
-              style={{
-                backgroundColor: isDark ? colors.primary : colors.border,
-              }}
-            >
-              <View
-                className="w-4 h-4 rounded-full bg-white"
-                style={{
-                  transform: [{ translateX: isDark ? 20 : 0 }],
-                }}
-              />
-            </TouchableOpacity>
-          </View>
-
           {/* Opções de navegação */}
           <View className="gap-3">
             {NAVE_OPTIONS.map((option) => (

@@ -6,18 +6,17 @@ import pt from "./locales/pt";
 
 export const lng = getLocales()[0].languageCode ?? "en";
 
-const resources = {
-  en,
-  pt,
-};
-
 i18n.use(initReactI18next).init({
-  resources,
-  lng,
-
-  interpolation: {
-    escapeValue: false, // react already safes from xss
+  resources: {
+    en: { translation: en },
+    pt: { translation: pt },
   },
+  lng,
+  fallbackLng: "en",
+  interpolation: {
+    escapeValue: false,
+  },
+  compatibilityJSON: "v4",
 });
 
 export default i18n;

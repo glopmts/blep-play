@@ -30,9 +30,7 @@
         ],
         "LSSupportsOpeningDocumentsInPlace": true,
         "UIFileSharingEnabled": true,
-        "UIBackgroundModes": [
-          "audio"
-        ]
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
@@ -56,10 +54,7 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": [
-            "DEFAULT",
-            "BROWSABLE"
-          ],
+          "category": ["DEFAULT", "BROWSABLE"],
           "data": [
             {
               "mimeType": "audio/*"
@@ -86,9 +81,7 @@
         },
         {
           "action": "SEND",
-          "category": [
-            "DEFAULT"
-          ],
+          "category": ["DEFAULT"],
           "data": [
             {
               "mimeType": "audio/*"
@@ -130,10 +123,7 @@
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
           "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos.",
           "isAccessMediaLocationEnabled": true,
-          "granularPermissions": [
-            "audio",
-            "photo"
-          ]
+          "granularPermissions": ["audio", "photo"]
         }
       ],
       [
@@ -185,7 +175,17 @@
       ],
       [
         "expo-pip",
-        {}
+        {
+          "android": {
+            "enablePip": true
+          },
+          "icons": [
+            "./assets/icon/play.png",
+            "./assets/icon/pause.png",
+            "./assets/icon/skip_next.png",
+            "./assets/icon/skip_previous.png"
+          ]
+        }
       ],
       "expo-localization"
     ],

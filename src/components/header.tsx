@@ -1,60 +1,50 @@
 import { Image } from "expo-image";
 import { usePathname } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
+import { Translations } from "../../i18next/locales/en";
 import { useTheme } from "../context/ThemeContext";
 
+type HeaderKey = keyof Translations["header"];
+
+// Mapa de rota → chave i18n (sem barras)
+const ROUTE_MAP: Record<string, HeaderKey> = {
+  "/": "home",
+  "/playlists": "playlists",
+  "/albums": "albums",
+  "/configurations": "configurations",
+};
+
+function getGreetingKey(): keyof Translations["greeting"] {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  return "night";
+}
+
 const Header = () => {
-  const { isDark, colors } = useTheme();
+  const { colors } = useTheme();
   const pathname = usePathname();
-  const [greeting, setGreeting] = useState("");
+  const { t } = useTranslation();
+  const [greetingKey, setGreetingKey] = useState(getGreetingKey);
 
-  // Atualiza a saudação em tempo real
+  // Atualiza a saudação via i18n a cada minuto
   useEffect(() => {
-    const updateGreeting = () => {
-      const currentHour = new Date().getHours();
-      if (currentHour >= 5 && currentHour < 12) setGreeting("Bom dia 👋");
-      else if (currentHour >= 12 && currentHour < 18)
-        setGreeting("Boa tarde 👋 ");
-      else setGreeting("Boa noite 👋");
-    };
-
-    updateGreeting();
-    const interval = setInterval(updateGreeting, 60000); // Atualiza a cada minuto
-
+    const interval = setInterval(() => {
+      setGreetingKey(getGreetingKey());
+    }, 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  // Define o conteúdo baseado na página
-  const getHeaderContent = () => {
-    const pageMap = {
-      "/": {
-        title: greeting,
-        subtitle: "Controle suas músicas em um único lugar",
-      },
-      "/playlists": {
-        title: "Playlists",
-        subtitle: "Suas playlists, do seu jeito",
-      },
-      "/albums": {
-        title: "Álbuns",
-        subtitle: "Crie e organize seus álbuns",
-      },
-      "/configurations": {
-        title: "Configurações",
-        subtitle: "Configurações geral app BlepPlay",
-      },
-    };
+  const headerKey: HeaderKey = ROUTE_MAP[pathname] ?? "default";
 
-    return (
-      pageMap[pathname as keyof typeof pageMap] || {
-        title: greeting,
-        subtitle: "Bem-vindo ao app",
-      }
-    );
-  };
+  const title = useMemo(() => {
+    if (headerKey === "home") return t(`greeting.${greetingKey}`);
+    return t(`header.${headerKey}.title`);
+  }, [headerKey, greetingKey, t]);
 
-  const content = getHeaderContent();
+  const subtitle = t(`header.${headerKey}.subtitle`);
 
   return (
     <View className="w-full p-5">
@@ -62,24 +52,21 @@ const Header = () => {
         <View className="flex flex-col gap-1 flex-1">
           <Text
             className="text-3xl font-bold"
-            style={{ color: colors?.text || "#000" }}
+            style={{ color: colors?.text ?? "#000" }}
           >
-            {content.title}
+            {title}
           </Text>
           <Text
             className="text-base"
-            style={{ color: colors?.text_gray || "#666" }}
+            style={{ color: colors?.text_gray ?? "#666" }}
           >
-            {content.subtitle}
+            {subtitle}
           </Text>
         </View>
         <Image
           source={require("../../assets/images/icon.png")}
           className="object-cover rounded-md"
-          style={{
-            width: 75,
-            height: 75,
-          }}
+          style={{ width: 75, height: 75 }}
         />
       </View>
     </View>
