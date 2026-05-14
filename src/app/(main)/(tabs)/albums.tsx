@@ -11,6 +11,7 @@ import { AlbumInterface } from "@/types/interfaces";
 import { router } from "expo-router";
 import { RefreshCw } from "lucide-react-native";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Dimensions,
@@ -58,9 +59,11 @@ const AlbumItem = memo(
 const ListFooterLoader = ({
   isLoading,
   colors,
+  t,
 }: {
   isLoading: boolean;
   colors: Colors;
+  t: any;
 }) => {
   if (!isLoading) return null;
 
@@ -68,7 +71,7 @@ const ListFooterLoader = ({
     <View className="py-8 items-center justify-center">
       <ActivityIndicator size="large" color={colors?.primary || "#3b82f6"} />
       <Text className="text-gray-500 dark:text-gray-400 mt-2">
-        Carregando mais álbuns...
+        {t("text.feedback.albumsload")}
       </Text>
     </View>
   );
@@ -89,6 +92,7 @@ const Albums = () => {
   const [hasMoreData, setHasMoreData] = useState(true);
   const [displayedAlbums, setDisplayedAlbums] = useState<AlbumInterface[]>([]);
   const { playSongs, currentTrack } = usePlayer();
+  const { t } = useTranslation();
 
   const itemsPerPage = 20; // Quantos itens carregar por vez
 
@@ -242,7 +246,7 @@ const Albums = () => {
             isSearching={isSearching}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            placeholder="Buscar album, artista..."
+            placeholder={t("search.feedback.albumsearch")}
           />
         </View>
         <View>
@@ -321,6 +325,7 @@ const Albums = () => {
                       <ListFooterLoader
                         isLoading={isLoadingMore}
                         colors={colors}
+                        t={t}
                       />
                     )
                   : undefined

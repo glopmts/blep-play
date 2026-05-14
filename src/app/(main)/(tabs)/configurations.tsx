@@ -13,10 +13,11 @@ import {
   PaintbrushIcon,
   Settings,
 } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const Configurations = () => {
-  const { colors, isDark, toggleColorScheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const {
     checkForUpdates,
     status,
@@ -29,6 +30,7 @@ const Configurations = () => {
     cancelDownload,
     dismissModal,
   } = useAppUpdater();
+  const { t } = useTranslation();
 
   const handleCheckForUpdates = async () => {
     await checkForUpdates();
@@ -37,52 +39,39 @@ const Configurations = () => {
   const NAVE_OPTIONS: NaveOptionsProps[] = [
     {
       id: 1,
-      label: "Biblioteca local",
-      description:
-        "Gerencia todos os dados armazenado no cache do dispositivo e pasta local audios.",
+      label: t("settings.options.localLibrary.label"),
+      description: t("settings.options.localLibrary.description"),
       icon: FileMusicIcon,
-      action: () => {
-        router.navigate("/(main)/(pages)/local-library");
-      },
+      action: () => router.navigate("/(main)/(pages)/local-library"),
     },
     {
       id: 2,
-      label: "Configuração de privacidade",
-      description:
-        "Gerencia suas configurações de privacidade e dados pessoais, notificações etc..",
+      label: t("settings.options.privacy.label"),
+      description: t("settings.options.privacy.description"),
       icon: Settings,
-      action: () => {
-        router.navigate("/(main)/(pages)/privacy-setting");
-      },
+      action: () => router.navigate("/(main)/(pages)/privacy-setting"),
     },
     {
       id: 3,
-      label: "Preferencias App",
-      description:
-        "Gerencia suas preferecias dentro app, linguagem, thema etc..",
+      label: t("settings.options.appPreferences.label"),
+      description: t("settings.options.appPreferences.description"),
       icon: PaintbrushIcon,
-      action: () => {
-        router.navigate("/(main)/(pages)/app-config-preferenc");
-      },
+      action: () => router.navigate("/(main)/(pages)/app-config-preferenc"),
     },
     {
       id: 4,
-      label: "Gerenciar dados em cache",
-      description: "Gerencie todos os dados armazenado em caches.",
+      label: t("settings.options.cacheManager.label"),
+      description: t("settings.options.cacheManager.description"),
       icon: Database,
-      action: () => {
-        router.navigate("/(main)/(pages)/cache-maneger");
-      },
+      action: () => router.navigate("/(main)/(pages)/cache-maneger"),
     },
     {
       id: 5,
-      label: "Verifica atualização App",
-      description: "Clique aqui para verificar se há novas atualizações",
+      label: t("settings.options.checkUpdate.label"),
+      description: t("settings.options.checkUpdate.description"),
       infor: `v${Application.nativeApplicationVersion}`,
       icon: Download,
-      action: () => {
-        handleCheckForUpdates();
-      },
+      action: () => handleCheckForUpdates(),
     },
   ];
 
@@ -95,7 +84,6 @@ const Configurations = () => {
         contentContainerStyle={{ paddingBottom: 30 }}
       >
         <View className="px-4 pt-4">
-          {/* Opções de navegação */}
           <View className="gap-3">
             {NAVE_OPTIONS.map((option) => (
               <TouchableOpacity
@@ -106,7 +94,6 @@ const Configurations = () => {
                 style={{ backgroundColor: colors.card }}
               >
                 <View className="flex-row items-center">
-                  {/* Ícone */}
                   <View
                     className="w-12 h-12 rounded-full items-center justify-center mr-3"
                     style={{ backgroundColor: isDark ? "#27272A" : "#E4E4E7" }}
@@ -119,7 +106,6 @@ const Configurations = () => {
                     )}
                   </View>
 
-                  {/* Conteúdo */}
                   <View className="flex-1">
                     <View className="flex-row items-center justify-between">
                       <Text
@@ -154,20 +140,19 @@ const Configurations = () => {
                     )}
                   </View>
 
-                  {/* Ícone de seta */}
                   <ChevronRight size={20} color={colors.textMuted} />
                 </View>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Seção adicional de suporte */}
+          {/* Seção de suporte */}
           <View className="mt-8">
             <Text
               className="text-sm font-semibold mb-3 uppercase tracking-wider"
               style={{ color: colors.textMuted }}
             >
-              Suporte
+              {t("settings.support.sectionTitle")}
             </Text>
 
             <TouchableOpacity
@@ -178,13 +163,13 @@ const Configurations = () => {
                 className="text-base font-medium"
                 style={{ color: colors.text }}
               >
-                Central de ajuda
+                {t("settings.support.helpCenter.label")}
               </Text>
               <Text
                 className="text-sm mt-1"
                 style={{ color: colors.textMuted }}
               >
-                Tire dúvidas e encontre soluções
+                {t("settings.support.helpCenter.description")}
               </Text>
             </TouchableOpacity>
 
@@ -196,13 +181,13 @@ const Configurations = () => {
                 className="text-base font-medium"
                 style={{ color: colors.text }}
               >
-                Termos e políticas
+                {t("settings.support.terms.label")}
               </Text>
               <Text
                 className="text-sm mt-1"
                 style={{ color: colors.textMuted }}
               >
-                Leia nossos termos de uso e política de privacidade
+                {t("settings.support.terms.description")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -214,7 +199,7 @@ const Configurations = () => {
             className="text-sm text-center"
             style={{ color: colors.textMuted }}
           >
-            Versão atual do app:
+            {t("settings.footer.currentVersion")}
           </Text>
           <Text
             className="text-sm font-medium text-center"
@@ -225,7 +210,6 @@ const Configurations = () => {
         </View>
       </ScrollView>
 
-      {/* Modal udpate app */}
       <UpdateModal
         visible={isUpdateModalVisible}
         status={status}
@@ -236,7 +220,7 @@ const Configurations = () => {
         onStartDownload={startDownload}
         onCancelDownload={cancelDownload}
         onDismiss={dismissModal}
-        onRetry={() => checkForUpdates(true)} // Recupera de erro
+        onRetry={() => checkForUpdates(true)}
       />
     </LayoutWithHeader>
   );

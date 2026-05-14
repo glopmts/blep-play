@@ -30,6 +30,20 @@ const pt = {
     },
   },
 
+  plalist: {
+    title: "Playlists",
+    empty: "Nenhuma playlist encontrada",
+    emptyMusics: "Nenhuma música nesta playlist",
+    notFound: "Playlist não encontrada",
+    actions: {
+      create: "Criar Playlist",
+      viewDetails: "Ver detalhes",
+      delete: "Excluir",
+      deleteplaylis: "Deletar playlist",
+      archive: "Arquivar",
+    },
+  },
+
   music: {
     title: "Música",
     notFound: "Música não encontrada",
@@ -85,6 +99,50 @@ const pt = {
 
   settings: {
     title: "Configurações",
+    subtitle: "Configurações gerais do app BlepPlay",
+
+    options: {
+      localLibrary: {
+        label: "Biblioteca local",
+        description:
+          "Gerencia todos os dados armazenado no cache do dispositivo e pasta local audios.",
+      },
+      privacy: {
+        label: "Configuração de privacidade",
+        description:
+          "Gerencia suas configurações de privacidade e dados pessoais, notificações etc..",
+      },
+      appPreferences: {
+        label: "Preferências App",
+        description:
+          "Gerencia suas preferências dentro app, linguagem, tema etc..",
+      },
+      cacheManager: {
+        label: "Gerenciar dados em cache",
+        description: "Gerencie todos os dados armazenado em caches.",
+      },
+      checkUpdate: {
+        label: "Verifica atualização App",
+        description: "Clique aqui para verificar se há novas atualizações",
+      },
+    },
+
+    support: {
+      sectionTitle: "Suporte",
+      helpCenter: {
+        label: "Central de ajuda",
+        description: "Tire dúvidas e encontre soluções",
+      },
+      terms: {
+        label: "Termos e políticas",
+        description: "Leia nossos termos de uso e política de privacidade",
+      },
+    },
+
+    footer: {
+      currentVersion: "Versão atual do app:",
+    },
+
     preferences: {
       title: "Preferências",
       theme: "Tema do App",
@@ -116,10 +174,24 @@ const pt = {
     feedback: {
       seeless: "Ver menos",
       seemore: "Ver mais",
+      seeall: "Ver todos",
+      viewdetails: "Ver detalhes",
       errorload: "Error ao carregar",
       refresh: "Tentar novamente",
+      albumsload: "Carregando mais álbuns...",
+      albumtitlehome: "Álbuns do Dispositivo",
+      totalsongs: "Total musicas",
     },
     refeshpage: "Recarregar pagina",
+  },
+
+  tabs: {
+    tabsselector: {
+      label1: "Pagina Inicial",
+      label2: "Lista musicas",
+      label3: "Minhas playlists",
+      label4: "Baixadas",
+    },
   },
 
   search: {
@@ -127,6 +199,7 @@ const pt = {
       getmusics: "Buscar músicas...",
       loading: "Buscando...",
       noresult: "Nenhum resultado encontrado",
+      albumsearch: "Buscar album, artista...",
       tips: "Tente buscar por título, artista ou álbum",
     },
   },

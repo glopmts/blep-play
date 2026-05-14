@@ -9,6 +9,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import { Playlists as Playlist } from "@/types/interfaces";
 import { router } from "expo-router";
+import { TFunction } from "i18next";
 import {
   ArrowRight,
   ChevronRight,
@@ -18,6 +19,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 import { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   FlatList,
   Pressable,
@@ -41,6 +43,7 @@ const Playlists = () => {
     handleRefresh,
     refreshing,
   } = usePlaylists();
+  const { t } = useTranslation();
 
   const [activeTab, setActiveTab] =
     useState<NaveItem["id"]>("minhas-playlists");
@@ -62,7 +65,7 @@ const Playlists = () => {
             <View className="flex-col gap-2">
               <Text className="text">{playlist.title}</Text>
               <Text className="text text-xl text-zinc-300">
-                Total musicas: {playlist.songs?.length || 0}
+                {t("text.feedback.totalsongs")}: {playlist.songs?.length || 0}
               </Text>
             </View>
           </View>
@@ -85,7 +88,7 @@ const Playlists = () => {
                   className="text-base font-medium"
                   style={{ color: colors.text }}
                 >
-                  Ver detalhes
+                  {t("text.feedback.viewdetails")}
                 </Text>
               </View>
               <ChevronRight size={18} color={colors.textMuted} />
@@ -113,7 +116,7 @@ const Playlists = () => {
                   className="text-base font-medium"
                   style={{ color: colors.danger_title }}
                 >
-                  Deletar playlist
+                  {t("plalist.actions.deleteplaylis")}
                 </Text>
               </View>
             </Pressable>
@@ -166,14 +169,16 @@ const Playlists = () => {
 
   const TabSelector = ({
     activeTab,
+    t,
     setActiveTab,
   }: {
     activeTab: string;
+    t: TFunction;
     setActiveTab: (tab: string) => void;
   }) => {
     const tabs = [
-      { id: "minhas-playlists", label: "Minhas playlists" },
-      { id: "baixadas", label: "Baixadas" },
+      { id: "minhas-playlists", label: t("tabs.tabsselector.label3") },
+      { id: "baixadas", label: t("tabs.tabsselector.label4") },
     ];
 
     return (
@@ -252,7 +257,11 @@ const Playlists = () => {
         <View className="flex-row items-center justify-between px-5 pt-5 pb-3 gap-3">
           {/* TabSelector - ocupa espaço restante */}
           <View className="flex-1">
-            <TabSelector activeTab={activeTab} setActiveTab={setActiveTab} />
+            <TabSelector
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              t={t}
+            />
           </View>
 
           {/* Botão Add - tamanho fixo */}
