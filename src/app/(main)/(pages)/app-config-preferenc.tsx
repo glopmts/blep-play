@@ -4,9 +4,10 @@ import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Globe, Moon, Smartphone, Sun } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, TouchableOpacity, View } from "react-native";
+import i18n from "../../../../i18next/i18n.ts";
 import { SUPPORTED_LANGUAGES } from "../../../../i18next/languages";
 
 type ColorScheme = "system" | "dark" | "light";
@@ -21,9 +22,14 @@ function LanguagesContent() {
   const { colors } = useTheme();
   const { i18n: i18nHook } = useTranslation();
 
+  useEffect(() => {
+    AsyncStorage.getItem("@lang").then((lang) => {
+      if (lang) i18n.changeLanguage(lang);
+    });
+  }, []);
+
   const handleSelect = async (code: string) => {
     await i18nHook.changeLanguage(code);
-    await AsyncStorage.setItem("@lang", code);
   };
 
   return (

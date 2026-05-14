@@ -148,6 +148,22 @@ const pt = {
       theme: "Tema do App",
       language: "Idioma do App",
     },
+
+    privacy: {
+      title: "Configurações avançadas",
+      bgUpdate: {
+        label: "Verificar atualizações automaticamente",
+        description: "Notifica quando uma nova versão estiver disponível",
+      },
+      notifications: {
+        label: "Notificações",
+        description: "Receber notificações no app?",
+      },
+      appCheck: {
+        label: "Verificação de atualizações app",
+        description: "Verifique automaticamente verificação de updates app",
+      },
+    },
   },
 
   player: {
@@ -181,6 +197,7 @@ const pt = {
       albumsload: "Carregando mais álbuns...",
       albumtitlehome: "Álbuns do Dispositivo",
       totalsongs: "Total musicas",
+      allsongs: "Totas as musicas",
     },
     refeshpage: "Recarregar pagina",
   },

@@ -46,7 +46,13 @@ export class MusicCache {
   async initialize(): Promise<void> {
     if (this.db) return;
     if (this.initPromise) return this.initPromise;
-    this.initPromise = this._init();
+
+    this.initPromise = this._init().catch((err) => {
+      // Reseta para permitir nova tentativa
+      this.initPromise = null;
+      throw err;
+    });
+
     return this.initPromise;
   }
 

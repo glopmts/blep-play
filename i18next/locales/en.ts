@@ -155,6 +155,22 @@ const en = {
       theme: "App Theme",
       language: "App Language",
     },
+
+    privacy: {
+      title: "Advanced Settings",
+      bgUpdate: {
+        label: "Automatically check for updates",
+        description: "Notifies when a new version is available",
+      },
+      notifications: {
+        label: "Notifications",
+        description: "Receive notifications in the app?",
+      },
+      appCheck: {
+        label: "App update check",
+        description: "Automatically verify app updates",
+      },
+    },
   },
 
   player: {
@@ -188,6 +204,7 @@ const en = {
       albumsload: "Loading more albums...",
       albumtitlehome: "Device Albums",
       totalsongs: "Total songs",
+      allsongs: "All songs",
     },
     refeshpage: "Reload page",
   },

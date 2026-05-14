@@ -1,4 +1,3 @@
-// PrivacySettings.tsx
 import { LayoutWithHeader } from "@/components/LayoutWithHeader";
 import { BackButton } from "@/components/black-button";
 import { useAppUpdaterContext } from "@/components/update/app-update-context";
@@ -12,6 +11,7 @@ import { Colors } from "@/types/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Bell, Download, RefreshCcwDot } from "lucide-react-native";
 import { ComponentType, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Text, View } from "react-native";
 import { Switch } from "react-native-gesture-handler";
 import {
@@ -38,6 +38,7 @@ const PrivacySettings = () => {
   const { colors } = useTheme();
   const [loading, setLoading] = useState(true);
   const { checkForUpdates } = useAppUpdaterContext();
+  const { t } = useTranslation();
 
   const [settings, setSettings] = useState<SettingsState>({
     bgUpdate: true,
@@ -113,22 +114,22 @@ const PrivacySettings = () => {
     icon?: ComponentType<{ size: number; color: string }>;
   }[] = [
     {
-      id: "bgUpdate",
+      id: "bgUpdate" as SettingKey,
       icon: RefreshCcwDot,
-      label: "Verificar atualizações automaticamente",
-      description: "Notifica quando uma nova versão estiver disponível",
+      label: t("settings.privacy.bgUpdate.label"),
+      description: t("settings.privacy.bgUpdate.description"),
     },
     {
-      id: "notifications",
-      label: "Notificações",
+      id: "notifications" as SettingKey,
       icon: Bell,
-      description: "Receber notificações no app?",
+      label: t("settings.privacy.notifications.label"),
+      description: t("settings.privacy.notifications.description"),
     },
     {
-      id: "appCheck",
+      id: "appCheck" as SettingKey,
       icon: Download,
-      label: "Verificação de atualizações app",
-      description: "Verifique automaticamente verificação de updates app",
+      label: t("settings.privacy.appCheck.label"),
+      description: t("settings.privacy.appCheck.description"),
     },
   ];
 
@@ -142,7 +143,7 @@ const PrivacySettings = () => {
         <View style={{ marginTop: 16 }} />
         <View className="p-3">
           <Text className="text text-2xl" style={{ color: colors.text }}>
-            Configurações avançadas
+            {t("settings.privacy.title")}
           </Text>
 
           <View className="mt-8 flex-col gap-4">

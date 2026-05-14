@@ -3,11 +3,13 @@ import { useTheme } from "@/context/ThemeContext";
 import { useMusics } from "@/hooks/music-hooks/useAllMusics";
 import { usePlayer } from "@/hooks/usePlayer";
 import { memo, useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import SongCard from "../cards/song-card";
 
 const AllMusicList = () => {
   const { activePaths, ready } = useLibrarySettingsContext();
+  const { t } = useTranslation();
 
   const { musics, loading, error, isRefresh, reload } = useMusics(
     ready ? activePaths : null,
@@ -47,9 +49,9 @@ const AllMusicList = () => {
       ) : (
         <>
           <View className="pb-4 p-4">
-            <Text className="text text-xl">Todas as musicas</Text>
+            <Text className="text text-xl">{t("text.feedback.allsongs")}</Text>
             <Text className="text text-zinc-400 text-base">
-              Total musicas: {musics.length || 0}
+              {t("text.feedback.totalsongs")} {musics.length || 0}
             </Text>
           </View>
           <FlatList
