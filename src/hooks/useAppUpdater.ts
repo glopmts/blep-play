@@ -4,6 +4,7 @@ import {
   updateStoredVersion,
 } from "@/services/updates/backgroundupdate.service";
 import NetInfo from "@react-native-community/netinfo";
+import * as Updates from "expo-updates";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clearUpdateCache,
@@ -216,6 +217,24 @@ export function useAppUpdater(
   // ─ Inicia download do APK
   const startDownload = useCallback(async () => {
     if (!updateInfo || isDownloading.current) return;
+
+    // Se for OTA, aplica via Expo Updates
+    if (updateInfo.updateType === "ota") {
+      try {
+        setStatus("downloading");
+        const result = await Updates.checkForUpdateAsync();
+        if (result.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync(); // reinicia o app com a nova versão
+        } else {
+          setStatus("up_to_date");
+        }
+      } catch (err: any) {
+        setStatus("error");
+        setErrorMessage(err?.message ?? "Erro ao aplicar OTA update");
+      }
+      return;
+    }
 
     if (isDevVersion(currentVersion)) {
       setErrorMessage(

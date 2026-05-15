@@ -185,6 +185,8 @@ export function UpdateModal({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { colors } = useTheme();
 
+  const isOta = updateInfo?.updateType === "ota";
+
   useEffect(() => {
     if (visible) {
       Animated.parallel([
@@ -380,11 +382,14 @@ export function UpdateModal({
                 className="bg-emerald-500 active:bg-emerald-600 rounded-2xl py-4 items-center"
               >
                 <Text className="text-white font-bold text-base">
-                  {isError ? "Tentar novamente" : "⬇️  Baixar agora"}
+                  {isError
+                    ? "Tentar novamente"
+                    : updateInfo?.updateType === "ota"
+                      ? "⚡ Atualizar agora"
+                      : "⬇️  Baixar agora"}
                 </Text>
               </Pressable>
             )}
-
             {/* Cancel during download */}
             {isDownloading && (
               <Pressable

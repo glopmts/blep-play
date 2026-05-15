@@ -83,11 +83,10 @@ export async function dbClearAllAlbums(): Promise<void> {
     await d.execAsync(
       "DELETE FROM albums_meta; DELETE FROM albums_numbers; DELETE FROM albums_list;",
     );
+    // ✅ não fecha a conexão após sucesso
   } catch (e) {
     console.warn("[dbClearAllAlbums] erro, resetando instância:", e);
-  } finally {
-    // Força nova conexão na próxima chamada
-    await resetAlbumsDb();
+    await resetAlbumsDb(); // só reseta se falhou
   }
 }
 

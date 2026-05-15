@@ -27,6 +27,7 @@ export interface GitHubRelease {
   draft: boolean;
   published_at: string;
   assets: GitHubAsset[];
+  updateType: "ota" | "native";
 }
 
 export interface UpdateInfo {
@@ -37,6 +38,7 @@ export interface UpdateInfo {
   publishedAt: string;
   releaseName: string;
   isPrerelease: boolean;
+  updateType: "ota" | "native";
 }
 
 interface CacheEntry {
@@ -169,6 +171,25 @@ export async function getUpdateInfo(
 ): Promise<UpdateInfo | null> {
   const release = await fetchLatestRelease(forceRefresh);
   const apk = findApkAsset(release.assets);
+
+  // Detecta tipo pelo body do release
+  const isOta = /update_type:\s*ota/i.test(release.body ?? "");
+  const updateType: "ota" | "native" = isOta ? "ota" : "native";
+
+  // Se é OTA, não precisa de APK
+  if (updateType === "ota") {
+    return {
+      latestVersion: normalizeVersion(release.tag_name),
+      releaseNotes: release.body || "Sem notas de versão.",
+      apkUrl: "",
+      apkSize: 0,
+      publishedAt: release.published_at,
+      releaseName: release.name || release.tag_name,
+      isPrerelease: release.prerelease,
+      updateType: "ota",
+    };
+  }
+
   if (!apk) return null;
 
   return {
@@ -179,5 +200,6 @@ export async function getUpdateInfo(
     publishedAt: release.published_at,
     releaseName: release.name || release.tag_name,
     isPrerelease: release.prerelease,
+    updateType: "native",
   };
 }

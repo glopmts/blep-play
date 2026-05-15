@@ -26,11 +26,28 @@
               "public.aac-audio",
               "public.flac-audio"
             ]
+          },
+          {
+            "CFBundleTypeName": "Audio File",
+            "LSHandlerRank": "Default",
+            "LSItemContentTypes": [
+              "public.mp3",
+              "public.mpeg-4-audio",
+              "public.audio",
+              "com.apple.m4a-audio",
+              "com.microsoft.waveform-audio",
+              "public.aiff-audio",
+              "public.aac-audio",
+              "public.flac-audio"
+            ]
           }
         ],
         "LSSupportsOpeningDocumentsInPlace": true,
         "UIFileSharingEnabled": true,
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": ["audio", "audio"]
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "android": {
@@ -47,7 +64,35 @@
         "READ_MEDIA_AUDIO",
         "CAMERA",
         "FOREGROUND_SERVICE",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_AUDIO",
+        "CAMERA",
+        "FOREGROUND_SERVICE",
+        "WAKE_LOCK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "predictiveBackGestureEnabled": false,
       "package": "com.glopblog.blepplay",
@@ -87,8 +132,45 @@
               "mimeType": "audio/*"
             }
           ]
+        },
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT", "BROWSABLE"],
+          "data": [
+            {
+              "mimeType": "audio/*"
+            },
+            {
+              "mimeType": "audio/mpeg"
+            },
+            {
+              "mimeType": "audio/mp4"
+            },
+            {
+              "mimeType": "audio/flac"
+            },
+            {
+              "mimeType": "audio/wav"
+            },
+            {
+              "mimeType": "audio/ogg"
+            },
+            {
+              "mimeType": "audio/aac"
+            }
+          ]
+        },
+        {
+          "action": "SEND",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "mimeType": "audio/*"
+            }
+          ]
         }
-      ]
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "output": "static",
@@ -198,6 +280,12 @@
       "eas": {
         "projectId": "444fcb6e-bf40-4668-9d79-f754753be4bb"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/444fcb6e-bf40-4668-9d79-f754753be4bb"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

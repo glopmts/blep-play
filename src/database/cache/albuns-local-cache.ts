@@ -77,6 +77,10 @@ export async function setCachedAlbumsList(
 }
 
 export async function invalidateAlbumsList(): Promise<void> {
-  const db = await getAlbumsDb();
-  await db.runAsync("DELETE FROM albums_list");
+  try {
+    const db = await getAlbumsDb();
+    await db.runAsync("DELETE FROM albums_list");
+  } catch (e) {
+    console.warn("[invalidateAlbumsList]", e);
+  }
 }

@@ -115,6 +115,7 @@ export function useMusics(activeFolderPaths: string[] | null) {
           ...t,
           coverArt: null,
         }));
+        musicCache.cacheMultipleTracks(withoutBase64);
         musicsRef.current = withoutBase64;
         setMusics(withoutBase64);
 
