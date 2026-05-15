@@ -2,7 +2,7 @@
   "expo": {
     "name": "BlepPlay",
     "slug": "blep-play",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
@@ -97,42 +97,6 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.glopblog.blepplay",
       "intentFilters": [
-        {
-          "action": "VIEW",
-          "category": ["DEFAULT", "BROWSABLE"],
-          "data": [
-            {
-              "mimeType": "audio/*"
-            },
-            {
-              "mimeType": "audio/mpeg"
-            },
-            {
-              "mimeType": "audio/mp4"
-            },
-            {
-              "mimeType": "audio/flac"
-            },
-            {
-              "mimeType": "audio/wav"
-            },
-            {
-              "mimeType": "audio/ogg"
-            },
-            {
-              "mimeType": "audio/aac"
-            }
-          ]
-        },
-        {
-          "action": "SEND",
-          "category": ["DEFAULT"],
-          "data": [
-            {
-              "mimeType": "audio/*"
-            }
-          ]
-        },
         {
           "action": "VIEW",
           "category": ["DEFAULT", "BROWSABLE"],
