@@ -196,7 +196,9 @@ const HistoryRecentMusic = () => {
             {loading ? (
               <ActivityIndicator size={20} color={colors.iconActive} />
             ) : (
-              <Text className="text-white text-xl">{t("text.refesh")}</Text>
+              <Text className="text-white text-xl">
+                {t("text.feedback.refresh")}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

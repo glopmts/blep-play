@@ -47,7 +47,6 @@ export default function PlayerScreen() {
   const [isReady, setIsReady] = useState(!!currentTrack);
   const hasLoadedRef = useRef(false);
   const { openSheet, closeSheet } = useBottomSheet();
-  const [delay, setDelay] = useState(true);
   const { handlePip } = usePipMusic();
   const { t } = useTranslation();
 
@@ -71,35 +70,30 @@ export default function PlayerScreen() {
   }, [currentTrack]);
 
   useEffect(() => {
-    if (!uri || hasLoadedRef.current) {
-      setIsReady(true);
+    if (!uri) {
+      if (currentTrack) setIsReady(true);
       return;
     }
+
+    if (hasLoadedRef.current) return;
 
     const handleDeepLink = async () => {
       hasLoadedRef.current = true;
       const decodedUri = decodeURIComponent(uri);
+
       const activeTrack = await TrackPlayer.getActiveTrack();
       if (activeTrack?.url === decodedUri) {
         setIsReady(true);
         return;
       }
+
       await loadExternalTrack(uri, fileName ?? undefined, hint);
     };
 
     handleDeepLink().catch(console.error);
   }, [uri]);
 
-  /// Delay player loader
-  useEffect(() => {
-    if ((hasLoadedRef.current = true)) {
-      setTimeout(() => {
-        setDelay(false);
-      }, 200);
-    }
-  }, []);
-
-  if (!currentTrack || !isReady || delay) {
+  if (!isReady || !currentTrack) {
     return (
       <View
         className="flex-1"
