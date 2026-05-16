@@ -141,7 +141,7 @@ const PrivacySettings = () => {
           style={{ paddingTop: 8, paddingHorizontal: 1 }}
         />
         <View style={{ marginTop: 16 }} />
-        <View className="p-3">
+        <View className="p-1">
           <Text className="text text-2xl" style={{ color: colors.text }}>
             {t("settings.privacy.title")}
           </Text>

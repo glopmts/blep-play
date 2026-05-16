@@ -14,13 +14,11 @@ import { TrackDetails } from "@/types/interfaces";
 import { formatDuration } from "@/utils/formaTS/formatTimeSong";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import * as Clipboard from "expo-clipboard";
-import { Image, ImageBackground } from "expo-image";
+import { ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 import {
   Album,
-  ArrowRightCircle,
-  CheckCircle,
   Copy,
   CopyCheck,
   Info,
@@ -36,13 +34,13 @@ import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { PlaylistSongPicker } from "../../../../components/PlaylistSongPicker";
 
 const DetailsMusic = () => {
   const { isDark, colors } = useTheme();
@@ -82,73 +80,16 @@ const DetailsMusic = () => {
     : 32;
 
   const getBottomSheetContent = useCallback(
-    (song: TrackDetails) => {
-      return (
-        <View className="flex-col gap-5 px-4">
-          {playlists.length > 0 ? (
-            playlists.map((c) => {
-              const isMusic = c.songs?.some((s) => s.id === song.id) ?? false;
-
-              return (
-                <Pressable
-                  key={c.id}
-                  className="flex-col flex-1 gap-4 px-4 py-3.5 rounded-2xl dark:bg-zinc-800/70 bg-zinc-50 border dark:border-zinc-700/50 border-zinc-200 active:opacity-80"
-                  onPress={async () => {
-                    if (isMusic) {
-                      await handleRemoveSongFromPlaylist(c.id, song.id);
-                    } else {
-                      await handleAddSongToPlaylist(c.id, song);
-                    }
-                  }}
-                >
-                  <View className="flex-row gap-4 items-center justify-between">
-                    <View className="flex-row gap-3 items-center">
-                      <View className="w-20 h-20 rounded-3xl overflow-hidden dark:bg-zinc-800 bg-zinc-100 items-center justify-center border dark:border-zinc-700 border-zinc-200 shadow-sm">
-                        {c.coverArt ? (
-                          <Image
-                            source={{ uri: c.coverArt }}
-                            style={{ width: "100%", height: "100%" }}
-                            contentFit="cover"
-                            transition={200}
-                            cachePolicy="memory-disk"
-                          />
-                        ) : (
-                          <ListMusicIcon
-                            size={24}
-                            color={colors.icon}
-                            strokeWidth={1.5}
-                          />
-                        )}
-                      </View>
-                      <View className="flex-col gap-2">
-                        <Text className="text">{c.title}</Text>
-                        <Text className="text text-base text-zinc-300">
-                          Musicas: {c.songs?.length || 0}
-                        </Text>
-                      </View>
-                    </View>
-                    {isMusic ? (
-                      <CheckCircle size={28} color={colors.primary} />
-                    ) : (
-                      <ArrowRightCircle
-                        size={28}
-                        color={isDark ? "#71717a" : "#a1a1aa"}
-                      />
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })
-          ) : (
-            <View className="items-center flex-1 justify-center">
-              <Text className="text text-center text-zinc-300">
-                {t("playlist.empty")}
-              </Text>
-            </View>
-          )}
-        </View>
-      );
-    },
+    (song: TrackDetails) => (
+      <PlaylistSongPicker
+        song={song}
+        playlists={playlists}
+        colors={colors}
+        isDark={isDark}
+        onAddSong={handleAddSongToPlaylist}
+        onRemoveSong={handleRemoveSongFromPlaylist}
+      />
+    ),
     [
       playlists,
       handleAddSongToPlaylist,
@@ -157,8 +98,6 @@ const DetailsMusic = () => {
       colors,
     ],
   );
-
-  //  ^ selectedSong removido das deps — recebe via parâmetro agora
 
   const handleOpenBottomSheet = useCallback(
     (item: TrackDetails) => {

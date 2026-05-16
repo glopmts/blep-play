@@ -68,8 +68,8 @@ export function Button({
     danger: "#ffffff",
     success: "#ffffff",
     warning: "#0A0A0C",
-    outline: colors.text,
-    ghost: colors.text,
+    outline: "#ffffff",
+    ghost: "#ffffff",
   };
 
   const borderColors: Record<ButtonVariant, string> = {
@@ -115,6 +115,20 @@ export function Button({
   const fontSize = fontSizes[size];
   const borderRadius = radiusMap[radius] as number;
   const isDisabled = disabled || isLoading;
+
+  const styledIcon = icon
+    ? React.cloneElement(
+        icon as React.ReactElement<{ color?: string; size?: number }>,
+        {
+          color:
+            (icon as React.ReactElement<{ color?: string; size?: number }>)
+              .props.color ?? textColor,
+          size:
+            (icon as React.ReactElement<{ color?: string; size?: number }>)
+              .props.size ?? iconSizes[size],
+        },
+      )
+    : null;
 
   return (
     <TouchableOpacity
@@ -162,9 +176,10 @@ export function Button({
               {label}
             </Text>
           )}
-          {icon && iconPosition === "right" && (
-            <View style={{ marginLeft: label ? 6 : 0 }}>{icon}</View>
-          )}
+          {styledIcon &&
+            iconPosition === "right" && ( // ← era {icon}
+              <View style={{ marginLeft: label ? 6 : 0 }}>{styledIcon}</View>
+            )}
         </View>
       )}
 

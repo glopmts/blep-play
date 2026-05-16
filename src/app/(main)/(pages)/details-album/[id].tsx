@@ -1,19 +1,24 @@
 import ActivityIndicatorCustom from "@/components/activityIndicator-Custom";
 import { BackButton } from "@/components/black-button";
 import SongCard from "@/components/cards/song-card";
+import { PlaylistSongPicker } from "@/components/PlaylistSongPicker";
 import SearchBar from "@/components/searchBar";
+import { Button } from "@/components/ui/button";
+import { useBottomSheet } from "@/context/bottom-sheet-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useAlbumDetailsLocal } from "@/hooks/albums-hooks/useAlbumDetailsLocal";
 import { useDownloadCoverLocal } from "@/hooks/download-cover-local";
 import { usePlayer } from "@/hooks/usePlayer";
+import { usePlaylists } from "@/hooks/usePlaylists";
 import { useSearchSong } from "@/hooks/useSearchSong";
 import { TrackDetails } from "@/types/interfaces";
 import { IMAGE_SIZE_BACKGROUND } from "@/utils/image-types";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Album, Download } from "lucide-react-native";
+import { Album, Download, ListMusicIcon } from "lucide-react-native";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -40,6 +45,10 @@ const AlbumDetails = () => {
 
   const flatListRef = useRef<FlatList>(null);
   const [loadingSongIndex, setLoadingSongIndex] = useState<number | null>(null);
+  const { playlists, handleRemoveSongFromPlaylist, handleAddSongToPlaylist } =
+    usePlaylists();
+  const { openSheet, closeSheet } = useBottomSheet();
+  const { t } = useTranslation();
 
   const {
     searchQuery,
@@ -83,6 +92,36 @@ const AlbumDetails = () => {
     return album?.songs || [];
   }, [searchQuery, searchResults, album?.songs]);
 
+  const getBottomSheetContent = useCallback(
+    (songs: TrackDetails[]) => (
+      <PlaylistSongPicker
+        song={songs}
+        playlists={playlists}
+        colors={colors}
+        isDark={isDark}
+        onAddSong={handleAddSongToPlaylist}
+        onRemoveSong={handleRemoveSongFromPlaylist}
+      />
+    ),
+    [
+      playlists,
+      handleAddSongToPlaylist,
+      handleRemoveSongFromPlaylist,
+      isDark,
+      colors,
+    ],
+  );
+
+  const handleOpenBottomSheet = useCallback(
+    (item: TrackDetails[]) => {
+      openSheet({
+        snapPoints: ["30%", "50%"],
+        content: () => getBottomSheetContent(item), // ← currying com item atual
+      });
+    },
+    [openSheet, getBottomSheetContent],
+  );
+
   const ListFooterComponent = useMemo(() => {
     // Só mostra footer se NÃO estiver em modo de busca
     if (searchQuery) return null;
@@ -92,7 +131,7 @@ const AlbumDetails = () => {
         <View className="py-8 items-center">
           <ActivityIndicator size="small" color={colors.iconActive} />
           <Text className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-            Carregando músicas...
+            {t("music.loadall")}
           </Text>
         </View>
       );
@@ -102,7 +141,7 @@ const AlbumDetails = () => {
       return (
         <View className="py-8 items-center">
           <Text className="text-gray-500 dark:text-gray-400 text-sm">
-            Nenhuma música encontrada
+            {t("music.notfoundmusics")}
           </Text>
         </View>
       );
@@ -169,8 +208,8 @@ const AlbumDetails = () => {
           <View>
             <Text className="text-lg font-bold text-black dark:text-white">
               {searchQuery
-                ? `Resultados para "${searchQuery}"`
-                : "Todas as Músicas"}
+                ? `${t("search.feedback.resulttitle")}: "${searchQuery}"`
+                : `${t("music.allmusictitle")}`}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
               {searchQuery
@@ -179,26 +218,36 @@ const AlbumDetails = () => {
             </Text>
           </View>
 
-          {!searchQuery && (
-            <TouchableOpacity
-              onPress={handlePlayAll}
-              activeOpacity={0.8}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#3b82f6",
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                gap: 6,
-              }}
-            >
-              <Ionicons name="play" size={14} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
-                Tocar tudo
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View className="flex-row gap-4 items-center">
+            {!searchQuery && (
+              <TouchableOpacity
+                onPress={handlePlayAll}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#3b82f6",
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  gap: 6,
+                }}
+              >
+                <Ionicons name="play" size={14} color="#fff" />
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}
+                >
+                  {t("player.feedback.allplaye")}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <Button
+              icon={<ListMusicIcon />}
+              variant="outline"
+              size="md"
+              onPress={() => handleOpenBottomSheet(album.songs!)}
+            />
+          </View>
         </View>
 
         {/*  Barra de Busca */}
@@ -209,7 +258,7 @@ const AlbumDetails = () => {
             isSearching={isSearching}
             onClear={clearSearch}
             colors={colors}
-            placeholder="Buscar música por título, artista..."
+            placeholder={t("search.feedback.albumsearch")}
           />
         )}
       </View>
@@ -253,12 +302,12 @@ const AlbumDetails = () => {
   if (!album) {
     return (
       <View className="infor-alert">
-        <Text className="text-1">Álbum não encontrado</Text>
+        <Text className="text-1">{t("text.feedback.nolbum")}</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           className="mt-4 px-6 py-2 bg-blue-500 rounded-lg"
         >
-          <Text className="text-white">Voltar</Text>
+          <Text className="text-white">{t("common.back")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -273,7 +322,7 @@ const AlbumDetails = () => {
           }}
           className="text text-xl"
         >
-          Houve um error ao carregar album: {error.message}
+          {t("text.feedback.errorloadalbum")}: {error.message}
         </Text>
       </View>
     );

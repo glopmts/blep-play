@@ -32,38 +32,35 @@ export const BottomSheetProvider = ({
   const [contentFn, setContentFn] = useState<{
     fn: () => React.ReactNode;
   } | null>(null);
-  const [trackArtwork, settrackArtwork] = useState<string | null>("");
-
+  const [trackArtwork, setTrackArtwork] = useState<string | null>("");
   const [snapPoints, setSnapPoints] = useState<(string | number)[]>(["50%"]);
   const [isOpen, setIsOpen] = useState(false);
+  const [openCount, setOpenCount] = useState(0); // ← contador
 
   const openSheet = useCallback(
-    ({ content, trackArtwork, snapPoints: sp, initialSnap }: SheetPayload) => {
-      // Envolve em objeto para evitar que o React execute como updater
+    ({ content, trackArtwork, snapPoints: sp }: SheetPayload) => {
       setContentFn({
         fn: typeof content === "function" ? content : () => content,
       });
       setSnapPoints(sp ?? ["50%"]);
+      setTrackArtwork(trackArtwork || "");
       setIsOpen(true);
-      settrackArtwork(trackArtwork || "");
+      setOpenCount((c) => c + 1); // ← incrementa sempre
       Haptics.selectionAsync();
-      initialSnap;
     },
     [],
   );
 
-  const closeSheet = useCallback(() => {
-    setIsOpen(false);
-  }, []);
+  const closeSheet = useCallback(() => setIsOpen(false), []);
 
   return (
     <BottomSheetContext.Provider value={{ openSheet, closeSheet, isOpen }}>
       <View className="flex-1">{children}</View>
       <GlobalBottomSheet
-        // Invoca a função a cada render — sempre conteúdo fresco
         content={contentFn?.fn() ?? null}
         snapPoints={snapPoints}
         isOpen={isOpen}
+        openCount={openCount} // ← passa o contador
         trackArtwork={trackArtwork}
         onClose={closeSheet}
       />

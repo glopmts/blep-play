@@ -58,8 +58,11 @@ const en = {
   music: {
     title: "Music",
     notFound: "Music not found",
+    notfoundmusics: "No music found", // ← adicionado
     norecent: "No recent music.",
     recent: "Recent Music",
+    loadall: "Loading music...", // ← adicionado
+    allmusictitle: "All Music",
     metadata: {
       title: "Title",
       artist: "Artist",
@@ -178,6 +181,7 @@ const en = {
       current: "Playing now",
       pause: "Pause",
       playe: "Play music",
+      allplaye: "Play all",
     },
   },
 
@@ -201,6 +205,8 @@ const en = {
       viewdetails: "View details",
       errorload: "Error loading",
       refresh: "Try again",
+      errorloadalbum: "An error occurred loading the album",
+      nolbum: "Album not found.",
       albumsload: "Loading more albums...",
       albumtitlehome: "Device Albums",
       totalsongs: "Total songs",
@@ -223,6 +229,7 @@ const en = {
       getmusics: "Search music...",
       loading: "Searching...",
       noresult: "No results found",
+      resulttitle: "Results for",
       albumsearch: "Search album, artist...",
       tips: "Try searching by title, artist or album",
     },

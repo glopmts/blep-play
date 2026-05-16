@@ -1,4 +1,3 @@
-// GlobalBottomSheet.tsx
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetScrollView,
@@ -12,6 +11,7 @@ type Props = {
   trackArtwork?: string | null;
   snapPoints: (string | number)[];
   isOpen: boolean;
+  openCount: number;
   onClose: () => void;
 };
 
@@ -20,6 +20,7 @@ export function GlobalBottomSheet({
   snapPoints,
   trackArtwork,
   isOpen,
+  openCount,
   onClose,
 }: Props) {
   const ref = useRef<BottomSheet>(null);
@@ -28,12 +29,12 @@ export function GlobalBottomSheet({
 
   useEffect(() => {
     if (isOpen) {
-      // Pequeno delay garante que snapPoints já foram aplicados
+      // openCount garante que re-abre mesmo se isOpen não mudou
       setTimeout(() => ref.current?.snapToIndex(0), 50);
     } else {
       ref.current?.close();
     }
-  }, [isOpen]);
+  }, [isOpen, openCount]);
 
   const renderBackdrop = useCallback(
     (props: any) => (

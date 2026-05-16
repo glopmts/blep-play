@@ -47,8 +47,11 @@ const pt = {
   music: {
     title: "Música",
     notFound: "Música não encontrada",
+    notfoundmusics: "Nenhuma música encontrada",
     norecent: "Nenhuma música recente.",
     recent: "Músicas Recente",
+    loadall: "Carregando músicas...",
+    allmusictitle: "Todas as Músicas",
     metadata: {
       title: "Título",
       artist: "Artista",
@@ -171,6 +174,7 @@ const pt = {
       current: "Tocando agora",
       pause: "Pausar",
       playe: "Tocar música",
+      allplaye: "Tocar tudo",
     },
   },
 
@@ -193,8 +197,10 @@ const pt = {
       seeall: "Ver todos",
       viewdetails: "Ver detalhes",
       errorload: "Error ao carregar",
+      errorloadalbum: "Houve um error ao carregar album",
       refresh: "Tentar novamente",
       albumsload: "Carregando mais álbuns...",
+      nolbum: "Álbum não encontrado.",
       albumtitlehome: "Álbuns do Dispositivo",
       totalsongs: "Total musicas",
       allsongs: "Totas as musicas",
@@ -215,6 +221,7 @@ const pt = {
     feedback: {
       getmusics: "Buscar músicas...",
       loading: "Buscando...",
+      resulttitle: "Resultados para",
       noresult: "Nenhum resultado encontrado",
       albumsearch: "Buscar album, artista...",
       tips: "Tente buscar por título, artista ou álbum",
