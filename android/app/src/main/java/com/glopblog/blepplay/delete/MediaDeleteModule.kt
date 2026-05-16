@@ -57,11 +57,11 @@ class MediaDeleteModule(private val reactContext: ReactApplicationContext) :
                 ActivityResultContracts.StartIntentSenderForResult(),
             ) { result: ActivityResult ->
                 activeLaunchers.remove(key) // limpa após uso
-                if (result.resultCode == Activity.RESULT_OK) {
-                    promise.resolve(true)
-                } else {
-                    promise.reject("ERR_CANCELLED", "Usuário cancelou a deleção")
-                }
+              if (result.resultCode == Activity.RESULT_OK) {
+    promise.resolve(true)
+} else {
+    promise.resolve(false) // ← resolve false, não rejeita
+}
             }
 
             activeLaunchers[key] = launcher // mantém referência forte

@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import { ChevronRight, Info, Music, Trash2, X } from "lucide-react-native";
 import { useState } from "react";
 import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
-import { showPlatformMessage } from "../toast-message-plataform";
 
 type Props = {
   album: AlbumInterface;
@@ -25,7 +24,6 @@ const BottomSheetAlbumDetails = ({ album, onClose, refreshAlbums }: Props) => {
       () => {
         onClose?.();
         refreshAlbums?.();
-        showPlatformMessage("Album deletado com sucesso!");
       },
       (_reason) => {
         setDeleting(false);

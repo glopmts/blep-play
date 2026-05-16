@@ -2,8 +2,10 @@ import { dbRemoveCacheCover } from "@/database/cache/coverArtCache";
 import { AlbumInterface } from "@/types/interfaces";
 import * as MediaLibrary from "expo-media-library";
 import { Alert, Platform } from "react-native";
+import { showPlatformMessage } from "../components/toast-message-plataform";
 import { invalidateAlbumsList } from "../database/cache/albuns-local-cache";
 import { MediaDeleteModule } from "../modules/mediadelete-album.module";
+import { getAlbumById } from "../modules/music-library.module";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,21 +45,23 @@ async function ensureWritePermission(): Promise<boolean> {
 async function fetchAssetsByAlbum(
   albumId: string,
 ): Promise<MediaLibrary.Asset[]> {
-  const assets: MediaLibrary.Asset[] = [];
-  let cursor: MediaLibrary.AssetRef | undefined;
+  const album = await getAlbumById(albumId);
+  if (!album?.songs?.length) return [];
 
-  do {
-    const page = await MediaLibrary.getAssetsAsync({
-      album: albumId,
-      mediaType: MediaLibrary.MediaType.audio,
-      first: 500,
-      after: cursor,
-    });
-    assets.push(...page.assets);
-    cursor = page.hasNextPage ? page.endCursor : undefined;
-  } while (cursor);
-
-  return assets;
+  return album.songs.map((s) => ({
+    id: s.id,
+    filename: s.title,
+    uri: s.uri,
+    mediaType: MediaLibrary.MediaType.audio,
+    width: 0,
+    height: 0,
+    creationTime: 0,
+    modificationTime: 0,
+    duration: s.duration / 1000,
+    albumId: s.albumId,
+    albumTitle: album.album,
+    isFavorite: false,
+  }));
 }
 
 /**
@@ -104,23 +108,25 @@ export async function deleteAlbumFromDevice(
 
     // 2. Assets — `album.songs` é TrackDetails[], que estende Asset implicitamente
     //    via `filePath` / `uri`. Convertemos para o shape que o MediaLibrary espera.
-    const resolvedAssets: MediaLibrary.Asset[] =
+    const songs =
       Array.isArray(album.songs) && album.songs.length > 0
-        ? album.songs.map((s) => ({
-            id: s.id,
-            filename: s.title,
-            uri: s.uri,
-            mediaType: MediaLibrary.MediaType.audio,
-            width: 0,
-            height: 0,
-            creationTime: 0,
-            modificationTime: 0,
-            duration: s.duration / 1000, // TrackDetails usa ms; Asset usa s
-            albumId: s.albumId,
-            albumTitle: album.album,
-            isFavorite: false,
-          }))
-        : await fetchAssetsByAlbum(album.id);
+        ? album.songs
+        : ((await getAlbumById(album.id))?.songs ?? []);
+
+    const resolvedAssets: MediaLibrary.Asset[] = songs.map((s) => ({
+      id: s.id,
+      filename: s.title,
+      uri: s.uri,
+      mediaType: MediaLibrary.MediaType.audio,
+      width: 0,
+      height: 0,
+      creationTime: 0,
+      modificationTime: 0,
+      duration: s.duration / 1000,
+      albumId: s.albumId,
+      albumTitle: album.album,
+      isFavorite: false,
+    }));
 
     if (resolvedAssets.length === 0) {
       await removeAlbumFromCache(album.id);
@@ -131,7 +137,6 @@ export async function deleteAlbumFromDevice(
     let deleted = false;
 
     if (Platform.OS === "android") {
-      // Usa as URIs diretamente se disponíveis, senão resolve pelo ID
       const uris = resolvedAssets.every((a) => a.uri?.startsWith("content://"))
         ? resolvedAssets.map((a) => a.uri)
         : await MediaDeleteModule.resolveAudioUris(assetIds);
@@ -145,11 +150,22 @@ export async function deleteAlbumFromDevice(
       }
 
       deleted = await MediaDeleteModule.deleteMediaFiles(uris);
-    }
 
-    if (!deleted) {
-      // O usuário cancelou o diálogo de permissão do sistema (Android 11+ / iOS)
-      return { success: false, reason: "cancelled" };
+      if (!deleted) {
+        return { success: false, reason: "cancelled" };
+      }
+    } else {
+      // iOS
+      try {
+        await MediaLibrary.deleteAssetsAsync(resolvedAssets);
+        deleted = true;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("cancel") || msg.includes("Cancel")) {
+          return { success: false, reason: "cancelled" };
+        }
+        throw e;
+      }
     }
 
     // 5. Tenta remover o registro de álbum vazio do MediaStore
@@ -212,7 +228,7 @@ export function confirmAndDeleteAlbum(
 ): void {
   Alert.alert(
     "Deletar álbum",
-    `Tem certeza que deseja deletar "${album.album}" e todas as ${album.songs} músicas?\n\nEsta ação não pode ser desfeita.`,
+    `Tem certeza que deseja deletar "${album.album}" e todas as ${album.songs?.length ?? 0} músicas?\n\nEsta ação não pode ser desfeita.`,
     [
       { text: "Cancelar", style: "cancel" },
       {
@@ -223,11 +239,13 @@ export function confirmAndDeleteAlbum(
 
           if (result.success) {
             onSuccess(result.deletedCount);
+            showPlatformMessage("Album deletado com sucesso!");
             return;
           }
 
           // Cancelamento silencioso — não mostra erro
           if (result.reason === "cancelled") return;
+          showPlatformMessage(result.reason);
 
           const message =
             result.reason === "error" && result.error
