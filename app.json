@@ -58,6 +58,7 @@
         "backgroundImage": "./assets/images/icon.png",
         "monochromeImage": "./assets/images/icon.png"
       },
+
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",

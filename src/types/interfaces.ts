@@ -18,6 +18,7 @@ export interface SongWithArt extends MediaLibrary.Asset {
 
 export interface TrackDetails {
   id: string;
+  url?: string;
   title: string;
   artist: string;
   album: string;
@@ -34,6 +35,11 @@ export interface TrackDetails {
   composer: string | null;
   coverArt?: string | null; // file:// path (após cache) ou null
   lyrics?: string;
+
+  videoClipUrl?: string; // URL do YouTube já resolvida (cache)
+  youtubeVideoId?: string; // ID do vídeo YouTube
+  isOfficialVideo?: boolean; // Distinguir clipe oficial de lyric video
+  clipSearchQuery?: string;
 }
 
 export interface AlbumWithDetails {

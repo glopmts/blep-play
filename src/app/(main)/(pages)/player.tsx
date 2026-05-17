@@ -13,7 +13,7 @@ import { Slider } from "@miblanchard/react-native-slider";
 import { ImageBackground } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { Music, PictureInPicture } from "lucide-react-native";
+import { Clapperboard, Music, PictureInPicture } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -25,6 +25,9 @@ import {
   View,
 } from "react-native";
 import TrackPlayer, { RepeatMode, Track } from "react-native-track-player";
+import VideoClipMusic from "../../../components/video-clip-music";
+import { useVideoClip } from "../../../hooks/useVideoClip";
+import { TrackDetails } from "../../../types/interfaces";
 
 export default function PlayerScreen() {
   const { isDark, colors } = useTheme();
@@ -47,6 +50,9 @@ export default function PlayerScreen() {
   const [isReady, setIsReady] = useState(!!currentTrack);
   const hasLoadedRef = useRef(false);
   const { openSheet, closeSheet } = useBottomSheet();
+  const [isVideoClip, setVideoClip] = useState(false);
+  const { searchVideoClip, videoId } = useVideoClip();
+
   const { handlePip } = usePipMusic();
   const { t } = useTranslation();
 
@@ -64,6 +70,13 @@ export default function PlayerScreen() {
     album: album ? decodeURIComponent(album) : undefined,
     artworkUri: artworkUri ? decodeURIComponent(artworkUri) : undefined,
   };
+
+  const handleVideoClip = useCallback(() => {
+    openSheet({
+      snapPoints: ["40%"],
+      content: <VideoClipMusic song={currentTrack as TrackDetails} />,
+    });
+  }, [currentTrack, openSheet]);
 
   useEffect(() => {
     if (currentTrack) setIsReady(true);
@@ -249,12 +262,18 @@ export default function PlayerScreen() {
             {currentTrack.artist}
           </Text>
         </View>
-        <View className="px-8">
+        <View className="px-8 flex-row gap-3">
           <Button
             onPress={handlePip}
             variant="outline"
             icon={<PictureInPicture size={20} color={colors.icon} />}
           ></Button>
+          <Button
+            onPress={handleVideoClip}
+            variant="outline"
+            disabled={true}
+            icon={<Clapperboard size={20} color={colors.icon} />}
+          />
         </View>
       </View>
 
