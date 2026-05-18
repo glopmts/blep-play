@@ -8,6 +8,8 @@ import pt from "./locales/pt";
 const deviceLang = getLocales()[0].languageCode ?? "en";
 
 export const initI18n = async () => {
+  if (i18n.isInitialized) return;
+
   const savedLang = await AsyncStorage.getItem("@lang");
 
   await i18n.use(initReactI18next).init({

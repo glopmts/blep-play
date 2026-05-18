@@ -5,43 +5,44 @@ let initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 export const getAlbumsDb = async (): Promise<SQLite.SQLiteDatabase> => {
   if (db) return db;
-
-  // Se já está inicializando, aguarda a mesma Promise
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
     try {
       const instance = await SQLite.openDatabaseAsync("albums_cache_v2.db");
 
+      await instance.execAsync("PRAGMA journal_mode = WAL");
+      await instance.execAsync("PRAGMA synchronous = NORMAL");
+
       await instance.execAsync(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA synchronous = NORMAL;
+        CREATE TABLE IF NOT EXISTS albums_meta (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        );
+      `);
 
-  CREATE TABLE IF NOT EXISTS albums_meta (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
+      await instance.execAsync(`
+        CREATE TABLE IF NOT EXISTS albums_numbers (
+          key TEXT PRIMARY KEY,
+          value INTEGER NOT NULL
+        );
+      `);
 
-  CREATE TABLE IF NOT EXISTS albums_numbers (
-    key TEXT PRIMARY KEY,
-    value INTEGER NOT NULL
-  );
+      await instance.execAsync(`
+        CREATE TABLE IF NOT EXISTS albums_list (
+          id TEXT PRIMARY KEY,
+          album TEXT NOT NULL,
+          artist TEXT NOT NULL,
+          numberOfSongs INTEGER NOT NULL,
+          year INTEGER NOT NULL,
+          artworkBase64 TEXT,
+          cached_at INTEGER NOT NULL
+        );
+      `);
 
-  -- Lista de álbuns (sem songs, sem base64 de faixas)
-  CREATE TABLE IF NOT EXISTS albums_list (
-    id           TEXT PRIMARY KEY,
-    album        TEXT NOT NULL,
-    artist       TEXT NOT NULL,
-    numberOfSongs INTEGER NOT NULL,
-    year         INTEGER NOT NULL,
-    artworkBase64 TEXT,            -- pode ser null
-    cached_at    INTEGER NOT NULL
-  );
-`);
       db = instance;
       return db;
     } catch (error) {
-      // Reset para permitir nova tentativa
       initPromise = null;
       throw error;
     }

@@ -2,7 +2,7 @@
   "expo": {
     "name": "BlepPlay",
     "slug": "blep-play",
-    "version": "1.3.2",
+    "version": "1.3.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "blepplay",
@@ -250,6 +250,6 @@
     "updates": {
       "url": "https://u.expo.dev/444fcb6e-bf40-4668-9d79-f754753be4bb"
     },
-    "runtimeVersion": "1.3.2"
+    "runtimeVersion": "1.3.8"
   }
 }

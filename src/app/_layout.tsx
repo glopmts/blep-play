@@ -3,12 +3,13 @@ import * as Linking from "expo-linking";
 import { useQuickAction } from "expo-quick-actions/hooks";
 import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { NativeModules } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import i18n from "../../i18next/i18n.ts";
+import i18n, { initI18n } from "../../i18next/i18n.ts";
+import ActivityIndicatorCustom from "../components/activityIndicator-Custom";
 import { showPlatformMessage } from "../components/toast-message-plataform";
 import { BottomSheetProvider } from "../context/bottom-sheet-context";
 import { LibrarySettingsProvider } from "../context/LibrarySettingsContext";
@@ -159,6 +160,24 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [i18nReady, setI18nReady] = useState(false);
+
+  useEffect(() => {
+    initI18n()
+      .catch(console.error)
+      .finally(() => setI18nReady(true));
+  }, []);
+
+  if (!i18nReady) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
+        <ThemeProvider>
+          <ActivityIndicatorCustom isImage={true} />
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#27272a" }}>
       <ThemeProvider>

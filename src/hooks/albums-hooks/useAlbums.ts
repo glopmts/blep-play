@@ -7,7 +7,6 @@ import { AlbumInterface } from "@/types/interfaces";
 import { usePermissions } from "expo-media-library";
 import { useEffect, useRef, useState } from "react";
 
-// useAlbums.ts
 export function useAlbums() {
   const [albums, setAlbums] = useState<AlbumInterface[]>([]);
   const [loading, setLoading] = useState(true); // começa true
@@ -30,18 +29,23 @@ export function useAlbums() {
   }, [permission?.granted]);
 
   async function load() {
+    if (abortRef.current) return;
     setLoading(true);
     setError(null);
 
     try {
       const cached = await getCachedAlbumsList();
-      if (cached && cached.length > 0 && !abortRef.current) {
+      if (abortRef.current) return;
+
+      if (cached && cached.length > 0) {
         setAlbums(cached);
         hasLoadedOnce.current = true;
         setLoading(false);
         syncInBackground();
         return;
       }
+
+      if (abortRef.current) return;
       await fetchFromNative();
       hasLoadedOnce.current = true;
     } catch (e: any) {
@@ -52,6 +56,7 @@ export function useAlbums() {
   }
 
   async function fetchFromNative() {
+    if (abortRef.current) return;
     const fresh = await getAlbums();
     if (abortRef.current) return;
     setAlbums(fresh);
